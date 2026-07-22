@@ -1,0 +1,32 @@
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDEs and editors
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Frontend
+church-frontend/node_modules/
+church-frontend/dist/
+church-frontend/.svelte-kit/
+church-frontend/build/
+church-frontend/.env
+church-frontend/.env.local
+church-frontend/.env.development.local
+church-frontend/.env.test.local
+church-frontend/.env.production.local
+church-frontend/npm-debug.log*
+church-frontend/yarn-debug.log*
+church-frontend/yarn-error.log*
+church-frontend/pnpm-debug.log*
+
+# Backend
+church-backend/bin/
+church-backend/dist/
+church-backend/.env

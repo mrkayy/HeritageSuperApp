@@ -1,0 +1,20 @@
+version: "2"
+linters:
+  enable:
+    - depguard
+  settings:
+    depguard:
+      rules:
+        # Any package under internal/modules/<x> may ONLY import:
+        # its own subpackages, internal/contracts, internal/platform/*,
+        # and third-party libraries. It may NOT import another module.
+        modules-isolation:
+          files:
+            - internal/modules/**/*.go
+          deny:
+            - pkg: github.com/hofchurchng/church-backend/internal/modules
+              desc: "modules must not import each other directly - depend on internal/contracts instead, wired in cmd/server/main.go"
+          allow:
+            - $gostd
+            - github.com/hofchurchng/church-backend/internal/contracts
+            - github.com/hofchurchng/church-backend/internal/platform
