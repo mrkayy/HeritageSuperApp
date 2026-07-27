@@ -24,3 +24,11 @@ func (s *Service) GetMember(ctx context.Context, id string) (contracts.Member, e
 func (s *Service) ListMembers(ctx context.Context) ([]contracts.Member, error) {
 	return s.repo.List(ctx)
 }
+
+func (s *Service) AddMember(ctx context.Context, name string, email string) (contracts.Member, error) {
+	return s.repo.Add(ctx, name, email)
+}
+
+func (s *Service) DeleteMember(ctx context.Context, id string) error {
+	return s.repo.Delete(ctx, id)
+}

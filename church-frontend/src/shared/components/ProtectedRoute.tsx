@@ -9,10 +9,12 @@ import { useAuth } from "../auth/AuthContext";
 export function ProtectedRoute({
   children,
   role,
+  allowedRoles,
   skipProfileCheck,
 }: {
   children: JSX.Element;
   role?: string;
+  allowedRoles?: string[];
   skipProfileCheck?: boolean;
 }) {
   const { user, loading } = useAuth();
@@ -27,7 +29,12 @@ export function ProtectedRoute({
   }
 
   if (!user) return <Navigate to="/login" replace />;
+  
   if (role && !user.Roles.includes(role)) return <Navigate to="/" replace />;
+  
+  if (allowedRoles && !allowedRoles.some(r => user.Roles.includes(r))) {
+    return <Navigate to="/" replace />;
+  }
 
   // Force onboarding if profile is incomplete
   if (!skipProfileCheck && !user.isProfileComplete) {

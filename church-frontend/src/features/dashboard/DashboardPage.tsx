@@ -35,12 +35,14 @@ export default function DashboardPage() {
         {/* Feature Cards Grid */}
         <section className="dashboard-grid animate-fade-in-up">
           {/* Card 1: Members Directory */}
-          <Link to="/members" className="feature-card card">
-            <div className="card-icon">👥</div>
-            <h3>Membership Directory</h3>
-            <p>Search, register, and update church members and their onboarding status.</p>
-            <span className="card-action">Go to Members →</span>
-          </Link>
+          {user && (user.Roles.includes("team_lead") || user.Roles.includes("resident_pastor") || user.Roles.includes("church_admin")) && (
+            <Link to="/members" className="feature-card card">
+              <div className="card-icon">👥</div>
+              <h3>Membership Directory</h3>
+              <p>Search, register, and update church members and their onboarding status.</p>
+              <span className="card-action">Go to Members →</span>
+            </Link>
+          )}
 
           {/* Card 2: Teams & Sectors */}
           <div className="feature-card card disabled">

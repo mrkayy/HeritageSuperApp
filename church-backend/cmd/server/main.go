@@ -105,7 +105,11 @@ func main() {
 	authHandler.RegisterProtected(authGroup.Group("", requireAuth))
 
 	// Protected module routes
-	membersGroup := api.Group("/members", requireAuth)
+	membersGroup := api.Group("/members", requireAuth, middleware.RequireAnyRole(
+		string(contracts.RoleTeamLead),
+		string(contracts.RoleResidentPastor),
+		string(contracts.RoleChurchAdmin),
+	))
 	membershipHandler.Register(membersGroup)
 
 	teamsGroup := api.Group("/teams", requireAuth)

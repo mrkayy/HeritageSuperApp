@@ -45,7 +45,7 @@ export default function AppRoutes() {
         <Route
           path="/members"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={["team_lead", "resident_pastor", "church_admin"]}>
               <MembershipPage />
             </ProtectedRoute>
           }

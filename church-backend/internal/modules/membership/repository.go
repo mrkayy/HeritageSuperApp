@@ -53,3 +53,28 @@ func (r *Repository) List(ctx context.Context) ([]contracts.Member, error) {
 	}
 	return out, nil
 }
+
+func (r *Repository) Add(ctx context.Context, name string, email string) (contracts.Member, error) {
+	m, err := r.db.Member.Create().
+		SetName(name).
+		SetEmail(email).
+		Save(ctx)
+	if err != nil {
+		return contracts.Member{}, err
+	}
+
+	return contracts.Member{
+		ID:    m.ID.String(),
+		Name:  m.Name,
+		Email: m.Email,
+	}, nil
+}
+
+func (r *Repository) Delete(ctx context.Context, id string) error {
+	uid, err := uuid.Parse(id)
+	if err != nil {
+		return err
+	}
+
+	return r.db.Member.DeleteOneID(uid).Exec(ctx)
+}

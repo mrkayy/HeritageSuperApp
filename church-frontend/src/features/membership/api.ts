@@ -11,3 +11,19 @@ export interface Member {
 export function listMembers() {
   return apiFetch<Member[]>("/members");
 }
+
+export function createMember(name: string, email: string) {
+  return apiFetch<Member>("/members", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ name, email }),
+  });
+}
+
+export function deleteMember(id: string) {
+  return apiFetch<void>(`/members/${id}`, {
+    method: "DELETE",
+  });
+}
