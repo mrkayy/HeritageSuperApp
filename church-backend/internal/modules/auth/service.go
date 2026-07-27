@@ -8,6 +8,7 @@ import (
 )
 
 var ErrInvalidCredentials = errors.New("invalid email or password")
+var ErrNotProfiled = errors.New("email is not registered in the members directory")
 
 type Service struct {
 	repo      *Repository
@@ -43,3 +44,25 @@ func (s *Service) Login(ctx context.Context, email, password string) (LoginResul
 
 	return LoginResult{Token: token, Email: u.Email, Roles: u.Roles}, nil
 }
+
+func (s *Service) LoginOrCreateOAuthUser(ctx context.Context, email string) (LoginResult, error) {
+	u, err := s.repo.FindOrCreateByEmail(ctx, email)
+	if err != nil {
+		if errors.Is(err, postgresErrNotProfiled) {
+			return LoginResult{}, ErrNotProfiled
+		}
+		return LoginResult{}, err
+	}
+
+	token, err := issueToken(s.jwtSecret, u.ID, u.Email, u.Roles)
+	if err != nil {
+		return LoginResult{}, err
+	}
+
+	return LoginResult{Token: token, Email: u.Email, Roles: u.Roles}, nil
+}
+
+func (s *Service) CheckMemberExists(ctx context.Context, email string) (bool, error) {
+	return s.repo.CheckMemberExists(ctx, email)
+}
+

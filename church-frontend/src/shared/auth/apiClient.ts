@@ -13,6 +13,10 @@ export function setToken(token: string | null) {
   else localStorage.removeItem("hof_token");
 }
 
+export function hasToken(): boolean {
+  return !!localStorage.getItem("hof_token");
+}
+
 export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = getToken();
   const res = await fetch(`${BASE_URL}${path}`, {
@@ -26,7 +30,9 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
 
   if (res.status === 401) {
     setToken(null);
-    window.location.href = "/login";
+    if (window.location.pathname !== "/login") {
+      window.location.href = "/login";
+    }
     throw new Error("session expired");
   }
 
@@ -35,5 +41,10 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
     throw new Error(text || `request failed: ${res.status}`);
   }
 
-  return res.json() as Promise<T>;
+  if (res.status === 204) {
+    return {} as T;
+  }
+
+  const text = await res.text();
+  return (text ? JSON.parse(text) : {}) as T;
 }

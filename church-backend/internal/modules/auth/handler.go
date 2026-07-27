@@ -1,39 +1,49 @@
 package auth
 
 import (
-	"embed"
-	"encoding/json"
+	"errors"
 	"net/http"
 
-	"github.com/go-chi/chi/v5"
+	"github.com/gorilla/sessions"
 	"github.com/hofchurchng/church-backend/internal/contracts"
-	"github.com/hofchurchng/church-backend/internal/platform/migrate"
+	"github.com/labstack/echo/v4"
+	"github.com/markbates/goth"
+	"github.com/markbates/goth/gothic"
+	"github.com/markbates/goth/providers/google"
 )
 
-//go:embed migrations/*.sql
-var MigrationsFS embed.FS
-
-// Migrations lets main.go register this module's migrations without
-// reaching into its internals - it's the one exported migration handle.
-var Migrations = migrate.ModuleMigrations{Module: "auth", FS: MigrationsFS, Dir: "migrations"}
-
 type Handler struct {
-	svc *Service
+	svc         *Service
+	frontendURL string
 }
 
-func NewHandler(svc *Service) *Handler {
-	return &Handler{svc: svc}
+func NewHandler(svc *Service, sessionSecret, clientID, clientSecret, callbackURL, frontendURL string) *Handler {
+	// Initialize gorilla session store for gothic
+	gothic.Store = sessions.NewCookieStore([]byte(sessionSecret))
+
+	// Initialize goth provider if credentials are provided
+	if clientID != "" && clientSecret != "" {
+		goth.UseProviders(
+			google.New(clientID, clientSecret, callbackURL, "email", "profile"),
+		)
+	}
+
+	return &Handler{
+		svc:         svc,
+		frontendURL: frontendURL,
+	}
 }
 
-// Routes returns this module's routes, mounted by main.go at /api/auth.
-// Notice /login is deliberately NOT behind RequireAuth - it's the front
-// door - while /me demonstrates reading the identity that middleware
-// already verified, via the shared contracts package.
-func (h *Handler) Routes() chi.Router {
-	r := chi.NewRouter()
-	r.Post("/login", h.login)
-	r.Get("/me", h.me) // mounted behind RequireAuth in main.go's router group
-	return r
+// RegisterPublic mounts endpoints that don't require credentials.
+func (h *Handler) RegisterPublic(g *echo.Group) {
+	g.POST("/login", h.login)
+	g.GET("/login/google", h.loginGoogle)
+	g.GET("/callback/google", h.callbackGoogle)
+}
+
+// RegisterProtected mounts endpoints that require validation.
+func (h *Handler) RegisterProtected(g *echo.Group) {
+	g.GET("/me", h.me)
 }
 
 type loginRequest struct {
@@ -41,27 +51,68 @@ type loginRequest struct {
 	Password string `json:"password"`
 }
 
-func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) login(c echo.Context) error {
 	var req loginRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "bad request", http.StatusBadRequest)
-		return
+	if err := c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "bad request")
 	}
 
-	result, err := h.svc.Login(r.Context(), req.Email, req.Password)
+	result, err := h.svc.Login(c.Request().Context(), req.Email, req.Password)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
-		return
+		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
 	}
 
-	json.NewEncoder(w).Encode(result)
+	return c.JSON(http.StatusOK, result)
 }
 
-func (h *Handler) me(w http.ResponseWriter, r *http.Request) {
-	user, ok := contracts.UserFromContext(r.Context())
+func (h *Handler) me(c echo.Context) error {
+	user, ok := contracts.UserFromContext(c.Request().Context())
 	if !ok {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
-		return
+		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
 	}
-	json.NewEncoder(w).Encode(user)
+	return c.JSON(http.StatusOK, user)
+}
+
+func (h *Handler) loginGoogle(c echo.Context) error {
+	email := c.QueryParam("email")
+	if email == "" {
+		return c.Redirect(http.StatusTemporaryRedirect, h.frontendURL+"/login?error=email_required")
+	}
+
+	// Verify the email exists in the member table first before calling Google
+	exists, err := h.svc.CheckMemberExists(c.Request().Context(), email)
+	if err != nil || !exists {
+		return c.Redirect(http.StatusTemporaryRedirect, h.frontendURL+"/login?error=not_profiled")
+	}
+
+	// Goth looks at "provider" in the query string or URL parameter.
+	q := c.Request().URL.Query()
+	q.Set("provider", "google")
+	c.Request().URL.RawQuery = q.Encode()
+
+	gothic.BeginAuthHandler(c.Response().Writer, c.Request())
+	return nil
+}
+
+func (h *Handler) callbackGoogle(c echo.Context) error {
+	q := c.Request().URL.Query()
+	q.Set("provider", "google")
+	c.Request().URL.RawQuery = q.Encode()
+
+	gothUser, err := gothic.CompleteUserAuth(c.Response().Writer, c.Request())
+	if err != nil {
+		return c.Redirect(http.StatusTemporaryRedirect, h.frontendURL+"/login?error=auth_failed")
+	}
+
+	result, err := h.svc.LoginOrCreateOAuthUser(c.Request().Context(), gothUser.Email)
+	if err != nil {
+		if errors.Is(err, ErrNotProfiled) {
+			return c.Redirect(http.StatusTemporaryRedirect, h.frontendURL+"/login?error=not_profiled")
+		}
+		return c.Redirect(http.StatusTemporaryRedirect, h.frontendURL+"/login?error=auth_failed")
+	}
+
+	// Redirect to frontend with token
+	redirectURL := h.frontendURL + "/login?token=" + result.Token
+	return c.Redirect(http.StatusTemporaryRedirect, redirectURL)
 }

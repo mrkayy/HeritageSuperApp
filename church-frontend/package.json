@@ -2,7 +2,11 @@
   "name": "church-frontend",
   "private": true,
   "version": "0.1.0",
+  "description": "React app mirroring the backend's module isolation, one feature folder per ministry/ops area.",
+  "license": "ISC",
+  "author": "",
   "type": "module",
+  "main": "index.js",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

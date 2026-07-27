@@ -1,7 +1,10 @@
-.PHONY: run build lint new-module
+.PHONY: run dev build lint new-module
 
 run:
 	go run ./cmd/server
+
+dev:
+	go run github.com/air-verse/air@latest -c .air.toml
 
 build:
 	go build -o bin/server ./cmd/server

@@ -2,8 +2,12 @@ package auth
 
 import (
 	"context"
+	"errors"
+	"strings"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/hofchurchng/church-backend/internal/ent"
+	"github.com/hofchurchng/church-backend/internal/ent/member"
+	entuser "github.com/hofchurchng/church-backend/internal/ent/user"
 )
 
 type user struct {
@@ -14,18 +18,83 @@ type user struct {
 }
 
 type Repository struct {
-	db *pgxpool.Pool
+	db *ent.Client
 }
 
-func NewRepository(db *pgxpool.Pool) *Repository {
+func NewRepository(db *ent.Client) *Repository {
 	return &Repository{db: db}
 }
 
-func (r *Repository) FindByEmail(ctx context.Context, email string) (user, error) {
-	var u user
-	err := r.db.QueryRow(ctx,
-		`SELECT id, email, password_hash, roles FROM auth_users WHERE email = $1`,
-		email,
-	).Scan(&u.ID, &u.Email, &u.PasswordHash, &u.Roles)
-	return u, err
+func mapEntUserToUser(eu *ent.User) user {
+	return user{
+		ID:           eu.ID.String(),
+		Email:        eu.Email,
+		PasswordHash: eu.PasswordHash,
+		Roles:        []string{string(eu.Role)},
+	}
 }
+
+func (r *Repository) FindByEmail(ctx context.Context, email string) (user, error) {
+	eu, err := r.db.User.Query().
+		Where(entuser.Email(email)).
+		Only(ctx)
+	if err != nil {
+		return user{}, err
+	}
+	return mapEntUserToUser(eu), nil
+}
+
+func (r *Repository) FindOrCreateByEmail(ctx context.Context, email string) (user, error) {
+	eu, err := r.db.User.Query().
+		Where(entuser.Email(email)).
+		Only(ctx)
+	if err == nil {
+		return mapEntUserToUser(eu), nil
+	}
+	if !ent.IsNotFound(err) {
+		return user{}, err
+	}
+
+	// Email not found in users. Check if they are profiled in members.
+	m, err := r.db.Member.Query().
+		Where(member.Email(email)).
+		Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return user{}, postgresErrNotProfiled
+		}
+		return user{}, err
+	}
+
+	// Insert new user if they are profiled in members. Default role is 'member'.
+	firstName := m.Name
+	lastName := ""
+	parts := strings.SplitN(m.Name, " ", 2)
+	if len(parts) > 1 {
+		firstName = parts[0]
+		lastName = parts[1]
+	}
+
+	newEu, err := r.db.User.Create().
+		SetEmail(email).
+		SetPasswordHash("oauth-managed-account").
+		SetFirstName(firstName).
+		SetLastName(lastName).
+		SetRole(entuser.RoleMember).
+		SetAccountStatus(entuser.AccountStatusActive).
+		SetIsProfileComplete(true).
+		Save(ctx)
+	if err != nil {
+		return user{}, err
+	}
+
+	return mapEntUserToUser(newEu), nil
+}
+
+func (r *Repository) CheckMemberExists(ctx context.Context, email string) (bool, error) {
+	return r.db.Member.Query().
+		Where(member.Email(email)).
+		Exist(ctx)
+}
+
+var postgresErrNotProfiled = errors.New("email is not registered in the members directory")

@@ -3,40 +3,53 @@ package membership
 import (
 	"context"
 
+	"github.com/google/uuid"
 	"github.com/hofchurchng/church-backend/internal/contracts"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/hofchurchng/church-backend/internal/ent"
+	"github.com/hofchurchng/church-backend/internal/ent/member"
 )
 
 type Repository struct {
-	db *pgxpool.Pool
+	db *ent.Client
 }
 
-func NewRepository(db *pgxpool.Pool) *Repository {
+func NewRepository(db *ent.Client) *Repository {
 	return &Repository{db: db}
 }
 
 func (r *Repository) Get(ctx context.Context, id string) (contracts.Member, error) {
-	var m contracts.Member
-	err := r.db.QueryRow(ctx,
-		`SELECT id, name, email FROM members WHERE id = $1`, id,
-	).Scan(&m.ID, &m.Name, &m.Email)
-	return m, err
+	uid, err := uuid.Parse(id)
+	if err != nil {
+		return contracts.Member{}, err
+	}
+
+	m, err := r.db.Member.Get(ctx, uid)
+	if err != nil {
+		return contracts.Member{}, err
+	}
+
+	return contracts.Member{
+		ID:    m.ID.String(),
+		Name:  m.Name,
+		Email: m.Email,
+	}, nil
 }
 
 func (r *Repository) List(ctx context.Context) ([]contracts.Member, error) {
-	rows, err := r.db.Query(ctx, `SELECT id, name, email FROM members ORDER BY name`)
+	members, err := r.db.Member.Query().
+		Order(ent.Asc(member.FieldName)).
+		All(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
-	var out []contracts.Member
-	for rows.Next() {
-		var m contracts.Member
-		if err := rows.Scan(&m.ID, &m.Name, &m.Email); err != nil {
-			return nil, err
-		}
-		out = append(out, m)
+	out := make([]contracts.Member, 0, len(members))
+	for _, m := range members {
+		out = append(out, contracts.Member{
+			ID:    m.ID.String(),
+			Name:  m.Name,
+			Email: m.Email,
+		})
 	}
 	return out, nil
 }

@@ -9,72 +9,114 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"os"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/hofchurchng/church-backend/internal/contracts"
 	"github.com/hofchurchng/church-backend/internal/modules/auth"
 	"github.com/hofchurchng/church-backend/internal/modules/membership"
+	"github.com/hofchurchng/church-backend/internal/modules/profile"
+	"github.com/hofchurchng/church-backend/internal/modules/teams"
 	"github.com/hofchurchng/church-backend/internal/platform/config"
 	"github.com/hofchurchng/church-backend/internal/platform/db"
 	"github.com/hofchurchng/church-backend/internal/platform/middleware"
-	"github.com/hofchurchng/church-backend/internal/platform/migrate"
+	"github.com/labstack/echo/v4"
+	echoMiddleware "github.com/labstack/echo/v4/middleware"
 )
 
 func main() {
-	ctx := context.Background()
-	cfg := config.Load()
+	// Open log file for request/response logs
+	logFile, err := os.OpenFile("app.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalf("failed to open log file: %v", err)
+	}
+	defer logFile.Close()
 
-	pool, err := db.Connect(ctx, cfg.DatabaseURL)
+	ctx := context.Background()
+	config := config.Load()
+
+	client, err := db.Connect(ctx, config.DatabaseURL)
 	if err != nil {
 		log.Fatalf("db connect: %v", err)
 	}
-	defer pool.Close()
-
-	// --- migrations: every module registers its own folder here ---
-	if err := migrate.Run(ctx, pool, []migrate.ModuleMigrations{
-		auth.Migrations,
-		membership.Migrations,
-		// events.Migrations,   <- next ministry module goes here
-		// giving.Migrations,
-	}); err != nil {
-		log.Fatalf("migrate: %v", err)
-	}
+	defer client.Close()
 
 	// --- build modules ---
-	authRepo := auth.NewRepository(pool)
-	authSvc := auth.NewService(authRepo, cfg.JWTSecret)
-	authHandler := auth.NewHandler(authSvc)
+	// Auth module handles authentication, JWT generation, and OAuth flows
+	authRepo := auth.NewRepository(client)
+	authSvc := auth.NewService(authRepo, config.JWTSecret)
+	authHandler := auth.NewHandler(
+		authSvc,
+		config.JWTSecret,
+		config.GoogleClientID,
+		config.GoogleClientSecret,
+		config.GoogleCallbackURL,
+		config.FrontendURL,
+	)
 
-	membershipRepo := membership.NewRepository(pool)
-	membershipSvc := membership.NewService(membershipRepo) // also satisfies contracts.MembershipReader
+	// Teams module handles organization structure, teams, and sectors
+	teamsRepo := teams.NewRepository(client)
+	teamsSvc := teams.NewService(teamsRepo)
+	teamsHandler := teams.NewHandler(teamsSvc)
+
+	// Profile module handles user profile management and tracks team/sector associations
+	profileRepo := profile.NewRepository(client)
+	profileSvc := profile.NewService(profileRepo, teamsSvc, teamsSvc)
+	profileHandler := profile.NewHandler(profileSvc)
+
+	// Membership module tracks church membership, registration steps, and onboarding status
+	membershipRepo := membership.NewRepository(client)
+	membershipSvc := membership.NewService(membershipRepo)
 	membershipHandler := membership.NewHandler(membershipSvc)
 
-	// Example of cross-module wiring via a contract, for when a future
-	// module (e.g. Giving) needs member data:
+	// Compile-time checks for cross-module contract compliance
 	var _ contracts.MembershipReader = membershipSvc
-	// giving := givingmod.New(pool, membershipSvc)  <- pass the interface in, not the package
+	var _ contracts.ProfileReader = profileSvc
+	var _ contracts.TeamReader = teamsSvc
+	var _ contracts.SectorReader = teamsSvc
 
-	// --- HTTP router ---
-	r := chi.NewRouter()
-	requireAuth := middleware.RequireAuth(cfg.JWTSecret)
+	// --- Echo router ---
+	e := echo.New()
 
-	r.Route("/api", func(api chi.Router) {
-		// Auth module: /login is public (front door), /me needs a token.
-		api.Route("/auth", func(a chi.Router) {
-			a.Mount("/", authHandler.Routes())
-		})
+	// Logger and recover middlewares
+	e.Use(middleware.RequestResponseLogger(logFile))
+	e.Use(echoMiddleware.Recover())
 
-		// Every other module's routes are mounted behind the SAME
-		// single sign-on gate - this is the SSO entry point in action.
-		// A ministry module never implements its own login check.
-		api.Group(func(protected chi.Router) {
-			protected.Use(requireAuth)
-			protected.Mount("/members", membershipHandler.Routes())
-			// protected.Mount("/events", eventsHandler.Routes())
-			// protected.Mount("/giving", givingHandler.Routes())
+	requireAuth := middleware.RequireAuth(config.JWTSecret)
+
+	api := e.Group("/api")
+
+	// Health check endpoint
+	api.GET("/health-check", func(c echo.Context) error {
+	if _, err := client.User.Query().Count(c.Request().Context()); err != nil {
+			return c.JSON(http.StatusInternalServerError, map[string]string{
+				"status":   "unhealthy",
+				"database": "disconnected",
+			})
+		}
+		return c.JSON(http.StatusOK, map[string]string{
+			"status":   "healthy connection established",
+			"database": "connected",
 		})
 	})
 
-	log.Printf("HOF Church backend listening on :%s", cfg.Port)
-	log.Fatal(http.ListenAndServe(":"+cfg.Port, r))
+	// Auth module routes
+	authGroup := api.Group("/auth")
+	authHandler.RegisterPublic(authGroup)
+	authHandler.RegisterProtected(authGroup.Group("", requireAuth))
+
+	// Protected module routes
+	membersGroup := api.Group("/members", requireAuth)
+	membershipHandler.Register(membersGroup)
+
+	teamsGroup := api.Group("/teams", requireAuth)
+	teamsHandler.RegisterTeams(teamsGroup)
+
+	sectorsGroup := api.Group("/sectors", requireAuth)
+	teamsHandler.RegisterSectors(sectorsGroup)
+
+	profileGroup := api.Group("/profile", requireAuth)
+	profileHandler.Register(profileGroup)
+
+	log.Printf("HOF Church backend listening on :%s", config.Port)
+	log.Fatal(e.Start(":" + config.Port))
 }

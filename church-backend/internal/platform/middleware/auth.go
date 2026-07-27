@@ -1,19 +1,13 @@
-// Package middleware is shared platform code. RequireAuth is the single
-// gate every module's protected routes pass through - this is what makes
-// login a true "single sign-on entry point": the auth module is the only
-// place that ISSUES tokens, but VERIFYING a token requires nothing from
-// the auth module at all, just the shared JWT secret. That means every
-// module can protect its routes without importing modules/auth, and there
-// is exactly one place in the whole codebase where "am I logged in?" is
-// decided.
 package middleware
 
 import (
+	"log"
 	"net/http"
 	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/hofchurchng/church-backend/internal/contracts"
+	"github.com/labstack/echo/v4"
 )
 
 type Claims struct {
@@ -25,16 +19,15 @@ type Claims struct {
 
 // RequireAuth returns middleware that verifies the JWT on every request,
 // and if valid, injects a contracts.AuthedUser into the request context.
-// Any module handler downstream calls contracts.UserFromContext(r.Context())
+// Any module handler downstream calls contracts.UserFromContext(c.Request().Context())
 // to get the current user - no coupling to the auth module required.
-func RequireAuth(jwtSecret string) func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			header := r.Header.Get("Authorization")
+func RequireAuth(jwtSecret string) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			header := c.Request().Header.Get("Authorization")
 			tokenStr := strings.TrimPrefix(header, "Bearer ")
 			if tokenStr == "" {
-				http.Error(w, "missing token", http.StatusUnauthorized)
-				return
+				return echo.NewHTTPError(http.StatusUnauthorized, "missing token")
 			}
 
 			claims := &Claims{}
@@ -42,31 +35,50 @@ func RequireAuth(jwtSecret string) func(http.Handler) http.Handler {
 				return []byte(jwtSecret), nil
 			})
 			if err != nil || !token.Valid {
-				http.Error(w, "invalid or expired token", http.StatusUnauthorized)
-				return
+				return echo.NewHTTPError(http.StatusUnauthorized, "invalid or expired token")
 			}
 
-			ctx := contracts.WithUser(r.Context(), contracts.AuthedUser{
+			log.Printf("[RequireAuth] Claims verified - UserID: %s, Email: %s, Roles: %v", claims.UserID, claims.Email, claims.Roles)
+
+			ctx := contracts.WithUser(c.Request().Context(), contracts.AuthedUser{
 				ID:    claims.UserID,
 				Email: claims.Email,
 				Roles: claims.Roles,
 			})
-			next.ServeHTTP(w, r.WithContext(ctx))
-		})
+			c.SetRequest(c.Request().WithContext(ctx))
+			return next(c)
+		}
 	}
 }
 
 // RequireRole is a small composable helper modules can chain after
 // RequireAuth for authorization, e.g. RequireRole("finance_admin").
-func RequireRole(role string) func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			user, ok := contracts.UserFromContext(r.Context())
+func RequireRole(role string) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			user, ok := contracts.UserFromContext(c.Request().Context())
 			if !ok || !user.HasRole(role) {
-				http.Error(w, "forbidden", http.StatusForbidden)
-				return
+				return echo.NewHTTPError(http.StatusForbidden, "forbidden")
 			}
-			next.ServeHTTP(w, r)
-		})
+			return next(c)
+		}
 	}
 }
+
+func RequireAnyRole(roles ...string) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			user, ok := contracts.UserFromContext(c.Request().Context())
+			if !ok {
+				return echo.NewHTTPError(http.StatusForbidden, "forbidden")
+			}
+			for _, role := range roles {
+				if user.HasRole(role) {
+					return next(c)
+				}
+			}
+			return echo.NewHTTPError(http.StatusForbidden, "forbidden")
+		}
+	}
+}
+

@@ -1,18 +1,10 @@
 package membership
 
 import (
-	"embed"
-	"encoding/json"
 	"net/http"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/hofchurchng/church-backend/internal/platform/migrate"
+	"github.com/labstack/echo/v4"
 )
-
-//go:embed migrations/*.sql
-var MigrationsFS embed.FS
-
-var Migrations = migrate.ModuleMigrations{Module: "membership", FS: MigrationsFS, Dir: "migrations"}
 
 type Handler struct {
 	svc *Service
@@ -22,32 +14,27 @@ func NewHandler(svc *Service) *Handler {
 	return &Handler{svc: svc}
 }
 
-// Routes only defines this module's own endpoints. Whether they're
+// Register defines this module's endpoints on the group. Whether they're
 // public or require login is decided where main.go mounts them, not
-// here - this module has zero knowledge of auth internals, it just
-// trusts the shared middleware to have already run.
-func (h *Handler) Routes() chi.Router {
-	r := chi.NewRouter()
-	r.Get("/", h.list)
-	r.Get("/{id}", h.get)
-	return r
+// here.
+func (h *Handler) Register(g *echo.Group) {
+	g.GET("", h.list)
+	g.GET("/:id", h.get)
 }
 
-func (h *Handler) list(w http.ResponseWriter, r *http.Request) {
-	members, err := h.svc.ListMembers(r.Context())
+func (h *Handler) list(c echo.Context) error {
+	members, err := h.svc.ListMembers(c.Request().Context())
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-	json.NewEncoder(w).Encode(members)
+	return c.JSON(http.StatusOK, members)
 }
 
-func (h *Handler) get(w http.ResponseWriter, r *http.Request) {
-	id := chi.URLParam(r, "id")
-	member, err := h.svc.GetMember(r.Context(), id)
+func (h *Handler) get(c echo.Context) error {
+	id := c.Param("id")
+	member, err := h.svc.GetMember(c.Request().Context(), id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
-		return
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
-	json.NewEncoder(w).Encode(member)
+	return c.JSON(http.StatusOK, member)
 }

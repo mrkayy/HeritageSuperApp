@@ -1,0 +1,63 @@
+@baseUrl = http://localhost:3080/api
+@authToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFkbWluQGhvZmNodXJjaC5vcmciLCJleHAiOjE3ODUyNTA1ODIsImlhdCI6MTc4NTE2NDE4Miwicm9sZXMiOlsiY2h1cmNoX2FkbWluIl0sInN1YiI6ImM4MmUwMTQ1LTVjM2YtNGQxNC05NDA1LTFiYjJmYWY5YTc1OSJ9.UIBZAAgrTSkPlo8OlPeg9N4JzPHIa_euMRlRAr2EhgY
+
+### Health Check
+# @name healthCheck
+GET {{baseUrl}}/health-check
+Accept: application/json
+
+########################################
+### Auth Module - Super Admin Login
+########################################
+# Seeded Super Admin credentials:
+# Email: admin@hofchurch.org
+# Password: Password123@
+#
+# @name loginSuperAdmin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@hofchurch.org",
+  "password": "Password123@"
+}
+
+########################################
+### Auth Module - Get Current User Info
+########################################
+# @name getMe
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{authToken}}
+Accept: application/json
+
+########################################
+### Profile Module - Get Own Profile
+########################################
+# @name getMyProfile
+GET {{baseUrl}}/profile/me
+Authorization: Bearer {{authToken}}
+Accept: application/json
+
+########################################
+### Membership Module - List Members (Admin gated)
+########################################
+# @name listMembers
+GET {{baseUrl}}/members
+Authorization: Bearer {{authToken}}
+Accept: application/json
+
+########################################
+### Teams Module - List Teams (Admin gated)
+########################################
+# @name listTeams
+GET {{baseUrl}}/teams
+Authorization: Bearer {{authToken}}
+Accept: application/json
+
+########################################
+### Teams Module - List Sectors (Admin gated)
+########################################
+# @name listSectors
+GET {{baseUrl}}/sectors
+Authorization: Bearer {{authToken}}
+Accept: application/json
