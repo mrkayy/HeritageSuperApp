@@ -61,7 +61,7 @@ sequenceDiagram
 1. **Initiate Sign-In**:
    The frontend must redirect the browser to the backend OAuth initiation endpoint:
    ```http
-   GET http://localhost:3080/api/auth/login/google?email=user_email@gmail.com
+   GET http://localhost:8080/api/auth/login/google?email=user_email@gmail.com
    ```
 2. **Backend Validation & Redirection**:
    * If the email is **not profiled**, the backend redirects the browser back to:
@@ -84,3 +84,27 @@ GET /api/profile/me
 Authorization: Bearer <your_jwt_token>
 Accept: application/json
 ```
+
+---
+
+## 4. Backend Logging System (Development & Production)
+The backend logs all incoming API requests and outgoing responses for debugging and auditing.
+
+### Request & Response Payload Logging
+- **Log Location**: Writes structured JSON data to `app.log` in the backend root directory and mirrors logs to `stdout`.
+- **Logged Properties**:
+  - `timestamp`: RFC3339 time format
+  - `client_ip`: The IP address of the request origin
+  - `method` & `uri`: HTTP Verb and request path
+  - `status`: HTTP response status code
+  - `latency_ms`: Duration of request processing in milliseconds
+  - `request_body`: The JSON payload sent by the client. Sensitive fields (`password`, `password_hash`, `token`) are automatically replaced with `[REDACTED]`.
+  - `response_body`: The JSON payload returned by the server.
+  - `error`: Populated with the error message if the handler fails.
+
+### JWT Claims Verification Logs
+When a request hits a protected endpoint, the `RequireAuth` middleware prints a console log upon successful token verification containing:
+```
+[RequireAuth] Claims verified - UserID: <id>, Email: <email>, Roles: <roles>
+```
+

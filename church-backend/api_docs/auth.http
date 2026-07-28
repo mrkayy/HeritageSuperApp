@@ -1,4 +1,4 @@
-@baseUrl = http://localhost:3080/api
+@baseUrl = http://localhost:8080/api
 @authToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFkbWluQGhvZmNodXJjaC5vcmciLCJleHAiOjE3ODUyNTA1ODIsImlhdCI6MTc4NTE2NDE4Miwicm9sZXMiOlsiY2h1cmNoX2FkbWluIl0sInN1YiI6ImM4MmUwMTQ1LTVjM2YtNGQxNC05NDA1LTFiYjJmYWY5YTc1OSJ9.UIBZAAgrTSkPlo8OlPeg9N4JzPHIa_euMRlRAr2EhgY
 
 ### Health Check

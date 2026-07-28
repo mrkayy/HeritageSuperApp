@@ -1,9 +1,5 @@
-// This is the single source of truth for "who is logged in" on the
-// frontend, mirroring the backend's single sign-on gate. Every feature
-// reads the current user via useAuth() - none of them implement their
-// own login state or call the /auth/login endpoint directly except the
-// auth feature itself.
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
+import { useEffect, ReactNode } from "react";
+import { create } from "zustand";
 import { apiFetch, setToken, hasToken } from "./apiClient";
 
 export interface AuthedUser {
@@ -11,14 +7,6 @@ export interface AuthedUser {
   Email: string;
   Roles: string[];
   isProfileComplete: boolean;
-}
-
-interface AuthContextValue {
-  user: AuthedUser | null;
-  loading: boolean;
-  login: (token: string, user: AuthedUser) => void;
-  logout: () => void;
-  refreshUser: () => Promise<void>;
 }
 
 interface MeResponse {
@@ -37,7 +25,15 @@ interface ProfileResponse {
   sectorId?: string;
 }
 
-const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+interface AuthStore {
+  user: AuthedUser | null;
+  loading: boolean;
+  login: (token: string, user: AuthedUser) => void;
+  logout: () => void;
+  refreshUser: () => Promise<void>;
+  setLoading: (loading: boolean) => void;
+  setUser: (user: AuthedUser | null) => void;
+}
 
 async function fetchFullUser(): Promise<AuthedUser | null> {
   if (!hasToken()) {
@@ -71,14 +67,40 @@ async function fetchFullUser(): Promise<AuthedUser | null> {
   }
 }
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthedUser | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  const refreshUser = useCallback(async () => {
+export const useAuthStore = create<AuthStore>((set) => ({
+  user: null,
+  loading: true,
+  setUser: (user) => set({ user }),
+  setLoading: (loading) => set({ loading }),
+  login: (token, user) => {
+    setToken(token);
+    set({ user });
+  },
+  logout: () => {
+    setToken(null);
+    set({ user: null });
+    window.location.href = "/login";
+  },
+  refreshUser: async () => {
     const u = await fetchFullUser();
-    setUser(u);
-  }, []);
+    set({ user: u });
+  },
+}));
+
+// Backwards compatibility hook
+export function useAuth() {
+  const user = useAuthStore((state) => state.user);
+  const loading = useAuthStore((state) => state.loading);
+  const login = useAuthStore((state) => state.login);
+  const logout = useAuthStore((state) => state.logout);
+  const refreshUser = useAuthStore((state) => state.refreshUser);
+
+  return { user, loading, login, logout, refreshUser };
+}
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const setUser = useAuthStore((state) => state.setUser);
+  const setLoading = useAuthStore((state) => state.setLoading);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -92,28 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     fetchFullUser()
       .then(setUser)
       .finally(() => setLoading(false));
-  }, []);
+  }, [setUser, setLoading]);
 
-  function login(token: string, u: AuthedUser) {
-    setToken(token);
-    setUser(u);
-  }
-
-  function logout() {
-    setToken(null);
-    setUser(null);
-    window.location.href = "/login";
-  }
-
-  return (
-    <AuthContext.Provider value={{ user, loading, login, logout, refreshUser }}>
-      {children}
-    </AuthContext.Provider>
-  );
-}
-
-export function useAuth(): AuthContextValue {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
-  return ctx;
+  return <>{children}</>;
 }

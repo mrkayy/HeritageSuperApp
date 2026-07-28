@@ -15,7 +15,7 @@ type Config struct {
 
 func Load() Config {
 	return Config{
-		Port:               getenv("PORT", "3080"),
+		Port:               getenv("PORT", "8080"),
 		DatabaseURL:        getenv("DATABASE_URL", "postgres://postgres:password@localhost:5432/hof_church?sslmode=disable"),
 		JWTSecret:          getenv("JWT_SECRET", "dev-secret-change-me"),
 		FrontendURL:        getenv("FRONTEND_URL", "http://localhost:5173"),
