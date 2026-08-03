@@ -457,7 +457,7 @@ export default function MembershipPage() {
       {/* Modal Overlay for Profiling/Creating Member */}
       {showModal && (
         <div className="modal-overlay">
-          <div className="modal-content card animate-fade-in-up" style={{ maxWidth: "680px", width: "100%", maxHeight: "90vh", overflowY: "auto" }}>
+          <div className="modal-content card animate-fade-in-up" style={{ maxWidth: "900px", width: "100%", maxHeight: "90vh", overflowY: "auto" }}>
             <div className="modal-header" style={{ marginBottom: "var(--space-4)" }}>
               <h2 style={{ fontSize: "var(--fs-2xl)", color: "var(--text-primary)" }}>
                 {modalMode === "edit" ? "Edit Member Profile" : "Profile New Member"}
@@ -675,19 +675,22 @@ export default function MembershipPage() {
                     </select>
                   </div>
                   <div className="input-group">
-                    <label className="input-label" htmlFor="member-source-team">Primary Team Name</label>
-                    <input
-                      id="member-source-team"
-                      type="text"
+                    <label className="input-label" htmlFor="member-team">Primary Team Placement</label>
+                    <select
+                      id="member-team"
                       className="input-field"
-                      placeholder="e.g. Media, Choir, Ushering"
-                      value={sourceTeam}
-                      onChange={(e) => setSourceTeam(e.target.value)}
-                    />
+                      value={teamId}
+                      onChange={(e) => setTeamId(e.target.value)}
+                    >
+                      <option value="">None / Not Assigned</option>
+                      {teams.map((t) => (
+                        <option key={t.ID} value={t.ID}>{t.Name}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
-                <div className="form-grid-3" style={{ marginTop: "var(--space-3)" }}>
+                <div className="form-grid-2" style={{ marginTop: "var(--space-3)" }}>
                   <div className="input-group">
                     <label className="input-label" htmlFor="member-church">Local Church Center</label>
                     <select
@@ -713,20 +716,6 @@ export default function MembershipPage() {
                       <option value="">None / Not Assigned</option>
                       {sectors.map((s) => (
                         <option key={s.ID} value={s.ID}>{s.Name}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="input-group">
-                    <label className="input-label" htmlFor="member-team">Assigned Team</label>
-                    <select
-                      id="member-team"
-                      className="input-field"
-                      value={teamId}
-                      onChange={(e) => setTeamId(e.target.value)}
-                    >
-                      <option value="">None / Not Assigned</option>
-                      {teams.map((t) => (
-                        <option key={t.ID} value={t.ID}>{t.Name}</option>
                       ))}
                     </select>
                   </div>
