@@ -22,6 +22,10 @@ func NewHandler(svc *Service) *Handler {
 func (h *Handler) Register(g *echo.Group) {
 	g.GET("/me", h.getOwn)
 	g.PUT("/me", h.updateOwn)
+	g.GET("/me/kids", h.listKids)
+	g.POST("/me/kids", h.addKid)
+	g.PUT("/me/kids/:kidID", h.updateKid)
+	g.DELETE("/me/kids/:kidID", h.deleteKid)
 
 	// Viewing someone else's profile gets a role gate
 	g.GET("/:userID", h.getOther, middleware.RequireAnyRole(
@@ -140,4 +144,68 @@ func (h *Handler) getOther(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "not found")
 	}
 	return c.JSON(http.StatusOK, toContractDTO(p))
+}
+
+func (h *Handler) listKids(c echo.Context) error {
+	user, ok := contracts.UserFromContext(c.Request().Context())
+	if !ok {
+		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
+	}
+
+	kids, err := h.svc.ListKids(c.Request().Context(), user.Email)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	return c.JSON(http.StatusOK, kids)
+}
+
+func (h *Handler) addKid(c echo.Context) error {
+	user, ok := contracts.UserFromContext(c.Request().Context())
+	if !ok {
+		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
+	}
+
+	var child contracts.Member
+	if err := c.Bind(&child); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	created, err := h.svc.AddKid(c.Request().Context(), user.Email, child)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	return c.JSON(http.StatusCreated, created)
+}
+
+func (h *Handler) updateKid(c echo.Context) error {
+	user, ok := contracts.UserFromContext(c.Request().Context())
+	if !ok {
+		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
+	}
+
+	kidID := c.Param("kidID")
+	var child contracts.Member
+	if err := c.Bind(&child); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	updated, err := h.svc.UpdateKid(c.Request().Context(), user.Email, kidID, child)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	return c.JSON(http.StatusOK, updated)
+}
+
+func (h *Handler) deleteKid(c echo.Context) error {
+	user, ok := contracts.UserFromContext(c.Request().Context())
+	if !ok {
+		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
+	}
+
+	kidID := c.Param("kidID")
+	err := h.svc.DeleteKid(c.Request().Context(), user.Email, kidID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	return c.NoContent(http.StatusNoContent)
 }

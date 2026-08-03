@@ -54,6 +54,16 @@ export default function DashboardPage() {
             </Link>
           )}
 
+          {/* Card 4: My Profile & Family */}
+          {user && (
+            <Link to="/profile" className="feature-card card">
+              <div className="card-icon">👤</div>
+              <h3>My Profile & Family</h3>
+              <p>View and update your personal details, and register/edit child or teenager profiles.</p>
+              <span className="card-action">Manage Profile & Kids →</span>
+            </Link>
+          )}
+
           {/* Card 3: Events & Scheduling */}
           <div className="feature-card card disabled">
             <div className="card-icon">📅</div>

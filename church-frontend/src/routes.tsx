@@ -8,6 +8,7 @@ const DashboardPage = lazy(() => import("./features/dashboard/DashboardPage"));
 const OnboardingPage = lazy(() => import("./features/onboarding/OnboardingPage"));
 const MembershipPage = lazy(() => import("./features/membership/MembershipPage"));
 const OrganizationPage = lazy(() => import("./features/organization/OrganizationPage"));
+const ProfilePage = lazy(() => import("./features/profile/ProfilePage"));
 
 export default function AppRoutes() {
   return (
@@ -40,6 +41,14 @@ export default function AppRoutes() {
           element={
             <ProtectedRoute>
               <DashboardPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <ProfilePage />
             </ProtectedRoute>
           }
         />

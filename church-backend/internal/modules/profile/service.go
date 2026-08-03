@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/hofchurchng/church-backend/internal/contracts"
 	"github.com/jackc/pgx/v5"
 )
@@ -144,4 +145,44 @@ func (s *Service) GetProfile(ctx context.Context, userID string) (contracts.Prof
 		}
 	}
 	return p, nil
+}
+
+func (s *Service) ListKids(ctx context.Context, email string) ([]contracts.Member, error) {
+	parent, err := s.repo.FindMemberByEmail(ctx, email)
+	if err != nil {
+		return nil, err
+	}
+	return s.repo.ListKids(ctx, parent.ID)
+}
+
+func (s *Service) AddKid(ctx context.Context, email string, child contracts.Member) (contracts.Member, error) {
+	parent, err := s.repo.FindMemberByEmail(ctx, email)
+	if err != nil {
+		return contracts.Member{}, err
+	}
+	return s.repo.AddKid(ctx, parent.ID, child)
+}
+
+func (s *Service) UpdateKid(ctx context.Context, email string, kidID string, child contracts.Member) (contracts.Member, error) {
+	parent, err := s.repo.FindMemberByEmail(ctx, email)
+	if err != nil {
+		return contracts.Member{}, err
+	}
+	kidUUID, err := uuid.Parse(kidID)
+	if err != nil {
+		return contracts.Member{}, err
+	}
+	return s.repo.UpdateKid(ctx, parent.ID, kidUUID, child)
+}
+
+func (s *Service) DeleteKid(ctx context.Context, email string, kidID string) error {
+	parent, err := s.repo.FindMemberByEmail(ctx, email)
+	if err != nil {
+		return err
+	}
+	kidUUID, err := uuid.Parse(kidID)
+	if err != nil {
+		return err
+	}
+	return s.repo.DeleteKid(ctx, parent.ID, kidUUID)
 }
