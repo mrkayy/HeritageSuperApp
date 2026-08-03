@@ -37,7 +37,8 @@ export function ProtectedRoute({
   }
 
   // Force onboarding if profile is incomplete
-  if (!skipProfileCheck && !user.isProfileComplete) {
+  const isAdmin = user.Roles.includes("church_admin");
+  if (!skipProfileCheck && !user.isProfileComplete && !isAdmin) {
     return <Navigate to="/onboarding" replace />;
   }
 

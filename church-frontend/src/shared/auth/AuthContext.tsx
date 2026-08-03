@@ -44,16 +44,18 @@ async function fetchFullUser(): Promise<AuthedUser | null> {
 
     // Check if profile is complete by seeing if basic fields are filled
     let isProfileComplete = true;
-    try {
-      const profile = await apiFetch<ProfileResponse>("/profile/me");
-      isProfileComplete = !!(
-        profile.firstName &&
-        profile.lastName &&
-        profile.phoneNumber &&
-        profile.address
-      );
-    } catch {
-      isProfileComplete = false;
+    if (!me.Roles.includes("church_admin")) {
+      try {
+        const profile = await apiFetch<ProfileResponse>("/profile/me");
+        isProfileComplete = !!(
+          profile.firstName &&
+          profile.lastName &&
+          profile.phoneNumber &&
+          profile.address
+        );
+      } catch {
+        isProfileComplete = false;
+      }
     }
 
     return {
