@@ -3,9 +3,11 @@
 package member
 
 import (
+	"fmt"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/google/uuid"
 )
 
@@ -14,22 +16,127 @@ const (
 	Label = "member"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
-	// FieldName holds the string denoting the name field in the database.
-	FieldName = "name"
+	// FieldFirstName holds the string denoting the first_name field in the database.
+	FieldFirstName = "first_name"
+	// FieldSurname holds the string denoting the surname field in the database.
+	FieldSurname = "surname"
 	// FieldEmail holds the string denoting the email field in the database.
 	FieldEmail = "email"
-	// FieldJoinedAt holds the string denoting the joined_at field in the database.
-	FieldJoinedAt = "joined_at"
+	// FieldPhoneNumber holds the string denoting the phone_number field in the database.
+	FieldPhoneNumber = "phone_number"
+	// FieldHomeAddress holds the string denoting the home_address field in the database.
+	FieldHomeAddress = "home_address"
+	// FieldGender holds the string denoting the gender field in the database.
+	FieldGender = "gender"
+	// FieldDateOfBirthDay holds the string denoting the date_of_birth_day field in the database.
+	FieldDateOfBirthDay = "date_of_birth_day"
+	// FieldDateOfBirthMonth holds the string denoting the date_of_birth_month field in the database.
+	FieldDateOfBirthMonth = "date_of_birth_month"
+	// FieldMaritalStatus holds the string denoting the marital_status field in the database.
+	FieldMaritalStatus = "marital_status"
+	// FieldWeddingAnniversaryDay holds the string denoting the wedding_anniversary_day field in the database.
+	FieldWeddingAnniversaryDay = "wedding_anniversary_day"
+	// FieldWeddingAnniversaryMonth holds the string denoting the wedding_anniversary_month field in the database.
+	FieldWeddingAnniversaryMonth = "wedding_anniversary_month"
+	// FieldJobOccupation holds the string denoting the job_occupation field in the database.
+	FieldJobOccupation = "job_occupation"
+	// FieldPhotoURL holds the string denoting the photo_url field in the database.
+	FieldPhotoURL = "photo_url"
+	// FieldEmergencyContactName holds the string denoting the emergency_contact_name field in the database.
+	FieldEmergencyContactName = "emergency_contact_name"
+	// FieldEmergencyContactPhone holds the string denoting the emergency_contact_phone field in the database.
+	FieldEmergencyContactPhone = "emergency_contact_phone"
+	// FieldAllergies holds the string denoting the allergies field in the database.
+	FieldAllergies = "allergies"
+	// FieldMedicalNotes holds the string denoting the medical_notes field in the database.
+	FieldMedicalNotes = "medical_notes"
+	// FieldIsPlaceholder holds the string denoting the is_placeholder field in the database.
+	FieldIsPlaceholder = "is_placeholder"
+	// FieldSourceTeam holds the string denoting the source_team field in the database.
+	FieldSourceTeam = "source_team"
+	// FieldCreatedBy holds the string denoting the created_by field in the database.
+	FieldCreatedBy = "created_by"
+	// FieldCreatedAt holds the string denoting the created_at field in the database.
+	FieldCreatedAt = "created_at"
+	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
+	FieldUpdatedAt = "updated_at"
+	// FieldCurrentStage holds the string denoting the current_stage field in the database.
+	FieldCurrentStage = "current_stage"
+	// EdgeStageHistories holds the string denoting the stage_histories edge name in mutations.
+	EdgeStageHistories = "stage_histories"
+	// EdgeTeams holds the string denoting the teams edge name in mutations.
+	EdgeTeams = "teams"
+	// EdgeGuardianRelationshipsAsChild holds the string denoting the guardian_relationships_as_child edge name in mutations.
+	EdgeGuardianRelationshipsAsChild = "guardian_relationships_as_child"
+	// EdgeGuardianRelationshipsAsGuardian holds the string denoting the guardian_relationships_as_guardian edge name in mutations.
+	EdgeGuardianRelationshipsAsGuardian = "guardian_relationships_as_guardian"
+	// EdgeKidsMinistryProfile holds the string denoting the kids_ministry_profile edge name in mutations.
+	EdgeKidsMinistryProfile = "kids_ministry_profile"
 	// Table holds the table name of the member in the database.
 	Table = "members"
+	// StageHistoriesTable is the table that holds the stage_histories relation/edge.
+	StageHistoriesTable = "membership_stage_history"
+	// StageHistoriesInverseTable is the table name for the MembershipStageHistory entity.
+	// It exists in this package in order to avoid circular dependency with the "membershipstagehistory" package.
+	StageHistoriesInverseTable = "membership_stage_history"
+	// StageHistoriesColumn is the table column denoting the stage_histories relation/edge.
+	StageHistoriesColumn = "member_id"
+	// TeamsTable is the table that holds the teams relation/edge.
+	TeamsTable = "member_teams"
+	// TeamsInverseTable is the table name for the MemberTeam entity.
+	// It exists in this package in order to avoid circular dependency with the "memberteam" package.
+	TeamsInverseTable = "member_teams"
+	// TeamsColumn is the table column denoting the teams relation/edge.
+	TeamsColumn = "member_id"
+	// GuardianRelationshipsAsChildTable is the table that holds the guardian_relationships_as_child relation/edge.
+	GuardianRelationshipsAsChildTable = "guardian_relationships"
+	// GuardianRelationshipsAsChildInverseTable is the table name for the GuardianRelationship entity.
+	// It exists in this package in order to avoid circular dependency with the "guardianrelationship" package.
+	GuardianRelationshipsAsChildInverseTable = "guardian_relationships"
+	// GuardianRelationshipsAsChildColumn is the table column denoting the guardian_relationships_as_child relation/edge.
+	GuardianRelationshipsAsChildColumn = "child_member_id"
+	// GuardianRelationshipsAsGuardianTable is the table that holds the guardian_relationships_as_guardian relation/edge.
+	GuardianRelationshipsAsGuardianTable = "guardian_relationships"
+	// GuardianRelationshipsAsGuardianInverseTable is the table name for the GuardianRelationship entity.
+	// It exists in this package in order to avoid circular dependency with the "guardianrelationship" package.
+	GuardianRelationshipsAsGuardianInverseTable = "guardian_relationships"
+	// GuardianRelationshipsAsGuardianColumn is the table column denoting the guardian_relationships_as_guardian relation/edge.
+	GuardianRelationshipsAsGuardianColumn = "guardian_member_id"
+	// KidsMinistryProfileTable is the table that holds the kids_ministry_profile relation/edge.
+	KidsMinistryProfileTable = "kids_ministry_profiles"
+	// KidsMinistryProfileInverseTable is the table name for the KidsMinistryProfile entity.
+	// It exists in this package in order to avoid circular dependency with the "kidsministryprofile" package.
+	KidsMinistryProfileInverseTable = "kids_ministry_profiles"
+	// KidsMinistryProfileColumn is the table column denoting the kids_ministry_profile relation/edge.
+	KidsMinistryProfileColumn = "member_id"
 )
 
 // Columns holds all SQL columns for member fields.
 var Columns = []string{
 	FieldID,
-	FieldName,
+	FieldFirstName,
+	FieldSurname,
 	FieldEmail,
-	FieldJoinedAt,
+	FieldPhoneNumber,
+	FieldHomeAddress,
+	FieldGender,
+	FieldDateOfBirthDay,
+	FieldDateOfBirthMonth,
+	FieldMaritalStatus,
+	FieldWeddingAnniversaryDay,
+	FieldWeddingAnniversaryMonth,
+	FieldJobOccupation,
+	FieldPhotoURL,
+	FieldEmergencyContactName,
+	FieldEmergencyContactPhone,
+	FieldAllergies,
+	FieldMedicalNotes,
+	FieldIsPlaceholder,
+	FieldSourceTeam,
+	FieldCreatedBy,
+	FieldCreatedAt,
+	FieldUpdatedAt,
+	FieldCurrentStage,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -43,11 +150,97 @@ func ValidColumn(column string) bool {
 }
 
 var (
-	// DefaultJoinedAt holds the default value on creation for the "joined_at" field.
-	DefaultJoinedAt func() time.Time
+	// DefaultIsPlaceholder holds the default value on creation for the "is_placeholder" field.
+	DefaultIsPlaceholder bool
+	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
+	DefaultCreatedAt func() time.Time
+	// DefaultUpdatedAt holds the default value on creation for the "updated_at" field.
+	DefaultUpdatedAt func() time.Time
+	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
+	UpdateDefaultUpdatedAt func() time.Time
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
+
+// Gender defines the type for the "gender" enum field.
+type Gender string
+
+// Gender values.
+const (
+	GenderMale   Gender = "male"
+	GenderFemale Gender = "female"
+)
+
+func (ge Gender) String() string {
+	return string(ge)
+}
+
+// GenderValidator is a validator for the "gender" field enum values. It is called by the builders before save.
+func GenderValidator(ge Gender) error {
+	switch ge {
+	case GenderMale, GenderFemale:
+		return nil
+	default:
+		return fmt.Errorf("member: invalid enum value for gender field: %q", ge)
+	}
+}
+
+// MaritalStatus defines the type for the "marital_status" enum field.
+type MaritalStatus string
+
+// MaritalStatus values.
+const (
+	MaritalStatusSingle    MaritalStatus = "single"
+	MaritalStatusMarried   MaritalStatus = "married"
+	MaritalStatusWidowed   MaritalStatus = "widowed"
+	MaritalStatusDivorced  MaritalStatus = "divorced"
+	MaritalStatusSeparated MaritalStatus = "separated"
+)
+
+func (ms MaritalStatus) String() string {
+	return string(ms)
+}
+
+// MaritalStatusValidator is a validator for the "marital_status" field enum values. It is called by the builders before save.
+func MaritalStatusValidator(ms MaritalStatus) error {
+	switch ms {
+	case MaritalStatusSingle, MaritalStatusMarried, MaritalStatusWidowed, MaritalStatusDivorced, MaritalStatusSeparated:
+		return nil
+	default:
+		return fmt.Errorf("member: invalid enum value for marital_status field: %q", ms)
+	}
+}
+
+// CurrentStage defines the type for the "current_stage" enum field.
+type CurrentStage string
+
+// CurrentStageFirstTimeGuest is the default value of the CurrentStage enum.
+const DefaultCurrentStage = CurrentStageFirstTimeGuest
+
+// CurrentStage values.
+const (
+	CurrentStageFirstTimeGuest      CurrentStage = "first_time_guest"
+	CurrentStageFoundationClass     CurrentStage = "foundation_class"
+	CurrentStageSundaySchoolModule1 CurrentStage = "sunday_school_module_1"
+	CurrentStageSundaySchoolModule2 CurrentStage = "sunday_school_module_2"
+	CurrentStageSundaySchoolModule3 CurrentStage = "sunday_school_module_3"
+	CurrentStageMembershipClass     CurrentStage = "membership_class"
+	CurrentStageStewardship         CurrentStage = "stewardship"
+)
+
+func (cs CurrentStage) String() string {
+	return string(cs)
+}
+
+// CurrentStageValidator is a validator for the "current_stage" field enum values. It is called by the builders before save.
+func CurrentStageValidator(cs CurrentStage) error {
+	switch cs {
+	case CurrentStageFirstTimeGuest, CurrentStageFoundationClass, CurrentStageSundaySchoolModule1, CurrentStageSundaySchoolModule2, CurrentStageSundaySchoolModule3, CurrentStageMembershipClass, CurrentStageStewardship:
+		return nil
+	default:
+		return fmt.Errorf("member: invalid enum value for current_stage field: %q", cs)
+	}
+}
 
 // OrderOption defines the ordering options for the Member queries.
 type OrderOption func(*sql.Selector)
@@ -57,9 +250,14 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
 }
 
-// ByName orders the results by the name field.
-func ByName(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldName, opts...).ToFunc()
+// ByFirstName orders the results by the first_name field.
+func ByFirstName(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldFirstName, opts...).ToFunc()
+}
+
+// BySurname orders the results by the surname field.
+func BySurname(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldSurname, opts...).ToFunc()
 }
 
 // ByEmail orders the results by the email field.
@@ -67,7 +265,200 @@ func ByEmail(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldEmail, opts...).ToFunc()
 }
 
-// ByJoinedAt orders the results by the joined_at field.
-func ByJoinedAt(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldJoinedAt, opts...).ToFunc()
+// ByPhoneNumber orders the results by the phone_number field.
+func ByPhoneNumber(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPhoneNumber, opts...).ToFunc()
+}
+
+// ByHomeAddress orders the results by the home_address field.
+func ByHomeAddress(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldHomeAddress, opts...).ToFunc()
+}
+
+// ByGender orders the results by the gender field.
+func ByGender(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldGender, opts...).ToFunc()
+}
+
+// ByDateOfBirthDay orders the results by the date_of_birth_day field.
+func ByDateOfBirthDay(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDateOfBirthDay, opts...).ToFunc()
+}
+
+// ByDateOfBirthMonth orders the results by the date_of_birth_month field.
+func ByDateOfBirthMonth(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDateOfBirthMonth, opts...).ToFunc()
+}
+
+// ByMaritalStatus orders the results by the marital_status field.
+func ByMaritalStatus(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldMaritalStatus, opts...).ToFunc()
+}
+
+// ByWeddingAnniversaryDay orders the results by the wedding_anniversary_day field.
+func ByWeddingAnniversaryDay(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldWeddingAnniversaryDay, opts...).ToFunc()
+}
+
+// ByWeddingAnniversaryMonth orders the results by the wedding_anniversary_month field.
+func ByWeddingAnniversaryMonth(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldWeddingAnniversaryMonth, opts...).ToFunc()
+}
+
+// ByJobOccupation orders the results by the job_occupation field.
+func ByJobOccupation(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldJobOccupation, opts...).ToFunc()
+}
+
+// ByPhotoURL orders the results by the photo_url field.
+func ByPhotoURL(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPhotoURL, opts...).ToFunc()
+}
+
+// ByEmergencyContactName orders the results by the emergency_contact_name field.
+func ByEmergencyContactName(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldEmergencyContactName, opts...).ToFunc()
+}
+
+// ByEmergencyContactPhone orders the results by the emergency_contact_phone field.
+func ByEmergencyContactPhone(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldEmergencyContactPhone, opts...).ToFunc()
+}
+
+// ByAllergies orders the results by the allergies field.
+func ByAllergies(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAllergies, opts...).ToFunc()
+}
+
+// ByMedicalNotes orders the results by the medical_notes field.
+func ByMedicalNotes(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldMedicalNotes, opts...).ToFunc()
+}
+
+// ByIsPlaceholder orders the results by the is_placeholder field.
+func ByIsPlaceholder(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldIsPlaceholder, opts...).ToFunc()
+}
+
+// BySourceTeam orders the results by the source_team field.
+func BySourceTeam(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldSourceTeam, opts...).ToFunc()
+}
+
+// ByCreatedBy orders the results by the created_by field.
+func ByCreatedBy(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCreatedBy, opts...).ToFunc()
+}
+
+// ByCreatedAt orders the results by the created_at field.
+func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
+}
+
+// ByUpdatedAt orders the results by the updated_at field.
+func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
+}
+
+// ByCurrentStage orders the results by the current_stage field.
+func ByCurrentStage(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCurrentStage, opts...).ToFunc()
+}
+
+// ByStageHistoriesCount orders the results by stage_histories count.
+func ByStageHistoriesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newStageHistoriesStep(), opts...)
+	}
+}
+
+// ByStageHistories orders the results by stage_histories terms.
+func ByStageHistories(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newStageHistoriesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByTeamsCount orders the results by teams count.
+func ByTeamsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newTeamsStep(), opts...)
+	}
+}
+
+// ByTeams orders the results by teams terms.
+func ByTeams(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newTeamsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByGuardianRelationshipsAsChildCount orders the results by guardian_relationships_as_child count.
+func ByGuardianRelationshipsAsChildCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newGuardianRelationshipsAsChildStep(), opts...)
+	}
+}
+
+// ByGuardianRelationshipsAsChild orders the results by guardian_relationships_as_child terms.
+func ByGuardianRelationshipsAsChild(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newGuardianRelationshipsAsChildStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByGuardianRelationshipsAsGuardianCount orders the results by guardian_relationships_as_guardian count.
+func ByGuardianRelationshipsAsGuardianCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newGuardianRelationshipsAsGuardianStep(), opts...)
+	}
+}
+
+// ByGuardianRelationshipsAsGuardian orders the results by guardian_relationships_as_guardian terms.
+func ByGuardianRelationshipsAsGuardian(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newGuardianRelationshipsAsGuardianStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByKidsMinistryProfileField orders the results by kids_ministry_profile field.
+func ByKidsMinistryProfileField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newKidsMinistryProfileStep(), sql.OrderByField(field, opts...))
+	}
+}
+func newStageHistoriesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(StageHistoriesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, StageHistoriesTable, StageHistoriesColumn),
+	)
+}
+func newTeamsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(TeamsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, TeamsTable, TeamsColumn),
+	)
+}
+func newGuardianRelationshipsAsChildStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(GuardianRelationshipsAsChildInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, GuardianRelationshipsAsChildTable, GuardianRelationshipsAsChildColumn),
+	)
+}
+func newGuardianRelationshipsAsGuardianStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(GuardianRelationshipsAsGuardianInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, GuardianRelationshipsAsGuardianTable, GuardianRelationshipsAsGuardianColumn),
+	)
+}
+func newKidsMinistryProfileStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(KidsMinistryProfileInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2O, false, KidsMinistryProfileTable, KidsMinistryProfileColumn),
+	)
 }

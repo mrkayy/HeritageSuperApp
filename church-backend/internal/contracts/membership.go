@@ -3,21 +3,36 @@ package contracts
 import "context"
 
 // Member is the shape other modules are allowed to know about a member.
-// It is intentionally smaller than membership's internal DB model -
-// only what's safe/useful to expose across module boundaries.
 type Member struct {
-	ID    string
-	Name  string
-	Email string
+	ID                      string  `json:"id"`
+	FirstName               string  `json:"firstName"`
+	Surname                 string  `json:"surname"`
+	Email                   *string `json:"email"`
+	PhoneNumber             *string `json:"phoneNumber"`
+	HomeAddress             *string `json:"homeAddress"`
+	Gender                  *string `json:"gender"`
+	DateOfBirthDay          *int16  `json:"dateOfBirthDay"`
+	DateOfBirthMonth        *int16  `json:"dateOfBirthMonth"`
+	MaritalStatus           *string `json:"maritalStatus"`
+	WeddingAnniversaryDay   *int16  `json:"weddingAnniversaryDay"`
+	WeddingAnniversaryMonth *int16  `json:"weddingAnniversaryMonth"`
+	JobOccupation           *string `json:"jobOccupation"`
+	PhotoURL                *string `json:"photoUrl"`
+	EmergencyContactName    *string `json:"emergencyContactName"`
+	EmergencyContactPhone   *string `json:"emergencyContactPhone"`
+	Allergies               *string `json:"allergies"`
+	MedicalNotes            *string `json:"medicalNotes"`
+	IsPlaceholder           bool    `json:"isPlaceholder"`
+	SourceTeam              *string `json:"sourceTeam"`
+	CreatedBy               *string `json:"createdBy"`
+	CurrentStage            string  `json:"currentStage"`
+	CreatedAt               string  `json:"createdAt"`
+	UpdatedAt               string  `json:"updatedAt"`
+	Name                    string  `json:"name"` // Computed first_name + surname for compatibility
 }
 
 // MembershipReader is implemented by the membership module and consumed
-// by any other module that needs member data (e.g. Giving needing a
-// member's name, Events needing to check membership status).
-//
-// A module NEVER imports "internal/modules/membership" directly - it
-// accepts this interface as a constructor argument instead. Wiring the
-// real implementation to the interface happens once, in cmd/server/main.go.
+// by any other module that needs member data.
 type MembershipReader interface {
 	GetMember(ctx context.Context, id string) (Member, error)
 }

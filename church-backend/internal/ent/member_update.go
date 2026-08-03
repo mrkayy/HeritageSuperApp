@@ -11,7 +11,12 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
+	"github.com/hofchurchng/church-backend/internal/ent/guardianrelationship"
+	"github.com/hofchurchng/church-backend/internal/ent/kidsministryprofile"
 	"github.com/hofchurchng/church-backend/internal/ent/member"
+	"github.com/hofchurchng/church-backend/internal/ent/membershipstagehistory"
+	"github.com/hofchurchng/church-backend/internal/ent/memberteam"
 	"github.com/hofchurchng/church-backend/internal/ent/predicate"
 )
 
@@ -28,16 +33,30 @@ func (_u *MemberUpdate) Where(ps ...predicate.Member) *MemberUpdate {
 	return _u
 }
 
-// SetName sets the "name" field.
-func (_u *MemberUpdate) SetName(v string) *MemberUpdate {
-	_u.mutation.SetName(v)
+// SetFirstName sets the "first_name" field.
+func (_u *MemberUpdate) SetFirstName(v string) *MemberUpdate {
+	_u.mutation.SetFirstName(v)
 	return _u
 }
 
-// SetNillableName sets the "name" field if the given value is not nil.
-func (_u *MemberUpdate) SetNillableName(v *string) *MemberUpdate {
+// SetNillableFirstName sets the "first_name" field if the given value is not nil.
+func (_u *MemberUpdate) SetNillableFirstName(v *string) *MemberUpdate {
 	if v != nil {
-		_u.SetName(*v)
+		_u.SetFirstName(*v)
+	}
+	return _u
+}
+
+// SetSurname sets the "surname" field.
+func (_u *MemberUpdate) SetSurname(v string) *MemberUpdate {
+	_u.mutation.SetSurname(v)
+	return _u
+}
+
+// SetNillableSurname sets the "surname" field if the given value is not nil.
+func (_u *MemberUpdate) SetNillableSurname(v *string) *MemberUpdate {
+	if v != nil {
+		_u.SetSurname(*v)
 	}
 	return _u
 }
@@ -56,18 +75,485 @@ func (_u *MemberUpdate) SetNillableEmail(v *string) *MemberUpdate {
 	return _u
 }
 
-// SetJoinedAt sets the "joined_at" field.
-func (_u *MemberUpdate) SetJoinedAt(v time.Time) *MemberUpdate {
-	_u.mutation.SetJoinedAt(v)
+// ClearEmail clears the value of the "email" field.
+func (_u *MemberUpdate) ClearEmail() *MemberUpdate {
+	_u.mutation.ClearEmail()
 	return _u
 }
 
-// SetNillableJoinedAt sets the "joined_at" field if the given value is not nil.
-func (_u *MemberUpdate) SetNillableJoinedAt(v *time.Time) *MemberUpdate {
+// SetPhoneNumber sets the "phone_number" field.
+func (_u *MemberUpdate) SetPhoneNumber(v string) *MemberUpdate {
+	_u.mutation.SetPhoneNumber(v)
+	return _u
+}
+
+// SetNillablePhoneNumber sets the "phone_number" field if the given value is not nil.
+func (_u *MemberUpdate) SetNillablePhoneNumber(v *string) *MemberUpdate {
 	if v != nil {
-		_u.SetJoinedAt(*v)
+		_u.SetPhoneNumber(*v)
 	}
 	return _u
+}
+
+// ClearPhoneNumber clears the value of the "phone_number" field.
+func (_u *MemberUpdate) ClearPhoneNumber() *MemberUpdate {
+	_u.mutation.ClearPhoneNumber()
+	return _u
+}
+
+// SetHomeAddress sets the "home_address" field.
+func (_u *MemberUpdate) SetHomeAddress(v string) *MemberUpdate {
+	_u.mutation.SetHomeAddress(v)
+	return _u
+}
+
+// SetNillableHomeAddress sets the "home_address" field if the given value is not nil.
+func (_u *MemberUpdate) SetNillableHomeAddress(v *string) *MemberUpdate {
+	if v != nil {
+		_u.SetHomeAddress(*v)
+	}
+	return _u
+}
+
+// ClearHomeAddress clears the value of the "home_address" field.
+func (_u *MemberUpdate) ClearHomeAddress() *MemberUpdate {
+	_u.mutation.ClearHomeAddress()
+	return _u
+}
+
+// SetGender sets the "gender" field.
+func (_u *MemberUpdate) SetGender(v member.Gender) *MemberUpdate {
+	_u.mutation.SetGender(v)
+	return _u
+}
+
+// SetNillableGender sets the "gender" field if the given value is not nil.
+func (_u *MemberUpdate) SetNillableGender(v *member.Gender) *MemberUpdate {
+	if v != nil {
+		_u.SetGender(*v)
+	}
+	return _u
+}
+
+// ClearGender clears the value of the "gender" field.
+func (_u *MemberUpdate) ClearGender() *MemberUpdate {
+	_u.mutation.ClearGender()
+	return _u
+}
+
+// SetDateOfBirthDay sets the "date_of_birth_day" field.
+func (_u *MemberUpdate) SetDateOfBirthDay(v int16) *MemberUpdate {
+	_u.mutation.ResetDateOfBirthDay()
+	_u.mutation.SetDateOfBirthDay(v)
+	return _u
+}
+
+// SetNillableDateOfBirthDay sets the "date_of_birth_day" field if the given value is not nil.
+func (_u *MemberUpdate) SetNillableDateOfBirthDay(v *int16) *MemberUpdate {
+	if v != nil {
+		_u.SetDateOfBirthDay(*v)
+	}
+	return _u
+}
+
+// AddDateOfBirthDay adds value to the "date_of_birth_day" field.
+func (_u *MemberUpdate) AddDateOfBirthDay(v int16) *MemberUpdate {
+	_u.mutation.AddDateOfBirthDay(v)
+	return _u
+}
+
+// ClearDateOfBirthDay clears the value of the "date_of_birth_day" field.
+func (_u *MemberUpdate) ClearDateOfBirthDay() *MemberUpdate {
+	_u.mutation.ClearDateOfBirthDay()
+	return _u
+}
+
+// SetDateOfBirthMonth sets the "date_of_birth_month" field.
+func (_u *MemberUpdate) SetDateOfBirthMonth(v int16) *MemberUpdate {
+	_u.mutation.ResetDateOfBirthMonth()
+	_u.mutation.SetDateOfBirthMonth(v)
+	return _u
+}
+
+// SetNillableDateOfBirthMonth sets the "date_of_birth_month" field if the given value is not nil.
+func (_u *MemberUpdate) SetNillableDateOfBirthMonth(v *int16) *MemberUpdate {
+	if v != nil {
+		_u.SetDateOfBirthMonth(*v)
+	}
+	return _u
+}
+
+// AddDateOfBirthMonth adds value to the "date_of_birth_month" field.
+func (_u *MemberUpdate) AddDateOfBirthMonth(v int16) *MemberUpdate {
+	_u.mutation.AddDateOfBirthMonth(v)
+	return _u
+}
+
+// ClearDateOfBirthMonth clears the value of the "date_of_birth_month" field.
+func (_u *MemberUpdate) ClearDateOfBirthMonth() *MemberUpdate {
+	_u.mutation.ClearDateOfBirthMonth()
+	return _u
+}
+
+// SetMaritalStatus sets the "marital_status" field.
+func (_u *MemberUpdate) SetMaritalStatus(v member.MaritalStatus) *MemberUpdate {
+	_u.mutation.SetMaritalStatus(v)
+	return _u
+}
+
+// SetNillableMaritalStatus sets the "marital_status" field if the given value is not nil.
+func (_u *MemberUpdate) SetNillableMaritalStatus(v *member.MaritalStatus) *MemberUpdate {
+	if v != nil {
+		_u.SetMaritalStatus(*v)
+	}
+	return _u
+}
+
+// ClearMaritalStatus clears the value of the "marital_status" field.
+func (_u *MemberUpdate) ClearMaritalStatus() *MemberUpdate {
+	_u.mutation.ClearMaritalStatus()
+	return _u
+}
+
+// SetWeddingAnniversaryDay sets the "wedding_anniversary_day" field.
+func (_u *MemberUpdate) SetWeddingAnniversaryDay(v int16) *MemberUpdate {
+	_u.mutation.ResetWeddingAnniversaryDay()
+	_u.mutation.SetWeddingAnniversaryDay(v)
+	return _u
+}
+
+// SetNillableWeddingAnniversaryDay sets the "wedding_anniversary_day" field if the given value is not nil.
+func (_u *MemberUpdate) SetNillableWeddingAnniversaryDay(v *int16) *MemberUpdate {
+	if v != nil {
+		_u.SetWeddingAnniversaryDay(*v)
+	}
+	return _u
+}
+
+// AddWeddingAnniversaryDay adds value to the "wedding_anniversary_day" field.
+func (_u *MemberUpdate) AddWeddingAnniversaryDay(v int16) *MemberUpdate {
+	_u.mutation.AddWeddingAnniversaryDay(v)
+	return _u
+}
+
+// ClearWeddingAnniversaryDay clears the value of the "wedding_anniversary_day" field.
+func (_u *MemberUpdate) ClearWeddingAnniversaryDay() *MemberUpdate {
+	_u.mutation.ClearWeddingAnniversaryDay()
+	return _u
+}
+
+// SetWeddingAnniversaryMonth sets the "wedding_anniversary_month" field.
+func (_u *MemberUpdate) SetWeddingAnniversaryMonth(v int16) *MemberUpdate {
+	_u.mutation.ResetWeddingAnniversaryMonth()
+	_u.mutation.SetWeddingAnniversaryMonth(v)
+	return _u
+}
+
+// SetNillableWeddingAnniversaryMonth sets the "wedding_anniversary_month" field if the given value is not nil.
+func (_u *MemberUpdate) SetNillableWeddingAnniversaryMonth(v *int16) *MemberUpdate {
+	if v != nil {
+		_u.SetWeddingAnniversaryMonth(*v)
+	}
+	return _u
+}
+
+// AddWeddingAnniversaryMonth adds value to the "wedding_anniversary_month" field.
+func (_u *MemberUpdate) AddWeddingAnniversaryMonth(v int16) *MemberUpdate {
+	_u.mutation.AddWeddingAnniversaryMonth(v)
+	return _u
+}
+
+// ClearWeddingAnniversaryMonth clears the value of the "wedding_anniversary_month" field.
+func (_u *MemberUpdate) ClearWeddingAnniversaryMonth() *MemberUpdate {
+	_u.mutation.ClearWeddingAnniversaryMonth()
+	return _u
+}
+
+// SetJobOccupation sets the "job_occupation" field.
+func (_u *MemberUpdate) SetJobOccupation(v string) *MemberUpdate {
+	_u.mutation.SetJobOccupation(v)
+	return _u
+}
+
+// SetNillableJobOccupation sets the "job_occupation" field if the given value is not nil.
+func (_u *MemberUpdate) SetNillableJobOccupation(v *string) *MemberUpdate {
+	if v != nil {
+		_u.SetJobOccupation(*v)
+	}
+	return _u
+}
+
+// ClearJobOccupation clears the value of the "job_occupation" field.
+func (_u *MemberUpdate) ClearJobOccupation() *MemberUpdate {
+	_u.mutation.ClearJobOccupation()
+	return _u
+}
+
+// SetPhotoURL sets the "photo_url" field.
+func (_u *MemberUpdate) SetPhotoURL(v string) *MemberUpdate {
+	_u.mutation.SetPhotoURL(v)
+	return _u
+}
+
+// SetNillablePhotoURL sets the "photo_url" field if the given value is not nil.
+func (_u *MemberUpdate) SetNillablePhotoURL(v *string) *MemberUpdate {
+	if v != nil {
+		_u.SetPhotoURL(*v)
+	}
+	return _u
+}
+
+// ClearPhotoURL clears the value of the "photo_url" field.
+func (_u *MemberUpdate) ClearPhotoURL() *MemberUpdate {
+	_u.mutation.ClearPhotoURL()
+	return _u
+}
+
+// SetEmergencyContactName sets the "emergency_contact_name" field.
+func (_u *MemberUpdate) SetEmergencyContactName(v string) *MemberUpdate {
+	_u.mutation.SetEmergencyContactName(v)
+	return _u
+}
+
+// SetNillableEmergencyContactName sets the "emergency_contact_name" field if the given value is not nil.
+func (_u *MemberUpdate) SetNillableEmergencyContactName(v *string) *MemberUpdate {
+	if v != nil {
+		_u.SetEmergencyContactName(*v)
+	}
+	return _u
+}
+
+// ClearEmergencyContactName clears the value of the "emergency_contact_name" field.
+func (_u *MemberUpdate) ClearEmergencyContactName() *MemberUpdate {
+	_u.mutation.ClearEmergencyContactName()
+	return _u
+}
+
+// SetEmergencyContactPhone sets the "emergency_contact_phone" field.
+func (_u *MemberUpdate) SetEmergencyContactPhone(v string) *MemberUpdate {
+	_u.mutation.SetEmergencyContactPhone(v)
+	return _u
+}
+
+// SetNillableEmergencyContactPhone sets the "emergency_contact_phone" field if the given value is not nil.
+func (_u *MemberUpdate) SetNillableEmergencyContactPhone(v *string) *MemberUpdate {
+	if v != nil {
+		_u.SetEmergencyContactPhone(*v)
+	}
+	return _u
+}
+
+// ClearEmergencyContactPhone clears the value of the "emergency_contact_phone" field.
+func (_u *MemberUpdate) ClearEmergencyContactPhone() *MemberUpdate {
+	_u.mutation.ClearEmergencyContactPhone()
+	return _u
+}
+
+// SetAllergies sets the "allergies" field.
+func (_u *MemberUpdate) SetAllergies(v string) *MemberUpdate {
+	_u.mutation.SetAllergies(v)
+	return _u
+}
+
+// SetNillableAllergies sets the "allergies" field if the given value is not nil.
+func (_u *MemberUpdate) SetNillableAllergies(v *string) *MemberUpdate {
+	if v != nil {
+		_u.SetAllergies(*v)
+	}
+	return _u
+}
+
+// ClearAllergies clears the value of the "allergies" field.
+func (_u *MemberUpdate) ClearAllergies() *MemberUpdate {
+	_u.mutation.ClearAllergies()
+	return _u
+}
+
+// SetMedicalNotes sets the "medical_notes" field.
+func (_u *MemberUpdate) SetMedicalNotes(v string) *MemberUpdate {
+	_u.mutation.SetMedicalNotes(v)
+	return _u
+}
+
+// SetNillableMedicalNotes sets the "medical_notes" field if the given value is not nil.
+func (_u *MemberUpdate) SetNillableMedicalNotes(v *string) *MemberUpdate {
+	if v != nil {
+		_u.SetMedicalNotes(*v)
+	}
+	return _u
+}
+
+// ClearMedicalNotes clears the value of the "medical_notes" field.
+func (_u *MemberUpdate) ClearMedicalNotes() *MemberUpdate {
+	_u.mutation.ClearMedicalNotes()
+	return _u
+}
+
+// SetIsPlaceholder sets the "is_placeholder" field.
+func (_u *MemberUpdate) SetIsPlaceholder(v bool) *MemberUpdate {
+	_u.mutation.SetIsPlaceholder(v)
+	return _u
+}
+
+// SetNillableIsPlaceholder sets the "is_placeholder" field if the given value is not nil.
+func (_u *MemberUpdate) SetNillableIsPlaceholder(v *bool) *MemberUpdate {
+	if v != nil {
+		_u.SetIsPlaceholder(*v)
+	}
+	return _u
+}
+
+// SetSourceTeam sets the "source_team" field.
+func (_u *MemberUpdate) SetSourceTeam(v string) *MemberUpdate {
+	_u.mutation.SetSourceTeam(v)
+	return _u
+}
+
+// SetNillableSourceTeam sets the "source_team" field if the given value is not nil.
+func (_u *MemberUpdate) SetNillableSourceTeam(v *string) *MemberUpdate {
+	if v != nil {
+		_u.SetSourceTeam(*v)
+	}
+	return _u
+}
+
+// ClearSourceTeam clears the value of the "source_team" field.
+func (_u *MemberUpdate) ClearSourceTeam() *MemberUpdate {
+	_u.mutation.ClearSourceTeam()
+	return _u
+}
+
+// SetCreatedBy sets the "created_by" field.
+func (_u *MemberUpdate) SetCreatedBy(v uuid.UUID) *MemberUpdate {
+	_u.mutation.SetCreatedBy(v)
+	return _u
+}
+
+// SetNillableCreatedBy sets the "created_by" field if the given value is not nil.
+func (_u *MemberUpdate) SetNillableCreatedBy(v *uuid.UUID) *MemberUpdate {
+	if v != nil {
+		_u.SetCreatedBy(*v)
+	}
+	return _u
+}
+
+// ClearCreatedBy clears the value of the "created_by" field.
+func (_u *MemberUpdate) ClearCreatedBy() *MemberUpdate {
+	_u.mutation.ClearCreatedBy()
+	return _u
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (_u *MemberUpdate) SetCreatedAt(v time.Time) *MemberUpdate {
+	_u.mutation.SetCreatedAt(v)
+	return _u
+}
+
+// SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
+func (_u *MemberUpdate) SetNillableCreatedAt(v *time.Time) *MemberUpdate {
+	if v != nil {
+		_u.SetCreatedAt(*v)
+	}
+	return _u
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (_u *MemberUpdate) SetUpdatedAt(v time.Time) *MemberUpdate {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
+}
+
+// SetCurrentStage sets the "current_stage" field.
+func (_u *MemberUpdate) SetCurrentStage(v member.CurrentStage) *MemberUpdate {
+	_u.mutation.SetCurrentStage(v)
+	return _u
+}
+
+// SetNillableCurrentStage sets the "current_stage" field if the given value is not nil.
+func (_u *MemberUpdate) SetNillableCurrentStage(v *member.CurrentStage) *MemberUpdate {
+	if v != nil {
+		_u.SetCurrentStage(*v)
+	}
+	return _u
+}
+
+// AddStageHistoryIDs adds the "stage_histories" edge to the MembershipStageHistory entity by IDs.
+func (_u *MemberUpdate) AddStageHistoryIDs(ids ...uuid.UUID) *MemberUpdate {
+	_u.mutation.AddStageHistoryIDs(ids...)
+	return _u
+}
+
+// AddStageHistories adds the "stage_histories" edges to the MembershipStageHistory entity.
+func (_u *MemberUpdate) AddStageHistories(v ...*MembershipStageHistory) *MemberUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddStageHistoryIDs(ids...)
+}
+
+// AddTeamIDs adds the "teams" edge to the MemberTeam entity by IDs.
+func (_u *MemberUpdate) AddTeamIDs(ids ...uuid.UUID) *MemberUpdate {
+	_u.mutation.AddTeamIDs(ids...)
+	return _u
+}
+
+// AddTeams adds the "teams" edges to the MemberTeam entity.
+func (_u *MemberUpdate) AddTeams(v ...*MemberTeam) *MemberUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddTeamIDs(ids...)
+}
+
+// AddGuardianRelationshipsAsChildIDs adds the "guardian_relationships_as_child" edge to the GuardianRelationship entity by IDs.
+func (_u *MemberUpdate) AddGuardianRelationshipsAsChildIDs(ids ...uuid.UUID) *MemberUpdate {
+	_u.mutation.AddGuardianRelationshipsAsChildIDs(ids...)
+	return _u
+}
+
+// AddGuardianRelationshipsAsChild adds the "guardian_relationships_as_child" edges to the GuardianRelationship entity.
+func (_u *MemberUpdate) AddGuardianRelationshipsAsChild(v ...*GuardianRelationship) *MemberUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddGuardianRelationshipsAsChildIDs(ids...)
+}
+
+// AddGuardianRelationshipsAsGuardianIDs adds the "guardian_relationships_as_guardian" edge to the GuardianRelationship entity by IDs.
+func (_u *MemberUpdate) AddGuardianRelationshipsAsGuardianIDs(ids ...uuid.UUID) *MemberUpdate {
+	_u.mutation.AddGuardianRelationshipsAsGuardianIDs(ids...)
+	return _u
+}
+
+// AddGuardianRelationshipsAsGuardian adds the "guardian_relationships_as_guardian" edges to the GuardianRelationship entity.
+func (_u *MemberUpdate) AddGuardianRelationshipsAsGuardian(v ...*GuardianRelationship) *MemberUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddGuardianRelationshipsAsGuardianIDs(ids...)
+}
+
+// SetKidsMinistryProfileID sets the "kids_ministry_profile" edge to the KidsMinistryProfile entity by ID.
+func (_u *MemberUpdate) SetKidsMinistryProfileID(id uuid.UUID) *MemberUpdate {
+	_u.mutation.SetKidsMinistryProfileID(id)
+	return _u
+}
+
+// SetNillableKidsMinistryProfileID sets the "kids_ministry_profile" edge to the KidsMinistryProfile entity by ID if the given value is not nil.
+func (_u *MemberUpdate) SetNillableKidsMinistryProfileID(id *uuid.UUID) *MemberUpdate {
+	if id != nil {
+		_u = _u.SetKidsMinistryProfileID(*id)
+	}
+	return _u
+}
+
+// SetKidsMinistryProfile sets the "kids_ministry_profile" edge to the KidsMinistryProfile entity.
+func (_u *MemberUpdate) SetKidsMinistryProfile(v *KidsMinistryProfile) *MemberUpdate {
+	return _u.SetKidsMinistryProfileID(v.ID)
 }
 
 // Mutation returns the MemberMutation object of the builder.
@@ -75,8 +561,99 @@ func (_u *MemberUpdate) Mutation() *MemberMutation {
 	return _u.mutation
 }
 
+// ClearStageHistories clears all "stage_histories" edges to the MembershipStageHistory entity.
+func (_u *MemberUpdate) ClearStageHistories() *MemberUpdate {
+	_u.mutation.ClearStageHistories()
+	return _u
+}
+
+// RemoveStageHistoryIDs removes the "stage_histories" edge to MembershipStageHistory entities by IDs.
+func (_u *MemberUpdate) RemoveStageHistoryIDs(ids ...uuid.UUID) *MemberUpdate {
+	_u.mutation.RemoveStageHistoryIDs(ids...)
+	return _u
+}
+
+// RemoveStageHistories removes "stage_histories" edges to MembershipStageHistory entities.
+func (_u *MemberUpdate) RemoveStageHistories(v ...*MembershipStageHistory) *MemberUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveStageHistoryIDs(ids...)
+}
+
+// ClearTeams clears all "teams" edges to the MemberTeam entity.
+func (_u *MemberUpdate) ClearTeams() *MemberUpdate {
+	_u.mutation.ClearTeams()
+	return _u
+}
+
+// RemoveTeamIDs removes the "teams" edge to MemberTeam entities by IDs.
+func (_u *MemberUpdate) RemoveTeamIDs(ids ...uuid.UUID) *MemberUpdate {
+	_u.mutation.RemoveTeamIDs(ids...)
+	return _u
+}
+
+// RemoveTeams removes "teams" edges to MemberTeam entities.
+func (_u *MemberUpdate) RemoveTeams(v ...*MemberTeam) *MemberUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveTeamIDs(ids...)
+}
+
+// ClearGuardianRelationshipsAsChild clears all "guardian_relationships_as_child" edges to the GuardianRelationship entity.
+func (_u *MemberUpdate) ClearGuardianRelationshipsAsChild() *MemberUpdate {
+	_u.mutation.ClearGuardianRelationshipsAsChild()
+	return _u
+}
+
+// RemoveGuardianRelationshipsAsChildIDs removes the "guardian_relationships_as_child" edge to GuardianRelationship entities by IDs.
+func (_u *MemberUpdate) RemoveGuardianRelationshipsAsChildIDs(ids ...uuid.UUID) *MemberUpdate {
+	_u.mutation.RemoveGuardianRelationshipsAsChildIDs(ids...)
+	return _u
+}
+
+// RemoveGuardianRelationshipsAsChild removes "guardian_relationships_as_child" edges to GuardianRelationship entities.
+func (_u *MemberUpdate) RemoveGuardianRelationshipsAsChild(v ...*GuardianRelationship) *MemberUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveGuardianRelationshipsAsChildIDs(ids...)
+}
+
+// ClearGuardianRelationshipsAsGuardian clears all "guardian_relationships_as_guardian" edges to the GuardianRelationship entity.
+func (_u *MemberUpdate) ClearGuardianRelationshipsAsGuardian() *MemberUpdate {
+	_u.mutation.ClearGuardianRelationshipsAsGuardian()
+	return _u
+}
+
+// RemoveGuardianRelationshipsAsGuardianIDs removes the "guardian_relationships_as_guardian" edge to GuardianRelationship entities by IDs.
+func (_u *MemberUpdate) RemoveGuardianRelationshipsAsGuardianIDs(ids ...uuid.UUID) *MemberUpdate {
+	_u.mutation.RemoveGuardianRelationshipsAsGuardianIDs(ids...)
+	return _u
+}
+
+// RemoveGuardianRelationshipsAsGuardian removes "guardian_relationships_as_guardian" edges to GuardianRelationship entities.
+func (_u *MemberUpdate) RemoveGuardianRelationshipsAsGuardian(v ...*GuardianRelationship) *MemberUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveGuardianRelationshipsAsGuardianIDs(ids...)
+}
+
+// ClearKidsMinistryProfile clears the "kids_ministry_profile" edge to the KidsMinistryProfile entity.
+func (_u *MemberUpdate) ClearKidsMinistryProfile() *MemberUpdate {
+	_u.mutation.ClearKidsMinistryProfile()
+	return _u
+}
+
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (_u *MemberUpdate) Save(ctx context.Context) (int, error) {
+	_u.defaults()
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -102,7 +679,38 @@ func (_u *MemberUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (_u *MemberUpdate) defaults() {
+	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		v := member.UpdateDefaultUpdatedAt()
+		_u.mutation.SetUpdatedAt(v)
+	}
+}
+
+// check runs all checks and user-defined validators on the builder.
+func (_u *MemberUpdate) check() error {
+	if v, ok := _u.mutation.Gender(); ok {
+		if err := member.GenderValidator(v); err != nil {
+			return &ValidationError{Name: "gender", err: fmt.Errorf(`ent: validator failed for field "Member.gender": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.MaritalStatus(); ok {
+		if err := member.MaritalStatusValidator(v); err != nil {
+			return &ValidationError{Name: "marital_status", err: fmt.Errorf(`ent: validator failed for field "Member.marital_status": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.CurrentStage(); ok {
+		if err := member.CurrentStageValidator(v); err != nil {
+			return &ValidationError{Name: "current_stage", err: fmt.Errorf(`ent: validator failed for field "Member.current_stage": %w`, err)}
+		}
+	}
+	return nil
+}
+
 func (_u *MemberUpdate) sqlSave(ctx context.Context) (_node int, err error) {
+	if err := _u.check(); err != nil {
+		return _node, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(member.Table, member.Columns, sqlgraph.NewFieldSpec(member.FieldID, field.TypeUUID))
 	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -111,14 +719,346 @@ func (_u *MemberUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			}
 		}
 	}
-	if value, ok := _u.mutation.Name(); ok {
-		_spec.SetField(member.FieldName, field.TypeString, value)
+	if value, ok := _u.mutation.FirstName(); ok {
+		_spec.SetField(member.FieldFirstName, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.Surname(); ok {
+		_spec.SetField(member.FieldSurname, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.Email(); ok {
 		_spec.SetField(member.FieldEmail, field.TypeString, value)
 	}
-	if value, ok := _u.mutation.JoinedAt(); ok {
-		_spec.SetField(member.FieldJoinedAt, field.TypeTime, value)
+	if _u.mutation.EmailCleared() {
+		_spec.ClearField(member.FieldEmail, field.TypeString)
+	}
+	if value, ok := _u.mutation.PhoneNumber(); ok {
+		_spec.SetField(member.FieldPhoneNumber, field.TypeString, value)
+	}
+	if _u.mutation.PhoneNumberCleared() {
+		_spec.ClearField(member.FieldPhoneNumber, field.TypeString)
+	}
+	if value, ok := _u.mutation.HomeAddress(); ok {
+		_spec.SetField(member.FieldHomeAddress, field.TypeString, value)
+	}
+	if _u.mutation.HomeAddressCleared() {
+		_spec.ClearField(member.FieldHomeAddress, field.TypeString)
+	}
+	if value, ok := _u.mutation.Gender(); ok {
+		_spec.SetField(member.FieldGender, field.TypeEnum, value)
+	}
+	if _u.mutation.GenderCleared() {
+		_spec.ClearField(member.FieldGender, field.TypeEnum)
+	}
+	if value, ok := _u.mutation.DateOfBirthDay(); ok {
+		_spec.SetField(member.FieldDateOfBirthDay, field.TypeInt16, value)
+	}
+	if value, ok := _u.mutation.AddedDateOfBirthDay(); ok {
+		_spec.AddField(member.FieldDateOfBirthDay, field.TypeInt16, value)
+	}
+	if _u.mutation.DateOfBirthDayCleared() {
+		_spec.ClearField(member.FieldDateOfBirthDay, field.TypeInt16)
+	}
+	if value, ok := _u.mutation.DateOfBirthMonth(); ok {
+		_spec.SetField(member.FieldDateOfBirthMonth, field.TypeInt16, value)
+	}
+	if value, ok := _u.mutation.AddedDateOfBirthMonth(); ok {
+		_spec.AddField(member.FieldDateOfBirthMonth, field.TypeInt16, value)
+	}
+	if _u.mutation.DateOfBirthMonthCleared() {
+		_spec.ClearField(member.FieldDateOfBirthMonth, field.TypeInt16)
+	}
+	if value, ok := _u.mutation.MaritalStatus(); ok {
+		_spec.SetField(member.FieldMaritalStatus, field.TypeEnum, value)
+	}
+	if _u.mutation.MaritalStatusCleared() {
+		_spec.ClearField(member.FieldMaritalStatus, field.TypeEnum)
+	}
+	if value, ok := _u.mutation.WeddingAnniversaryDay(); ok {
+		_spec.SetField(member.FieldWeddingAnniversaryDay, field.TypeInt16, value)
+	}
+	if value, ok := _u.mutation.AddedWeddingAnniversaryDay(); ok {
+		_spec.AddField(member.FieldWeddingAnniversaryDay, field.TypeInt16, value)
+	}
+	if _u.mutation.WeddingAnniversaryDayCleared() {
+		_spec.ClearField(member.FieldWeddingAnniversaryDay, field.TypeInt16)
+	}
+	if value, ok := _u.mutation.WeddingAnniversaryMonth(); ok {
+		_spec.SetField(member.FieldWeddingAnniversaryMonth, field.TypeInt16, value)
+	}
+	if value, ok := _u.mutation.AddedWeddingAnniversaryMonth(); ok {
+		_spec.AddField(member.FieldWeddingAnniversaryMonth, field.TypeInt16, value)
+	}
+	if _u.mutation.WeddingAnniversaryMonthCleared() {
+		_spec.ClearField(member.FieldWeddingAnniversaryMonth, field.TypeInt16)
+	}
+	if value, ok := _u.mutation.JobOccupation(); ok {
+		_spec.SetField(member.FieldJobOccupation, field.TypeString, value)
+	}
+	if _u.mutation.JobOccupationCleared() {
+		_spec.ClearField(member.FieldJobOccupation, field.TypeString)
+	}
+	if value, ok := _u.mutation.PhotoURL(); ok {
+		_spec.SetField(member.FieldPhotoURL, field.TypeString, value)
+	}
+	if _u.mutation.PhotoURLCleared() {
+		_spec.ClearField(member.FieldPhotoURL, field.TypeString)
+	}
+	if value, ok := _u.mutation.EmergencyContactName(); ok {
+		_spec.SetField(member.FieldEmergencyContactName, field.TypeString, value)
+	}
+	if _u.mutation.EmergencyContactNameCleared() {
+		_spec.ClearField(member.FieldEmergencyContactName, field.TypeString)
+	}
+	if value, ok := _u.mutation.EmergencyContactPhone(); ok {
+		_spec.SetField(member.FieldEmergencyContactPhone, field.TypeString, value)
+	}
+	if _u.mutation.EmergencyContactPhoneCleared() {
+		_spec.ClearField(member.FieldEmergencyContactPhone, field.TypeString)
+	}
+	if value, ok := _u.mutation.Allergies(); ok {
+		_spec.SetField(member.FieldAllergies, field.TypeString, value)
+	}
+	if _u.mutation.AllergiesCleared() {
+		_spec.ClearField(member.FieldAllergies, field.TypeString)
+	}
+	if value, ok := _u.mutation.MedicalNotes(); ok {
+		_spec.SetField(member.FieldMedicalNotes, field.TypeString, value)
+	}
+	if _u.mutation.MedicalNotesCleared() {
+		_spec.ClearField(member.FieldMedicalNotes, field.TypeString)
+	}
+	if value, ok := _u.mutation.IsPlaceholder(); ok {
+		_spec.SetField(member.FieldIsPlaceholder, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.SourceTeam(); ok {
+		_spec.SetField(member.FieldSourceTeam, field.TypeString, value)
+	}
+	if _u.mutation.SourceTeamCleared() {
+		_spec.ClearField(member.FieldSourceTeam, field.TypeString)
+	}
+	if value, ok := _u.mutation.CreatedBy(); ok {
+		_spec.SetField(member.FieldCreatedBy, field.TypeUUID, value)
+	}
+	if _u.mutation.CreatedByCleared() {
+		_spec.ClearField(member.FieldCreatedBy, field.TypeUUID)
+	}
+	if value, ok := _u.mutation.CreatedAt(); ok {
+		_spec.SetField(member.FieldCreatedAt, field.TypeTime, value)
+	}
+	if value, ok := _u.mutation.UpdatedAt(); ok {
+		_spec.SetField(member.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if value, ok := _u.mutation.CurrentStage(); ok {
+		_spec.SetField(member.FieldCurrentStage, field.TypeEnum, value)
+	}
+	if _u.mutation.StageHistoriesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   member.StageHistoriesTable,
+			Columns: []string{member.StageHistoriesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(membershipstagehistory.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedStageHistoriesIDs(); len(nodes) > 0 && !_u.mutation.StageHistoriesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   member.StageHistoriesTable,
+			Columns: []string{member.StageHistoriesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(membershipstagehistory.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.StageHistoriesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   member.StageHistoriesTable,
+			Columns: []string{member.StageHistoriesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(membershipstagehistory.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.TeamsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   member.TeamsTable,
+			Columns: []string{member.TeamsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(memberteam.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedTeamsIDs(); len(nodes) > 0 && !_u.mutation.TeamsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   member.TeamsTable,
+			Columns: []string{member.TeamsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(memberteam.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.TeamsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   member.TeamsTable,
+			Columns: []string{member.TeamsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(memberteam.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.GuardianRelationshipsAsChildCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   member.GuardianRelationshipsAsChildTable,
+			Columns: []string{member.GuardianRelationshipsAsChildColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(guardianrelationship.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedGuardianRelationshipsAsChildIDs(); len(nodes) > 0 && !_u.mutation.GuardianRelationshipsAsChildCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   member.GuardianRelationshipsAsChildTable,
+			Columns: []string{member.GuardianRelationshipsAsChildColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(guardianrelationship.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.GuardianRelationshipsAsChildIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   member.GuardianRelationshipsAsChildTable,
+			Columns: []string{member.GuardianRelationshipsAsChildColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(guardianrelationship.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.GuardianRelationshipsAsGuardianCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   member.GuardianRelationshipsAsGuardianTable,
+			Columns: []string{member.GuardianRelationshipsAsGuardianColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(guardianrelationship.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedGuardianRelationshipsAsGuardianIDs(); len(nodes) > 0 && !_u.mutation.GuardianRelationshipsAsGuardianCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   member.GuardianRelationshipsAsGuardianTable,
+			Columns: []string{member.GuardianRelationshipsAsGuardianColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(guardianrelationship.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.GuardianRelationshipsAsGuardianIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   member.GuardianRelationshipsAsGuardianTable,
+			Columns: []string{member.GuardianRelationshipsAsGuardianColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(guardianrelationship.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.KidsMinistryProfileCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   member.KidsMinistryProfileTable,
+			Columns: []string{member.KidsMinistryProfileColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(kidsministryprofile.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.KidsMinistryProfileIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   member.KidsMinistryProfileTable,
+			Columns: []string{member.KidsMinistryProfileColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(kidsministryprofile.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -140,16 +1080,30 @@ type MemberUpdateOne struct {
 	mutation *MemberMutation
 }
 
-// SetName sets the "name" field.
-func (_u *MemberUpdateOne) SetName(v string) *MemberUpdateOne {
-	_u.mutation.SetName(v)
+// SetFirstName sets the "first_name" field.
+func (_u *MemberUpdateOne) SetFirstName(v string) *MemberUpdateOne {
+	_u.mutation.SetFirstName(v)
 	return _u
 }
 
-// SetNillableName sets the "name" field if the given value is not nil.
-func (_u *MemberUpdateOne) SetNillableName(v *string) *MemberUpdateOne {
+// SetNillableFirstName sets the "first_name" field if the given value is not nil.
+func (_u *MemberUpdateOne) SetNillableFirstName(v *string) *MemberUpdateOne {
 	if v != nil {
-		_u.SetName(*v)
+		_u.SetFirstName(*v)
+	}
+	return _u
+}
+
+// SetSurname sets the "surname" field.
+func (_u *MemberUpdateOne) SetSurname(v string) *MemberUpdateOne {
+	_u.mutation.SetSurname(v)
+	return _u
+}
+
+// SetNillableSurname sets the "surname" field if the given value is not nil.
+func (_u *MemberUpdateOne) SetNillableSurname(v *string) *MemberUpdateOne {
+	if v != nil {
+		_u.SetSurname(*v)
 	}
 	return _u
 }
@@ -168,23 +1122,580 @@ func (_u *MemberUpdateOne) SetNillableEmail(v *string) *MemberUpdateOne {
 	return _u
 }
 
-// SetJoinedAt sets the "joined_at" field.
-func (_u *MemberUpdateOne) SetJoinedAt(v time.Time) *MemberUpdateOne {
-	_u.mutation.SetJoinedAt(v)
+// ClearEmail clears the value of the "email" field.
+func (_u *MemberUpdateOne) ClearEmail() *MemberUpdateOne {
+	_u.mutation.ClearEmail()
 	return _u
 }
 
-// SetNillableJoinedAt sets the "joined_at" field if the given value is not nil.
-func (_u *MemberUpdateOne) SetNillableJoinedAt(v *time.Time) *MemberUpdateOne {
+// SetPhoneNumber sets the "phone_number" field.
+func (_u *MemberUpdateOne) SetPhoneNumber(v string) *MemberUpdateOne {
+	_u.mutation.SetPhoneNumber(v)
+	return _u
+}
+
+// SetNillablePhoneNumber sets the "phone_number" field if the given value is not nil.
+func (_u *MemberUpdateOne) SetNillablePhoneNumber(v *string) *MemberUpdateOne {
 	if v != nil {
-		_u.SetJoinedAt(*v)
+		_u.SetPhoneNumber(*v)
 	}
 	return _u
+}
+
+// ClearPhoneNumber clears the value of the "phone_number" field.
+func (_u *MemberUpdateOne) ClearPhoneNumber() *MemberUpdateOne {
+	_u.mutation.ClearPhoneNumber()
+	return _u
+}
+
+// SetHomeAddress sets the "home_address" field.
+func (_u *MemberUpdateOne) SetHomeAddress(v string) *MemberUpdateOne {
+	_u.mutation.SetHomeAddress(v)
+	return _u
+}
+
+// SetNillableHomeAddress sets the "home_address" field if the given value is not nil.
+func (_u *MemberUpdateOne) SetNillableHomeAddress(v *string) *MemberUpdateOne {
+	if v != nil {
+		_u.SetHomeAddress(*v)
+	}
+	return _u
+}
+
+// ClearHomeAddress clears the value of the "home_address" field.
+func (_u *MemberUpdateOne) ClearHomeAddress() *MemberUpdateOne {
+	_u.mutation.ClearHomeAddress()
+	return _u
+}
+
+// SetGender sets the "gender" field.
+func (_u *MemberUpdateOne) SetGender(v member.Gender) *MemberUpdateOne {
+	_u.mutation.SetGender(v)
+	return _u
+}
+
+// SetNillableGender sets the "gender" field if the given value is not nil.
+func (_u *MemberUpdateOne) SetNillableGender(v *member.Gender) *MemberUpdateOne {
+	if v != nil {
+		_u.SetGender(*v)
+	}
+	return _u
+}
+
+// ClearGender clears the value of the "gender" field.
+func (_u *MemberUpdateOne) ClearGender() *MemberUpdateOne {
+	_u.mutation.ClearGender()
+	return _u
+}
+
+// SetDateOfBirthDay sets the "date_of_birth_day" field.
+func (_u *MemberUpdateOne) SetDateOfBirthDay(v int16) *MemberUpdateOne {
+	_u.mutation.ResetDateOfBirthDay()
+	_u.mutation.SetDateOfBirthDay(v)
+	return _u
+}
+
+// SetNillableDateOfBirthDay sets the "date_of_birth_day" field if the given value is not nil.
+func (_u *MemberUpdateOne) SetNillableDateOfBirthDay(v *int16) *MemberUpdateOne {
+	if v != nil {
+		_u.SetDateOfBirthDay(*v)
+	}
+	return _u
+}
+
+// AddDateOfBirthDay adds value to the "date_of_birth_day" field.
+func (_u *MemberUpdateOne) AddDateOfBirthDay(v int16) *MemberUpdateOne {
+	_u.mutation.AddDateOfBirthDay(v)
+	return _u
+}
+
+// ClearDateOfBirthDay clears the value of the "date_of_birth_day" field.
+func (_u *MemberUpdateOne) ClearDateOfBirthDay() *MemberUpdateOne {
+	_u.mutation.ClearDateOfBirthDay()
+	return _u
+}
+
+// SetDateOfBirthMonth sets the "date_of_birth_month" field.
+func (_u *MemberUpdateOne) SetDateOfBirthMonth(v int16) *MemberUpdateOne {
+	_u.mutation.ResetDateOfBirthMonth()
+	_u.mutation.SetDateOfBirthMonth(v)
+	return _u
+}
+
+// SetNillableDateOfBirthMonth sets the "date_of_birth_month" field if the given value is not nil.
+func (_u *MemberUpdateOne) SetNillableDateOfBirthMonth(v *int16) *MemberUpdateOne {
+	if v != nil {
+		_u.SetDateOfBirthMonth(*v)
+	}
+	return _u
+}
+
+// AddDateOfBirthMonth adds value to the "date_of_birth_month" field.
+func (_u *MemberUpdateOne) AddDateOfBirthMonth(v int16) *MemberUpdateOne {
+	_u.mutation.AddDateOfBirthMonth(v)
+	return _u
+}
+
+// ClearDateOfBirthMonth clears the value of the "date_of_birth_month" field.
+func (_u *MemberUpdateOne) ClearDateOfBirthMonth() *MemberUpdateOne {
+	_u.mutation.ClearDateOfBirthMonth()
+	return _u
+}
+
+// SetMaritalStatus sets the "marital_status" field.
+func (_u *MemberUpdateOne) SetMaritalStatus(v member.MaritalStatus) *MemberUpdateOne {
+	_u.mutation.SetMaritalStatus(v)
+	return _u
+}
+
+// SetNillableMaritalStatus sets the "marital_status" field if the given value is not nil.
+func (_u *MemberUpdateOne) SetNillableMaritalStatus(v *member.MaritalStatus) *MemberUpdateOne {
+	if v != nil {
+		_u.SetMaritalStatus(*v)
+	}
+	return _u
+}
+
+// ClearMaritalStatus clears the value of the "marital_status" field.
+func (_u *MemberUpdateOne) ClearMaritalStatus() *MemberUpdateOne {
+	_u.mutation.ClearMaritalStatus()
+	return _u
+}
+
+// SetWeddingAnniversaryDay sets the "wedding_anniversary_day" field.
+func (_u *MemberUpdateOne) SetWeddingAnniversaryDay(v int16) *MemberUpdateOne {
+	_u.mutation.ResetWeddingAnniversaryDay()
+	_u.mutation.SetWeddingAnniversaryDay(v)
+	return _u
+}
+
+// SetNillableWeddingAnniversaryDay sets the "wedding_anniversary_day" field if the given value is not nil.
+func (_u *MemberUpdateOne) SetNillableWeddingAnniversaryDay(v *int16) *MemberUpdateOne {
+	if v != nil {
+		_u.SetWeddingAnniversaryDay(*v)
+	}
+	return _u
+}
+
+// AddWeddingAnniversaryDay adds value to the "wedding_anniversary_day" field.
+func (_u *MemberUpdateOne) AddWeddingAnniversaryDay(v int16) *MemberUpdateOne {
+	_u.mutation.AddWeddingAnniversaryDay(v)
+	return _u
+}
+
+// ClearWeddingAnniversaryDay clears the value of the "wedding_anniversary_day" field.
+func (_u *MemberUpdateOne) ClearWeddingAnniversaryDay() *MemberUpdateOne {
+	_u.mutation.ClearWeddingAnniversaryDay()
+	return _u
+}
+
+// SetWeddingAnniversaryMonth sets the "wedding_anniversary_month" field.
+func (_u *MemberUpdateOne) SetWeddingAnniversaryMonth(v int16) *MemberUpdateOne {
+	_u.mutation.ResetWeddingAnniversaryMonth()
+	_u.mutation.SetWeddingAnniversaryMonth(v)
+	return _u
+}
+
+// SetNillableWeddingAnniversaryMonth sets the "wedding_anniversary_month" field if the given value is not nil.
+func (_u *MemberUpdateOne) SetNillableWeddingAnniversaryMonth(v *int16) *MemberUpdateOne {
+	if v != nil {
+		_u.SetWeddingAnniversaryMonth(*v)
+	}
+	return _u
+}
+
+// AddWeddingAnniversaryMonth adds value to the "wedding_anniversary_month" field.
+func (_u *MemberUpdateOne) AddWeddingAnniversaryMonth(v int16) *MemberUpdateOne {
+	_u.mutation.AddWeddingAnniversaryMonth(v)
+	return _u
+}
+
+// ClearWeddingAnniversaryMonth clears the value of the "wedding_anniversary_month" field.
+func (_u *MemberUpdateOne) ClearWeddingAnniversaryMonth() *MemberUpdateOne {
+	_u.mutation.ClearWeddingAnniversaryMonth()
+	return _u
+}
+
+// SetJobOccupation sets the "job_occupation" field.
+func (_u *MemberUpdateOne) SetJobOccupation(v string) *MemberUpdateOne {
+	_u.mutation.SetJobOccupation(v)
+	return _u
+}
+
+// SetNillableJobOccupation sets the "job_occupation" field if the given value is not nil.
+func (_u *MemberUpdateOne) SetNillableJobOccupation(v *string) *MemberUpdateOne {
+	if v != nil {
+		_u.SetJobOccupation(*v)
+	}
+	return _u
+}
+
+// ClearJobOccupation clears the value of the "job_occupation" field.
+func (_u *MemberUpdateOne) ClearJobOccupation() *MemberUpdateOne {
+	_u.mutation.ClearJobOccupation()
+	return _u
+}
+
+// SetPhotoURL sets the "photo_url" field.
+func (_u *MemberUpdateOne) SetPhotoURL(v string) *MemberUpdateOne {
+	_u.mutation.SetPhotoURL(v)
+	return _u
+}
+
+// SetNillablePhotoURL sets the "photo_url" field if the given value is not nil.
+func (_u *MemberUpdateOne) SetNillablePhotoURL(v *string) *MemberUpdateOne {
+	if v != nil {
+		_u.SetPhotoURL(*v)
+	}
+	return _u
+}
+
+// ClearPhotoURL clears the value of the "photo_url" field.
+func (_u *MemberUpdateOne) ClearPhotoURL() *MemberUpdateOne {
+	_u.mutation.ClearPhotoURL()
+	return _u
+}
+
+// SetEmergencyContactName sets the "emergency_contact_name" field.
+func (_u *MemberUpdateOne) SetEmergencyContactName(v string) *MemberUpdateOne {
+	_u.mutation.SetEmergencyContactName(v)
+	return _u
+}
+
+// SetNillableEmergencyContactName sets the "emergency_contact_name" field if the given value is not nil.
+func (_u *MemberUpdateOne) SetNillableEmergencyContactName(v *string) *MemberUpdateOne {
+	if v != nil {
+		_u.SetEmergencyContactName(*v)
+	}
+	return _u
+}
+
+// ClearEmergencyContactName clears the value of the "emergency_contact_name" field.
+func (_u *MemberUpdateOne) ClearEmergencyContactName() *MemberUpdateOne {
+	_u.mutation.ClearEmergencyContactName()
+	return _u
+}
+
+// SetEmergencyContactPhone sets the "emergency_contact_phone" field.
+func (_u *MemberUpdateOne) SetEmergencyContactPhone(v string) *MemberUpdateOne {
+	_u.mutation.SetEmergencyContactPhone(v)
+	return _u
+}
+
+// SetNillableEmergencyContactPhone sets the "emergency_contact_phone" field if the given value is not nil.
+func (_u *MemberUpdateOne) SetNillableEmergencyContactPhone(v *string) *MemberUpdateOne {
+	if v != nil {
+		_u.SetEmergencyContactPhone(*v)
+	}
+	return _u
+}
+
+// ClearEmergencyContactPhone clears the value of the "emergency_contact_phone" field.
+func (_u *MemberUpdateOne) ClearEmergencyContactPhone() *MemberUpdateOne {
+	_u.mutation.ClearEmergencyContactPhone()
+	return _u
+}
+
+// SetAllergies sets the "allergies" field.
+func (_u *MemberUpdateOne) SetAllergies(v string) *MemberUpdateOne {
+	_u.mutation.SetAllergies(v)
+	return _u
+}
+
+// SetNillableAllergies sets the "allergies" field if the given value is not nil.
+func (_u *MemberUpdateOne) SetNillableAllergies(v *string) *MemberUpdateOne {
+	if v != nil {
+		_u.SetAllergies(*v)
+	}
+	return _u
+}
+
+// ClearAllergies clears the value of the "allergies" field.
+func (_u *MemberUpdateOne) ClearAllergies() *MemberUpdateOne {
+	_u.mutation.ClearAllergies()
+	return _u
+}
+
+// SetMedicalNotes sets the "medical_notes" field.
+func (_u *MemberUpdateOne) SetMedicalNotes(v string) *MemberUpdateOne {
+	_u.mutation.SetMedicalNotes(v)
+	return _u
+}
+
+// SetNillableMedicalNotes sets the "medical_notes" field if the given value is not nil.
+func (_u *MemberUpdateOne) SetNillableMedicalNotes(v *string) *MemberUpdateOne {
+	if v != nil {
+		_u.SetMedicalNotes(*v)
+	}
+	return _u
+}
+
+// ClearMedicalNotes clears the value of the "medical_notes" field.
+func (_u *MemberUpdateOne) ClearMedicalNotes() *MemberUpdateOne {
+	_u.mutation.ClearMedicalNotes()
+	return _u
+}
+
+// SetIsPlaceholder sets the "is_placeholder" field.
+func (_u *MemberUpdateOne) SetIsPlaceholder(v bool) *MemberUpdateOne {
+	_u.mutation.SetIsPlaceholder(v)
+	return _u
+}
+
+// SetNillableIsPlaceholder sets the "is_placeholder" field if the given value is not nil.
+func (_u *MemberUpdateOne) SetNillableIsPlaceholder(v *bool) *MemberUpdateOne {
+	if v != nil {
+		_u.SetIsPlaceholder(*v)
+	}
+	return _u
+}
+
+// SetSourceTeam sets the "source_team" field.
+func (_u *MemberUpdateOne) SetSourceTeam(v string) *MemberUpdateOne {
+	_u.mutation.SetSourceTeam(v)
+	return _u
+}
+
+// SetNillableSourceTeam sets the "source_team" field if the given value is not nil.
+func (_u *MemberUpdateOne) SetNillableSourceTeam(v *string) *MemberUpdateOne {
+	if v != nil {
+		_u.SetSourceTeam(*v)
+	}
+	return _u
+}
+
+// ClearSourceTeam clears the value of the "source_team" field.
+func (_u *MemberUpdateOne) ClearSourceTeam() *MemberUpdateOne {
+	_u.mutation.ClearSourceTeam()
+	return _u
+}
+
+// SetCreatedBy sets the "created_by" field.
+func (_u *MemberUpdateOne) SetCreatedBy(v uuid.UUID) *MemberUpdateOne {
+	_u.mutation.SetCreatedBy(v)
+	return _u
+}
+
+// SetNillableCreatedBy sets the "created_by" field if the given value is not nil.
+func (_u *MemberUpdateOne) SetNillableCreatedBy(v *uuid.UUID) *MemberUpdateOne {
+	if v != nil {
+		_u.SetCreatedBy(*v)
+	}
+	return _u
+}
+
+// ClearCreatedBy clears the value of the "created_by" field.
+func (_u *MemberUpdateOne) ClearCreatedBy() *MemberUpdateOne {
+	_u.mutation.ClearCreatedBy()
+	return _u
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (_u *MemberUpdateOne) SetCreatedAt(v time.Time) *MemberUpdateOne {
+	_u.mutation.SetCreatedAt(v)
+	return _u
+}
+
+// SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
+func (_u *MemberUpdateOne) SetNillableCreatedAt(v *time.Time) *MemberUpdateOne {
+	if v != nil {
+		_u.SetCreatedAt(*v)
+	}
+	return _u
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (_u *MemberUpdateOne) SetUpdatedAt(v time.Time) *MemberUpdateOne {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
+}
+
+// SetCurrentStage sets the "current_stage" field.
+func (_u *MemberUpdateOne) SetCurrentStage(v member.CurrentStage) *MemberUpdateOne {
+	_u.mutation.SetCurrentStage(v)
+	return _u
+}
+
+// SetNillableCurrentStage sets the "current_stage" field if the given value is not nil.
+func (_u *MemberUpdateOne) SetNillableCurrentStage(v *member.CurrentStage) *MemberUpdateOne {
+	if v != nil {
+		_u.SetCurrentStage(*v)
+	}
+	return _u
+}
+
+// AddStageHistoryIDs adds the "stage_histories" edge to the MembershipStageHistory entity by IDs.
+func (_u *MemberUpdateOne) AddStageHistoryIDs(ids ...uuid.UUID) *MemberUpdateOne {
+	_u.mutation.AddStageHistoryIDs(ids...)
+	return _u
+}
+
+// AddStageHistories adds the "stage_histories" edges to the MembershipStageHistory entity.
+func (_u *MemberUpdateOne) AddStageHistories(v ...*MembershipStageHistory) *MemberUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddStageHistoryIDs(ids...)
+}
+
+// AddTeamIDs adds the "teams" edge to the MemberTeam entity by IDs.
+func (_u *MemberUpdateOne) AddTeamIDs(ids ...uuid.UUID) *MemberUpdateOne {
+	_u.mutation.AddTeamIDs(ids...)
+	return _u
+}
+
+// AddTeams adds the "teams" edges to the MemberTeam entity.
+func (_u *MemberUpdateOne) AddTeams(v ...*MemberTeam) *MemberUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddTeamIDs(ids...)
+}
+
+// AddGuardianRelationshipsAsChildIDs adds the "guardian_relationships_as_child" edge to the GuardianRelationship entity by IDs.
+func (_u *MemberUpdateOne) AddGuardianRelationshipsAsChildIDs(ids ...uuid.UUID) *MemberUpdateOne {
+	_u.mutation.AddGuardianRelationshipsAsChildIDs(ids...)
+	return _u
+}
+
+// AddGuardianRelationshipsAsChild adds the "guardian_relationships_as_child" edges to the GuardianRelationship entity.
+func (_u *MemberUpdateOne) AddGuardianRelationshipsAsChild(v ...*GuardianRelationship) *MemberUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddGuardianRelationshipsAsChildIDs(ids...)
+}
+
+// AddGuardianRelationshipsAsGuardianIDs adds the "guardian_relationships_as_guardian" edge to the GuardianRelationship entity by IDs.
+func (_u *MemberUpdateOne) AddGuardianRelationshipsAsGuardianIDs(ids ...uuid.UUID) *MemberUpdateOne {
+	_u.mutation.AddGuardianRelationshipsAsGuardianIDs(ids...)
+	return _u
+}
+
+// AddGuardianRelationshipsAsGuardian adds the "guardian_relationships_as_guardian" edges to the GuardianRelationship entity.
+func (_u *MemberUpdateOne) AddGuardianRelationshipsAsGuardian(v ...*GuardianRelationship) *MemberUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddGuardianRelationshipsAsGuardianIDs(ids...)
+}
+
+// SetKidsMinistryProfileID sets the "kids_ministry_profile" edge to the KidsMinistryProfile entity by ID.
+func (_u *MemberUpdateOne) SetKidsMinistryProfileID(id uuid.UUID) *MemberUpdateOne {
+	_u.mutation.SetKidsMinistryProfileID(id)
+	return _u
+}
+
+// SetNillableKidsMinistryProfileID sets the "kids_ministry_profile" edge to the KidsMinistryProfile entity by ID if the given value is not nil.
+func (_u *MemberUpdateOne) SetNillableKidsMinistryProfileID(id *uuid.UUID) *MemberUpdateOne {
+	if id != nil {
+		_u = _u.SetKidsMinistryProfileID(*id)
+	}
+	return _u
+}
+
+// SetKidsMinistryProfile sets the "kids_ministry_profile" edge to the KidsMinistryProfile entity.
+func (_u *MemberUpdateOne) SetKidsMinistryProfile(v *KidsMinistryProfile) *MemberUpdateOne {
+	return _u.SetKidsMinistryProfileID(v.ID)
 }
 
 // Mutation returns the MemberMutation object of the builder.
 func (_u *MemberUpdateOne) Mutation() *MemberMutation {
 	return _u.mutation
+}
+
+// ClearStageHistories clears all "stage_histories" edges to the MembershipStageHistory entity.
+func (_u *MemberUpdateOne) ClearStageHistories() *MemberUpdateOne {
+	_u.mutation.ClearStageHistories()
+	return _u
+}
+
+// RemoveStageHistoryIDs removes the "stage_histories" edge to MembershipStageHistory entities by IDs.
+func (_u *MemberUpdateOne) RemoveStageHistoryIDs(ids ...uuid.UUID) *MemberUpdateOne {
+	_u.mutation.RemoveStageHistoryIDs(ids...)
+	return _u
+}
+
+// RemoveStageHistories removes "stage_histories" edges to MembershipStageHistory entities.
+func (_u *MemberUpdateOne) RemoveStageHistories(v ...*MembershipStageHistory) *MemberUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveStageHistoryIDs(ids...)
+}
+
+// ClearTeams clears all "teams" edges to the MemberTeam entity.
+func (_u *MemberUpdateOne) ClearTeams() *MemberUpdateOne {
+	_u.mutation.ClearTeams()
+	return _u
+}
+
+// RemoveTeamIDs removes the "teams" edge to MemberTeam entities by IDs.
+func (_u *MemberUpdateOne) RemoveTeamIDs(ids ...uuid.UUID) *MemberUpdateOne {
+	_u.mutation.RemoveTeamIDs(ids...)
+	return _u
+}
+
+// RemoveTeams removes "teams" edges to MemberTeam entities.
+func (_u *MemberUpdateOne) RemoveTeams(v ...*MemberTeam) *MemberUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveTeamIDs(ids...)
+}
+
+// ClearGuardianRelationshipsAsChild clears all "guardian_relationships_as_child" edges to the GuardianRelationship entity.
+func (_u *MemberUpdateOne) ClearGuardianRelationshipsAsChild() *MemberUpdateOne {
+	_u.mutation.ClearGuardianRelationshipsAsChild()
+	return _u
+}
+
+// RemoveGuardianRelationshipsAsChildIDs removes the "guardian_relationships_as_child" edge to GuardianRelationship entities by IDs.
+func (_u *MemberUpdateOne) RemoveGuardianRelationshipsAsChildIDs(ids ...uuid.UUID) *MemberUpdateOne {
+	_u.mutation.RemoveGuardianRelationshipsAsChildIDs(ids...)
+	return _u
+}
+
+// RemoveGuardianRelationshipsAsChild removes "guardian_relationships_as_child" edges to GuardianRelationship entities.
+func (_u *MemberUpdateOne) RemoveGuardianRelationshipsAsChild(v ...*GuardianRelationship) *MemberUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveGuardianRelationshipsAsChildIDs(ids...)
+}
+
+// ClearGuardianRelationshipsAsGuardian clears all "guardian_relationships_as_guardian" edges to the GuardianRelationship entity.
+func (_u *MemberUpdateOne) ClearGuardianRelationshipsAsGuardian() *MemberUpdateOne {
+	_u.mutation.ClearGuardianRelationshipsAsGuardian()
+	return _u
+}
+
+// RemoveGuardianRelationshipsAsGuardianIDs removes the "guardian_relationships_as_guardian" edge to GuardianRelationship entities by IDs.
+func (_u *MemberUpdateOne) RemoveGuardianRelationshipsAsGuardianIDs(ids ...uuid.UUID) *MemberUpdateOne {
+	_u.mutation.RemoveGuardianRelationshipsAsGuardianIDs(ids...)
+	return _u
+}
+
+// RemoveGuardianRelationshipsAsGuardian removes "guardian_relationships_as_guardian" edges to GuardianRelationship entities.
+func (_u *MemberUpdateOne) RemoveGuardianRelationshipsAsGuardian(v ...*GuardianRelationship) *MemberUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveGuardianRelationshipsAsGuardianIDs(ids...)
+}
+
+// ClearKidsMinistryProfile clears the "kids_ministry_profile" edge to the KidsMinistryProfile entity.
+func (_u *MemberUpdateOne) ClearKidsMinistryProfile() *MemberUpdateOne {
+	_u.mutation.ClearKidsMinistryProfile()
+	return _u
 }
 
 // Where appends a list predicates to the MemberUpdate builder.
@@ -202,6 +1713,7 @@ func (_u *MemberUpdateOne) Select(field string, fields ...string) *MemberUpdateO
 
 // Save executes the query and returns the updated Member entity.
 func (_u *MemberUpdateOne) Save(ctx context.Context) (*Member, error) {
+	_u.defaults()
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -227,7 +1739,38 @@ func (_u *MemberUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (_u *MemberUpdateOne) defaults() {
+	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		v := member.UpdateDefaultUpdatedAt()
+		_u.mutation.SetUpdatedAt(v)
+	}
+}
+
+// check runs all checks and user-defined validators on the builder.
+func (_u *MemberUpdateOne) check() error {
+	if v, ok := _u.mutation.Gender(); ok {
+		if err := member.GenderValidator(v); err != nil {
+			return &ValidationError{Name: "gender", err: fmt.Errorf(`ent: validator failed for field "Member.gender": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.MaritalStatus(); ok {
+		if err := member.MaritalStatusValidator(v); err != nil {
+			return &ValidationError{Name: "marital_status", err: fmt.Errorf(`ent: validator failed for field "Member.marital_status": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.CurrentStage(); ok {
+		if err := member.CurrentStageValidator(v); err != nil {
+			return &ValidationError{Name: "current_stage", err: fmt.Errorf(`ent: validator failed for field "Member.current_stage": %w`, err)}
+		}
+	}
+	return nil
+}
+
 func (_u *MemberUpdateOne) sqlSave(ctx context.Context) (_node *Member, err error) {
+	if err := _u.check(); err != nil {
+		return _node, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(member.Table, member.Columns, sqlgraph.NewFieldSpec(member.FieldID, field.TypeUUID))
 	id, ok := _u.mutation.ID()
 	if !ok {
@@ -253,14 +1796,346 @@ func (_u *MemberUpdateOne) sqlSave(ctx context.Context) (_node *Member, err erro
 			}
 		}
 	}
-	if value, ok := _u.mutation.Name(); ok {
-		_spec.SetField(member.FieldName, field.TypeString, value)
+	if value, ok := _u.mutation.FirstName(); ok {
+		_spec.SetField(member.FieldFirstName, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.Surname(); ok {
+		_spec.SetField(member.FieldSurname, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.Email(); ok {
 		_spec.SetField(member.FieldEmail, field.TypeString, value)
 	}
-	if value, ok := _u.mutation.JoinedAt(); ok {
-		_spec.SetField(member.FieldJoinedAt, field.TypeTime, value)
+	if _u.mutation.EmailCleared() {
+		_spec.ClearField(member.FieldEmail, field.TypeString)
+	}
+	if value, ok := _u.mutation.PhoneNumber(); ok {
+		_spec.SetField(member.FieldPhoneNumber, field.TypeString, value)
+	}
+	if _u.mutation.PhoneNumberCleared() {
+		_spec.ClearField(member.FieldPhoneNumber, field.TypeString)
+	}
+	if value, ok := _u.mutation.HomeAddress(); ok {
+		_spec.SetField(member.FieldHomeAddress, field.TypeString, value)
+	}
+	if _u.mutation.HomeAddressCleared() {
+		_spec.ClearField(member.FieldHomeAddress, field.TypeString)
+	}
+	if value, ok := _u.mutation.Gender(); ok {
+		_spec.SetField(member.FieldGender, field.TypeEnum, value)
+	}
+	if _u.mutation.GenderCleared() {
+		_spec.ClearField(member.FieldGender, field.TypeEnum)
+	}
+	if value, ok := _u.mutation.DateOfBirthDay(); ok {
+		_spec.SetField(member.FieldDateOfBirthDay, field.TypeInt16, value)
+	}
+	if value, ok := _u.mutation.AddedDateOfBirthDay(); ok {
+		_spec.AddField(member.FieldDateOfBirthDay, field.TypeInt16, value)
+	}
+	if _u.mutation.DateOfBirthDayCleared() {
+		_spec.ClearField(member.FieldDateOfBirthDay, field.TypeInt16)
+	}
+	if value, ok := _u.mutation.DateOfBirthMonth(); ok {
+		_spec.SetField(member.FieldDateOfBirthMonth, field.TypeInt16, value)
+	}
+	if value, ok := _u.mutation.AddedDateOfBirthMonth(); ok {
+		_spec.AddField(member.FieldDateOfBirthMonth, field.TypeInt16, value)
+	}
+	if _u.mutation.DateOfBirthMonthCleared() {
+		_spec.ClearField(member.FieldDateOfBirthMonth, field.TypeInt16)
+	}
+	if value, ok := _u.mutation.MaritalStatus(); ok {
+		_spec.SetField(member.FieldMaritalStatus, field.TypeEnum, value)
+	}
+	if _u.mutation.MaritalStatusCleared() {
+		_spec.ClearField(member.FieldMaritalStatus, field.TypeEnum)
+	}
+	if value, ok := _u.mutation.WeddingAnniversaryDay(); ok {
+		_spec.SetField(member.FieldWeddingAnniversaryDay, field.TypeInt16, value)
+	}
+	if value, ok := _u.mutation.AddedWeddingAnniversaryDay(); ok {
+		_spec.AddField(member.FieldWeddingAnniversaryDay, field.TypeInt16, value)
+	}
+	if _u.mutation.WeddingAnniversaryDayCleared() {
+		_spec.ClearField(member.FieldWeddingAnniversaryDay, field.TypeInt16)
+	}
+	if value, ok := _u.mutation.WeddingAnniversaryMonth(); ok {
+		_spec.SetField(member.FieldWeddingAnniversaryMonth, field.TypeInt16, value)
+	}
+	if value, ok := _u.mutation.AddedWeddingAnniversaryMonth(); ok {
+		_spec.AddField(member.FieldWeddingAnniversaryMonth, field.TypeInt16, value)
+	}
+	if _u.mutation.WeddingAnniversaryMonthCleared() {
+		_spec.ClearField(member.FieldWeddingAnniversaryMonth, field.TypeInt16)
+	}
+	if value, ok := _u.mutation.JobOccupation(); ok {
+		_spec.SetField(member.FieldJobOccupation, field.TypeString, value)
+	}
+	if _u.mutation.JobOccupationCleared() {
+		_spec.ClearField(member.FieldJobOccupation, field.TypeString)
+	}
+	if value, ok := _u.mutation.PhotoURL(); ok {
+		_spec.SetField(member.FieldPhotoURL, field.TypeString, value)
+	}
+	if _u.mutation.PhotoURLCleared() {
+		_spec.ClearField(member.FieldPhotoURL, field.TypeString)
+	}
+	if value, ok := _u.mutation.EmergencyContactName(); ok {
+		_spec.SetField(member.FieldEmergencyContactName, field.TypeString, value)
+	}
+	if _u.mutation.EmergencyContactNameCleared() {
+		_spec.ClearField(member.FieldEmergencyContactName, field.TypeString)
+	}
+	if value, ok := _u.mutation.EmergencyContactPhone(); ok {
+		_spec.SetField(member.FieldEmergencyContactPhone, field.TypeString, value)
+	}
+	if _u.mutation.EmergencyContactPhoneCleared() {
+		_spec.ClearField(member.FieldEmergencyContactPhone, field.TypeString)
+	}
+	if value, ok := _u.mutation.Allergies(); ok {
+		_spec.SetField(member.FieldAllergies, field.TypeString, value)
+	}
+	if _u.mutation.AllergiesCleared() {
+		_spec.ClearField(member.FieldAllergies, field.TypeString)
+	}
+	if value, ok := _u.mutation.MedicalNotes(); ok {
+		_spec.SetField(member.FieldMedicalNotes, field.TypeString, value)
+	}
+	if _u.mutation.MedicalNotesCleared() {
+		_spec.ClearField(member.FieldMedicalNotes, field.TypeString)
+	}
+	if value, ok := _u.mutation.IsPlaceholder(); ok {
+		_spec.SetField(member.FieldIsPlaceholder, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.SourceTeam(); ok {
+		_spec.SetField(member.FieldSourceTeam, field.TypeString, value)
+	}
+	if _u.mutation.SourceTeamCleared() {
+		_spec.ClearField(member.FieldSourceTeam, field.TypeString)
+	}
+	if value, ok := _u.mutation.CreatedBy(); ok {
+		_spec.SetField(member.FieldCreatedBy, field.TypeUUID, value)
+	}
+	if _u.mutation.CreatedByCleared() {
+		_spec.ClearField(member.FieldCreatedBy, field.TypeUUID)
+	}
+	if value, ok := _u.mutation.CreatedAt(); ok {
+		_spec.SetField(member.FieldCreatedAt, field.TypeTime, value)
+	}
+	if value, ok := _u.mutation.UpdatedAt(); ok {
+		_spec.SetField(member.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if value, ok := _u.mutation.CurrentStage(); ok {
+		_spec.SetField(member.FieldCurrentStage, field.TypeEnum, value)
+	}
+	if _u.mutation.StageHistoriesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   member.StageHistoriesTable,
+			Columns: []string{member.StageHistoriesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(membershipstagehistory.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedStageHistoriesIDs(); len(nodes) > 0 && !_u.mutation.StageHistoriesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   member.StageHistoriesTable,
+			Columns: []string{member.StageHistoriesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(membershipstagehistory.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.StageHistoriesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   member.StageHistoriesTable,
+			Columns: []string{member.StageHistoriesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(membershipstagehistory.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.TeamsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   member.TeamsTable,
+			Columns: []string{member.TeamsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(memberteam.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedTeamsIDs(); len(nodes) > 0 && !_u.mutation.TeamsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   member.TeamsTable,
+			Columns: []string{member.TeamsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(memberteam.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.TeamsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   member.TeamsTable,
+			Columns: []string{member.TeamsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(memberteam.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.GuardianRelationshipsAsChildCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   member.GuardianRelationshipsAsChildTable,
+			Columns: []string{member.GuardianRelationshipsAsChildColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(guardianrelationship.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedGuardianRelationshipsAsChildIDs(); len(nodes) > 0 && !_u.mutation.GuardianRelationshipsAsChildCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   member.GuardianRelationshipsAsChildTable,
+			Columns: []string{member.GuardianRelationshipsAsChildColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(guardianrelationship.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.GuardianRelationshipsAsChildIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   member.GuardianRelationshipsAsChildTable,
+			Columns: []string{member.GuardianRelationshipsAsChildColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(guardianrelationship.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.GuardianRelationshipsAsGuardianCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   member.GuardianRelationshipsAsGuardianTable,
+			Columns: []string{member.GuardianRelationshipsAsGuardianColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(guardianrelationship.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedGuardianRelationshipsAsGuardianIDs(); len(nodes) > 0 && !_u.mutation.GuardianRelationshipsAsGuardianCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   member.GuardianRelationshipsAsGuardianTable,
+			Columns: []string{member.GuardianRelationshipsAsGuardianColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(guardianrelationship.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.GuardianRelationshipsAsGuardianIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   member.GuardianRelationshipsAsGuardianTable,
+			Columns: []string{member.GuardianRelationshipsAsGuardianColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(guardianrelationship.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.KidsMinistryProfileCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   member.KidsMinistryProfileTable,
+			Columns: []string{member.KidsMinistryProfileColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(kidsministryprofile.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.KidsMinistryProfileIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   member.KidsMinistryProfileTable,
+			Columns: []string{member.KidsMinistryProfileColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(kidsministryprofile.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &Member{config: _u.config}
 	_spec.Assign = _node.assignValues

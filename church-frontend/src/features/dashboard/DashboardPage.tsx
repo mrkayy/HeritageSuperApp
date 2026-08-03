@@ -45,12 +45,14 @@ export default function DashboardPage() {
           )}
 
           {/* Card 2: Teams & Sectors */}
-          <div className="feature-card card disabled">
-            <div className="card-icon">🛡️</div>
-            <h3>Teams & Sectors</h3>
-            <p>Manage church departments, sectors, and volunteers.</p>
-            <span className="card-tag">Coming Soon</span>
-          </div>
+          {user && (user.Roles.includes("team_lead") || user.Roles.includes("resident_pastor") || user.Roles.includes("church_admin")) && (
+            <Link to="/admin/organization" className="feature-card card">
+              <div className="card-icon">🛡️</div>
+              <h3>Teams & Sectors</h3>
+              <p>Manage church departments, sectors, and volunteer rosters.</p>
+              <span className="card-action">Manage Organization →</span>
+            </Link>
+          )}
 
           {/* Card 3: Events & Scheduling */}
           <div className="feature-card card disabled">

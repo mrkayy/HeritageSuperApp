@@ -14,8 +14,8 @@ func NewService(repo *Repository) *Service {
 	return &Service{repo: repo}
 }
 
-// GetTeam/ListTeams satisfy contracts.TeamReader; GetSector/ListSectors
-// satisfy contracts.SectorReader.
+// --- Team CRUD ---
+
 func (s *Service) GetTeam(ctx context.Context, id string) (contracts.Team, error) {
 	return s.repo.GetTeam(ctx, id)
 }
@@ -28,6 +28,20 @@ func (s *Service) CreateTeam(ctx context.Context, name string) (contracts.Team, 
 	return s.repo.CreateTeam(ctx, name)
 }
 
+func (s *Service) CreateTeamFull(ctx context.Context, name string, description *string, churchID, sectorID *string) (contracts.Team, error) {
+	return s.repo.CreateTeamFull(ctx, name, description, churchID, sectorID)
+}
+
+func (s *Service) UpdateTeam(ctx context.Context, id, name string, description *string, churchID, sectorID *string) (contracts.Team, error) {
+	return s.repo.UpdateTeam(ctx, id, name, description, churchID, sectorID)
+}
+
+func (s *Service) DeleteTeam(ctx context.Context, id string) error {
+	return s.repo.DeleteTeam(ctx, id)
+}
+
+// --- Sector CRUD ---
+
 func (s *Service) GetSector(ctx context.Context, id string) (contracts.Sector, error) {
 	return s.repo.GetSector(ctx, id)
 }
@@ -38,4 +52,38 @@ func (s *Service) ListSectors(ctx context.Context) ([]contracts.Sector, error) {
 
 func (s *Service) CreateSector(ctx context.Context, name string) (contracts.Sector, error) {
 	return s.repo.CreateSector(ctx, name)
+}
+
+func (s *Service) CreateSectorFull(ctx context.Context, name string, description *string, churchID *string) (contracts.Sector, error) {
+	return s.repo.CreateSectorFull(ctx, name, description, churchID)
+}
+
+func (s *Service) UpdateSector(ctx context.Context, id, name string, description *string, churchID *string) (contracts.Sector, error) {
+	return s.repo.UpdateSector(ctx, id, name, description, churchID)
+}
+
+func (s *Service) DeleteSector(ctx context.Context, id string) error {
+	return s.repo.DeleteSector(ctx, id)
+}
+
+// --- LocalChurch CRUD ---
+
+func (s *Service) ListChurches(ctx context.Context) ([]contracts.LocalChurch, error) {
+	return s.repo.ListChurches(ctx)
+}
+
+func (s *Service) GetChurch(ctx context.Context, id string) (contracts.LocalChurch, error) {
+	return s.repo.GetChurch(ctx, id)
+}
+
+func (s *Service) CreateChurch(ctx context.Context, name, center, description, slug string) (contracts.LocalChurch, error) {
+	return s.repo.CreateChurch(ctx, name, center, description, slug)
+}
+
+func (s *Service) UpdateChurch(ctx context.Context, id, name, center, description, slug string) (contracts.LocalChurch, error) {
+	return s.repo.UpdateChurch(ctx, id, name, center, description, slug)
+}
+
+func (s *Service) DeleteChurch(ctx context.Context, id string) error {
+	return s.repo.DeleteChurch(ctx, id)
 }

@@ -35,3 +35,18 @@ export function updateProfile(data: ProfileUpdatePayload) {
     body: JSON.stringify(data),
   });
 }
+
+export interface UserProfile {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneNumber?: string;
+  address?: string;
+  dateOfBirth?: string;
+  teamId?: string;
+  sectorId?: string;
+}
+
+export function fetchProfile() {
+  return apiFetch<UserProfile>("/profile/me");
+}

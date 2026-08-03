@@ -18,11 +18,23 @@ type Districts func(*sql.Selector)
 // FollowUp is the predicate function for followup builders.
 type FollowUp func(*sql.Selector)
 
+// GuardianRelationship is the predicate function for guardianrelationship builders.
+type GuardianRelationship func(*sql.Selector)
+
+// KidsMinistryProfile is the predicate function for kidsministryprofile builders.
+type KidsMinistryProfile func(*sql.Selector)
+
 // LocalChurch is the predicate function for localchurch builders.
 type LocalChurch func(*sql.Selector)
 
 // Member is the predicate function for member builders.
 type Member func(*sql.Selector)
+
+// MemberTeam is the predicate function for memberteam builders.
+type MemberTeam func(*sql.Selector)
+
+// MembershipStageHistory is the predicate function for membershipstagehistory builders.
+type MembershipStageHistory func(*sql.Selector)
 
 // OtpInvites is the predicate function for otpinvites builders.
 type OtpInvites func(*sql.Selector)

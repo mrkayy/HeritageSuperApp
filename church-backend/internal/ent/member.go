@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
+	"github.com/hofchurchng/church-backend/internal/ent/kidsministryprofile"
 	"github.com/hofchurchng/church-backend/internal/ent/member"
 )
 
@@ -18,13 +19,120 @@ type Member struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID uuid.UUID `json:"id,omitempty"`
-	// Name holds the value of the "name" field.
-	Name string `json:"name,omitempty"`
+	// FirstName holds the value of the "first_name" field.
+	FirstName string `json:"first_name,omitempty"`
+	// Surname holds the value of the "surname" field.
+	Surname string `json:"surname,omitempty"`
 	// Email holds the value of the "email" field.
-	Email string `json:"email,omitempty"`
-	// JoinedAt holds the value of the "joined_at" field.
-	JoinedAt     time.Time `json:"joined_at,omitempty"`
+	Email *string `json:"email,omitempty"`
+	// PhoneNumber holds the value of the "phone_number" field.
+	PhoneNumber *string `json:"phone_number,omitempty"`
+	// HomeAddress holds the value of the "home_address" field.
+	HomeAddress *string `json:"home_address,omitempty"`
+	// Gender holds the value of the "gender" field.
+	Gender *member.Gender `json:"gender,omitempty"`
+	// DateOfBirthDay holds the value of the "date_of_birth_day" field.
+	DateOfBirthDay *int16 `json:"date_of_birth_day,omitempty"`
+	// DateOfBirthMonth holds the value of the "date_of_birth_month" field.
+	DateOfBirthMonth *int16 `json:"date_of_birth_month,omitempty"`
+	// MaritalStatus holds the value of the "marital_status" field.
+	MaritalStatus *member.MaritalStatus `json:"marital_status,omitempty"`
+	// WeddingAnniversaryDay holds the value of the "wedding_anniversary_day" field.
+	WeddingAnniversaryDay *int16 `json:"wedding_anniversary_day,omitempty"`
+	// WeddingAnniversaryMonth holds the value of the "wedding_anniversary_month" field.
+	WeddingAnniversaryMonth *int16 `json:"wedding_anniversary_month,omitempty"`
+	// JobOccupation holds the value of the "job_occupation" field.
+	JobOccupation *string `json:"job_occupation,omitempty"`
+	// PhotoURL holds the value of the "photo_url" field.
+	PhotoURL *string `json:"photo_url,omitempty"`
+	// EmergencyContactName holds the value of the "emergency_contact_name" field.
+	EmergencyContactName *string `json:"emergency_contact_name,omitempty"`
+	// EmergencyContactPhone holds the value of the "emergency_contact_phone" field.
+	EmergencyContactPhone *string `json:"emergency_contact_phone,omitempty"`
+	// Allergies holds the value of the "allergies" field.
+	Allergies *string `json:"allergies,omitempty"`
+	// MedicalNotes holds the value of the "medical_notes" field.
+	MedicalNotes *string `json:"medical_notes,omitempty"`
+	// IsPlaceholder holds the value of the "is_placeholder" field.
+	IsPlaceholder bool `json:"is_placeholder,omitempty"`
+	// SourceTeam holds the value of the "source_team" field.
+	SourceTeam *string `json:"source_team,omitempty"`
+	// CreatedBy holds the value of the "created_by" field.
+	CreatedBy *uuid.UUID `json:"created_by,omitempty"`
+	// CreatedAt holds the value of the "created_at" field.
+	CreatedAt time.Time `json:"created_at,omitempty"`
+	// UpdatedAt holds the value of the "updated_at" field.
+	UpdatedAt time.Time `json:"updated_at,omitempty"`
+	// CurrentStage holds the value of the "current_stage" field.
+	CurrentStage member.CurrentStage `json:"current_stage,omitempty"`
+	// Edges holds the relations/edges for other nodes in the graph.
+	// The values are being populated by the MemberQuery when eager-loading is set.
+	Edges        MemberEdges `json:"edges"`
 	selectValues sql.SelectValues
+}
+
+// MemberEdges holds the relations/edges for other nodes in the graph.
+type MemberEdges struct {
+	// StageHistories holds the value of the stage_histories edge.
+	StageHistories []*MembershipStageHistory `json:"stage_histories,omitempty"`
+	// Teams holds the value of the teams edge.
+	Teams []*MemberTeam `json:"teams,omitempty"`
+	// GuardianRelationshipsAsChild holds the value of the guardian_relationships_as_child edge.
+	GuardianRelationshipsAsChild []*GuardianRelationship `json:"guardian_relationships_as_child,omitempty"`
+	// GuardianRelationshipsAsGuardian holds the value of the guardian_relationships_as_guardian edge.
+	GuardianRelationshipsAsGuardian []*GuardianRelationship `json:"guardian_relationships_as_guardian,omitempty"`
+	// KidsMinistryProfile holds the value of the kids_ministry_profile edge.
+	KidsMinistryProfile *KidsMinistryProfile `json:"kids_ministry_profile,omitempty"`
+	// loadedTypes holds the information for reporting if a
+	// type was loaded (or requested) in eager-loading or not.
+	loadedTypes [5]bool
+}
+
+// StageHistoriesOrErr returns the StageHistories value or an error if the edge
+// was not loaded in eager-loading.
+func (e MemberEdges) StageHistoriesOrErr() ([]*MembershipStageHistory, error) {
+	if e.loadedTypes[0] {
+		return e.StageHistories, nil
+	}
+	return nil, &NotLoadedError{edge: "stage_histories"}
+}
+
+// TeamsOrErr returns the Teams value or an error if the edge
+// was not loaded in eager-loading.
+func (e MemberEdges) TeamsOrErr() ([]*MemberTeam, error) {
+	if e.loadedTypes[1] {
+		return e.Teams, nil
+	}
+	return nil, &NotLoadedError{edge: "teams"}
+}
+
+// GuardianRelationshipsAsChildOrErr returns the GuardianRelationshipsAsChild value or an error if the edge
+// was not loaded in eager-loading.
+func (e MemberEdges) GuardianRelationshipsAsChildOrErr() ([]*GuardianRelationship, error) {
+	if e.loadedTypes[2] {
+		return e.GuardianRelationshipsAsChild, nil
+	}
+	return nil, &NotLoadedError{edge: "guardian_relationships_as_child"}
+}
+
+// GuardianRelationshipsAsGuardianOrErr returns the GuardianRelationshipsAsGuardian value or an error if the edge
+// was not loaded in eager-loading.
+func (e MemberEdges) GuardianRelationshipsAsGuardianOrErr() ([]*GuardianRelationship, error) {
+	if e.loadedTypes[3] {
+		return e.GuardianRelationshipsAsGuardian, nil
+	}
+	return nil, &NotLoadedError{edge: "guardian_relationships_as_guardian"}
+}
+
+// KidsMinistryProfileOrErr returns the KidsMinistryProfile value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e MemberEdges) KidsMinistryProfileOrErr() (*KidsMinistryProfile, error) {
+	if e.KidsMinistryProfile != nil {
+		return e.KidsMinistryProfile, nil
+	} else if e.loadedTypes[4] {
+		return nil, &NotFoundError{label: kidsministryprofile.Label}
+	}
+	return nil, &NotLoadedError{edge: "kids_ministry_profile"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -32,9 +140,15 @@ func (*Member) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case member.FieldName, member.FieldEmail:
+		case member.FieldCreatedBy:
+			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
+		case member.FieldIsPlaceholder:
+			values[i] = new(sql.NullBool)
+		case member.FieldDateOfBirthDay, member.FieldDateOfBirthMonth, member.FieldWeddingAnniversaryDay, member.FieldWeddingAnniversaryMonth:
+			values[i] = new(sql.NullInt64)
+		case member.FieldFirstName, member.FieldSurname, member.FieldEmail, member.FieldPhoneNumber, member.FieldHomeAddress, member.FieldGender, member.FieldMaritalStatus, member.FieldJobOccupation, member.FieldPhotoURL, member.FieldEmergencyContactName, member.FieldEmergencyContactPhone, member.FieldAllergies, member.FieldMedicalNotes, member.FieldSourceTeam, member.FieldCurrentStage:
 			values[i] = new(sql.NullString)
-		case member.FieldJoinedAt:
+		case member.FieldCreatedAt, member.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
 		case member.FieldID:
 			values[i] = new(uuid.UUID)
@@ -59,23 +173,160 @@ func (_m *Member) assignValues(columns []string, values []any) error {
 			} else if value != nil {
 				_m.ID = *value
 			}
-		case member.FieldName:
+		case member.FieldFirstName:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field name", values[i])
+				return fmt.Errorf("unexpected type %T for field first_name", values[i])
 			} else if value.Valid {
-				_m.Name = value.String
+				_m.FirstName = value.String
+			}
+		case member.FieldSurname:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field surname", values[i])
+			} else if value.Valid {
+				_m.Surname = value.String
 			}
 		case member.FieldEmail:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field email", values[i])
 			} else if value.Valid {
-				_m.Email = value.String
+				_m.Email = new(string)
+				*_m.Email = value.String
 			}
-		case member.FieldJoinedAt:
-			if value, ok := values[i].(*sql.NullTime); !ok {
-				return fmt.Errorf("unexpected type %T for field joined_at", values[i])
+		case member.FieldPhoneNumber:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field phone_number", values[i])
 			} else if value.Valid {
-				_m.JoinedAt = value.Time
+				_m.PhoneNumber = new(string)
+				*_m.PhoneNumber = value.String
+			}
+		case member.FieldHomeAddress:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field home_address", values[i])
+			} else if value.Valid {
+				_m.HomeAddress = new(string)
+				*_m.HomeAddress = value.String
+			}
+		case member.FieldGender:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field gender", values[i])
+			} else if value.Valid {
+				_m.Gender = new(member.Gender)
+				*_m.Gender = member.Gender(value.String)
+			}
+		case member.FieldDateOfBirthDay:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field date_of_birth_day", values[i])
+			} else if value.Valid {
+				_m.DateOfBirthDay = new(int16)
+				*_m.DateOfBirthDay = int16(value.Int64)
+			}
+		case member.FieldDateOfBirthMonth:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field date_of_birth_month", values[i])
+			} else if value.Valid {
+				_m.DateOfBirthMonth = new(int16)
+				*_m.DateOfBirthMonth = int16(value.Int64)
+			}
+		case member.FieldMaritalStatus:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field marital_status", values[i])
+			} else if value.Valid {
+				_m.MaritalStatus = new(member.MaritalStatus)
+				*_m.MaritalStatus = member.MaritalStatus(value.String)
+			}
+		case member.FieldWeddingAnniversaryDay:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field wedding_anniversary_day", values[i])
+			} else if value.Valid {
+				_m.WeddingAnniversaryDay = new(int16)
+				*_m.WeddingAnniversaryDay = int16(value.Int64)
+			}
+		case member.FieldWeddingAnniversaryMonth:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field wedding_anniversary_month", values[i])
+			} else if value.Valid {
+				_m.WeddingAnniversaryMonth = new(int16)
+				*_m.WeddingAnniversaryMonth = int16(value.Int64)
+			}
+		case member.FieldJobOccupation:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field job_occupation", values[i])
+			} else if value.Valid {
+				_m.JobOccupation = new(string)
+				*_m.JobOccupation = value.String
+			}
+		case member.FieldPhotoURL:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field photo_url", values[i])
+			} else if value.Valid {
+				_m.PhotoURL = new(string)
+				*_m.PhotoURL = value.String
+			}
+		case member.FieldEmergencyContactName:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field emergency_contact_name", values[i])
+			} else if value.Valid {
+				_m.EmergencyContactName = new(string)
+				*_m.EmergencyContactName = value.String
+			}
+		case member.FieldEmergencyContactPhone:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field emergency_contact_phone", values[i])
+			} else if value.Valid {
+				_m.EmergencyContactPhone = new(string)
+				*_m.EmergencyContactPhone = value.String
+			}
+		case member.FieldAllergies:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field allergies", values[i])
+			} else if value.Valid {
+				_m.Allergies = new(string)
+				*_m.Allergies = value.String
+			}
+		case member.FieldMedicalNotes:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field medical_notes", values[i])
+			} else if value.Valid {
+				_m.MedicalNotes = new(string)
+				*_m.MedicalNotes = value.String
+			}
+		case member.FieldIsPlaceholder:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field is_placeholder", values[i])
+			} else if value.Valid {
+				_m.IsPlaceholder = value.Bool
+			}
+		case member.FieldSourceTeam:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field source_team", values[i])
+			} else if value.Valid {
+				_m.SourceTeam = new(string)
+				*_m.SourceTeam = value.String
+			}
+		case member.FieldCreatedBy:
+			if value, ok := values[i].(*sql.NullScanner); !ok {
+				return fmt.Errorf("unexpected type %T for field created_by", values[i])
+			} else if value.Valid {
+				_m.CreatedBy = new(uuid.UUID)
+				*_m.CreatedBy = *value.S.(*uuid.UUID)
+			}
+		case member.FieldCreatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field created_at", values[i])
+			} else if value.Valid {
+				_m.CreatedAt = value.Time
+			}
+		case member.FieldUpdatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
+			} else if value.Valid {
+				_m.UpdatedAt = value.Time
+			}
+		case member.FieldCurrentStage:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field current_stage", values[i])
+			} else if value.Valid {
+				_m.CurrentStage = member.CurrentStage(value.String)
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
@@ -88,6 +339,31 @@ func (_m *Member) assignValues(columns []string, values []any) error {
 // This includes values selected through modifiers, order, etc.
 func (_m *Member) Value(name string) (ent.Value, error) {
 	return _m.selectValues.Get(name)
+}
+
+// QueryStageHistories queries the "stage_histories" edge of the Member entity.
+func (_m *Member) QueryStageHistories() *MembershipStageHistoryQuery {
+	return NewMemberClient(_m.config).QueryStageHistories(_m)
+}
+
+// QueryTeams queries the "teams" edge of the Member entity.
+func (_m *Member) QueryTeams() *MemberTeamQuery {
+	return NewMemberClient(_m.config).QueryTeams(_m)
+}
+
+// QueryGuardianRelationshipsAsChild queries the "guardian_relationships_as_child" edge of the Member entity.
+func (_m *Member) QueryGuardianRelationshipsAsChild() *GuardianRelationshipQuery {
+	return NewMemberClient(_m.config).QueryGuardianRelationshipsAsChild(_m)
+}
+
+// QueryGuardianRelationshipsAsGuardian queries the "guardian_relationships_as_guardian" edge of the Member entity.
+func (_m *Member) QueryGuardianRelationshipsAsGuardian() *GuardianRelationshipQuery {
+	return NewMemberClient(_m.config).QueryGuardianRelationshipsAsGuardian(_m)
+}
+
+// QueryKidsMinistryProfile queries the "kids_ministry_profile" edge of the Member entity.
+func (_m *Member) QueryKidsMinistryProfile() *KidsMinistryProfileQuery {
+	return NewMemberClient(_m.config).QueryKidsMinistryProfile(_m)
 }
 
 // Update returns a builder for updating this Member.
@@ -113,14 +389,108 @@ func (_m *Member) String() string {
 	var builder strings.Builder
 	builder.WriteString("Member(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
-	builder.WriteString("name=")
-	builder.WriteString(_m.Name)
+	builder.WriteString("first_name=")
+	builder.WriteString(_m.FirstName)
 	builder.WriteString(", ")
-	builder.WriteString("email=")
-	builder.WriteString(_m.Email)
+	builder.WriteString("surname=")
+	builder.WriteString(_m.Surname)
 	builder.WriteString(", ")
-	builder.WriteString("joined_at=")
-	builder.WriteString(_m.JoinedAt.Format(time.ANSIC))
+	if v := _m.Email; v != nil {
+		builder.WriteString("email=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.PhoneNumber; v != nil {
+		builder.WriteString("phone_number=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.HomeAddress; v != nil {
+		builder.WriteString("home_address=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.Gender; v != nil {
+		builder.WriteString("gender=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.DateOfBirthDay; v != nil {
+		builder.WriteString("date_of_birth_day=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.DateOfBirthMonth; v != nil {
+		builder.WriteString("date_of_birth_month=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.MaritalStatus; v != nil {
+		builder.WriteString("marital_status=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.WeddingAnniversaryDay; v != nil {
+		builder.WriteString("wedding_anniversary_day=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.WeddingAnniversaryMonth; v != nil {
+		builder.WriteString("wedding_anniversary_month=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.JobOccupation; v != nil {
+		builder.WriteString("job_occupation=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.PhotoURL; v != nil {
+		builder.WriteString("photo_url=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.EmergencyContactName; v != nil {
+		builder.WriteString("emergency_contact_name=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.EmergencyContactPhone; v != nil {
+		builder.WriteString("emergency_contact_phone=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.Allergies; v != nil {
+		builder.WriteString("allergies=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.MedicalNotes; v != nil {
+		builder.WriteString("medical_notes=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	builder.WriteString("is_placeholder=")
+	builder.WriteString(fmt.Sprintf("%v", _m.IsPlaceholder))
+	builder.WriteString(", ")
+	if v := _m.SourceTeam; v != nil {
+		builder.WriteString("source_team=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.CreatedBy; v != nil {
+		builder.WriteString("created_by=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	builder.WriteString("created_at=")
+	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("updated_at=")
+	builder.WriteString(_m.UpdatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("current_stage=")
+	builder.WriteString(fmt.Sprintf("%v", _m.CurrentStage))
 	builder.WriteByte(')')
 	return builder.String()
 }

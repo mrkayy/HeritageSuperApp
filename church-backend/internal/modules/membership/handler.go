@@ -40,8 +40,26 @@ func (h *Handler) get(c echo.Context) error {
 }
 
 type createPayload struct {
-	Name  string `json:"name"`
-	Email string `json:"email"`
+	FirstName               string  `json:"firstName"`
+	Surname                 string  `json:"surname"`
+	Email                   *string `json:"email"`
+	PhoneNumber             *string `json:"phoneNumber"`
+	HomeAddress             *string `json:"homeAddress"`
+	Gender                  *string `json:"gender"`
+	DateOfBirthDay          *int16  `json:"dateOfBirthDay"`
+	DateOfBirthMonth        *int16  `json:"dateOfBirthMonth"`
+	MaritalStatus           *string `json:"maritalStatus"`
+	WeddingAnniversaryDay   *int16  `json:"weddingAnniversaryDay"`
+	WeddingAnniversaryMonth *int16  `json:"weddingAnniversaryMonth"`
+	JobOccupation           *string `json:"jobOccupation"`
+	PhotoURL                *string `json:"photoUrl"`
+	EmergencyContactName    *string `json:"emergencyContactName"`
+	EmergencyContactPhone   *string `json:"emergencyContactPhone"`
+	Allergies               *string `json:"allergies"`
+	MedicalNotes            *string `json:"medicalNotes"`
+	IsPlaceholder           bool    `json:"isPlaceholder"`
+	SourceTeam              *string `json:"sourceTeam"`
+	CurrentStage            *string `json:"currentStage"`
 }
 
 func (h *Handler) add(c echo.Context) error {
@@ -49,11 +67,32 @@ func (h *Handler) add(c echo.Context) error {
 	if err := c.Bind(&p); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
-	if p.Name == "" || p.Email == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "name and email are required")
+	if p.FirstName == "" || p.Surname == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "firstName and surname are required")
 	}
 
-	member, err := h.svc.AddMember(c.Request().Context(), p.Name, p.Email)
+	member, err := h.svc.AddMember(c.Request().Context(), AddMemberInput{
+		FirstName:               p.FirstName,
+		Surname:                 p.Surname,
+		Email:                   p.Email,
+		PhoneNumber:             p.PhoneNumber,
+		HomeAddress:             p.HomeAddress,
+		Gender:                  p.Gender,
+		DateOfBirthDay:          p.DateOfBirthDay,
+		DateOfBirthMonth:        p.DateOfBirthMonth,
+		MaritalStatus:           p.MaritalStatus,
+		WeddingAnniversaryDay:   p.WeddingAnniversaryDay,
+		WeddingAnniversaryMonth: p.WeddingAnniversaryMonth,
+		JobOccupation:           p.JobOccupation,
+		PhotoURL:                p.PhotoURL,
+		EmergencyContactName:    p.EmergencyContactName,
+		EmergencyContactPhone:   p.EmergencyContactPhone,
+		Allergies:               p.Allergies,
+		MedicalNotes:            p.MedicalNotes,
+		IsPlaceholder:           p.IsPlaceholder,
+		SourceTeam:              p.SourceTeam,
+		CurrentStage:            p.CurrentStage,
+	})
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}

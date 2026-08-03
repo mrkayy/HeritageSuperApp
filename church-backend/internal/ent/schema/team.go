@@ -60,6 +60,7 @@ func (Team) Edges() []ent.Edge {
 		edge.To("transport_requests", TransportRequest.Type),
 		edge.To("user_teams", UserTeam.Type),
 		edge.To("church_teams", ChurchTeams.Type),
+		edge.To("member_teams", MemberTeam.Type),
 	}
 }
 

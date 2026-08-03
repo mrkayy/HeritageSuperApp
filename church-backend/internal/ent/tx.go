@@ -20,10 +20,18 @@ type Tx struct {
 	Districts *DistrictsClient
 	// FollowUp is the client for interacting with the FollowUp builders.
 	FollowUp *FollowUpClient
+	// GuardianRelationship is the client for interacting with the GuardianRelationship builders.
+	GuardianRelationship *GuardianRelationshipClient
+	// KidsMinistryProfile is the client for interacting with the KidsMinistryProfile builders.
+	KidsMinistryProfile *KidsMinistryProfileClient
 	// LocalChurch is the client for interacting with the LocalChurch builders.
 	LocalChurch *LocalChurchClient
 	// Member is the client for interacting with the Member builders.
 	Member *MemberClient
+	// MemberTeam is the client for interacting with the MemberTeam builders.
+	MemberTeam *MemberTeamClient
+	// MembershipStageHistory is the client for interacting with the MembershipStageHistory builders.
+	MembershipStageHistory *MembershipStageHistoryClient
 	// OtpInvites is the client for interacting with the OtpInvites builders.
 	OtpInvites *OtpInvitesClient
 	// OutreachReport is the client for interacting with the OutreachReport builders.
@@ -183,8 +191,12 @@ func (tx *Tx) init() {
 	tx.ChurchTeams = NewChurchTeamsClient(tx.config)
 	tx.Districts = NewDistrictsClient(tx.config)
 	tx.FollowUp = NewFollowUpClient(tx.config)
+	tx.GuardianRelationship = NewGuardianRelationshipClient(tx.config)
+	tx.KidsMinistryProfile = NewKidsMinistryProfileClient(tx.config)
 	tx.LocalChurch = NewLocalChurchClient(tx.config)
 	tx.Member = NewMemberClient(tx.config)
+	tx.MemberTeam = NewMemberTeamClient(tx.config)
+	tx.MembershipStageHistory = NewMembershipStageHistoryClient(tx.config)
 	tx.OtpInvites = NewOtpInvitesClient(tx.config)
 	tx.OutreachReport = NewOutreachReportClient(tx.config)
 	tx.OutreachTargets = NewOutreachTargetsClient(tx.config)

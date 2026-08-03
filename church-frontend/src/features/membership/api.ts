@@ -1,24 +1,67 @@
 import { apiFetch } from "../../shared/auth/apiClient";
 
 export interface Member {
-  ID: string;
-  Name: string;
-  Email: string;
+  id: string;
+  firstName: string;
+  surname: string;
+  email: string | null;
+  phoneNumber: string | null;
+  homeAddress: string | null;
+  gender: 'male' | 'female' | null;
+  dateOfBirthDay: number | null;
+  dateOfBirthMonth: number | null;
+  maritalStatus: 'single' | 'married' | 'widowed' | 'divorced' | 'separated' | null;
+  weddingAnniversaryDay: number | null;
+  weddingAnniversaryMonth: number | null;
+  jobOccupation: string | null;
+  photoUrl: string | null;
+  emergencyContactName: string | null;
+  emergencyContactPhone: string | null;
+  allergies: string | null;
+  medicalNotes: string | null;
+  isPlaceholder: boolean;
+  sourceTeam: string | null;
+  createdBy: string | null;
+  currentStage: string;
+  createdAt: string;
+  updatedAt: string;
+  name: string;
 }
 
-// apiFetch already attaches the SSO token - this feature never thinks
-// about auth at all, it just calls its own backend module's endpoint.
+export interface CreateMemberPayload {
+  firstName: string;
+  surname: string;
+  email?: string;
+  phoneNumber?: string;
+  homeAddress?: string;
+  gender?: 'male' | 'female';
+  dateOfBirthDay?: number;
+  dateOfBirthMonth?: number;
+  maritalStatus?: 'single' | 'married' | 'widowed' | 'divorced' | 'separated';
+  weddingAnniversaryDay?: number;
+  weddingAnniversaryMonth?: number;
+  jobOccupation?: string;
+  photoUrl?: string;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
+  allergies?: string;
+  medicalNotes?: string;
+  isPlaceholder?: boolean;
+  sourceTeam?: string;
+  currentStage?: string;
+}
+
 export function listMembers() {
   return apiFetch<Member[]>("/members");
 }
 
-export function createMember(name: string, email: string) {
+export function createMember(payload: CreateMemberPayload) {
   return apiFetch<Member>("/members", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ name, email }),
+    body: JSON.stringify(payload),
   });
 }
 

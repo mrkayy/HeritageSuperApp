@@ -45,6 +45,8 @@ const (
 	EdgeUserTeams = "user_teams"
 	// EdgeChurchTeams holds the string denoting the church_teams edge name in mutations.
 	EdgeChurchTeams = "church_teams"
+	// EdgeMemberTeams holds the string denoting the member_teams edge name in mutations.
+	EdgeMemberTeams = "member_teams"
 	// LocalChurchFieldID holds the string denoting the ID field of the LocalChurch.
 	LocalChurchFieldID = "church_id"
 	// SectorFieldID holds the string denoting the ID field of the Sector.
@@ -63,6 +65,8 @@ const (
 	UserTeamFieldID = "steward_team_id"
 	// ChurchTeamsFieldID holds the string denoting the ID field of the ChurchTeams.
 	ChurchTeamsFieldID = "church_team_id"
+	// MemberTeamFieldID holds the string denoting the ID field of the MemberTeam.
+	MemberTeamFieldID = "id"
 	// Table holds the table name of the team in the database.
 	Table = "team"
 	// ChurchTable is the table that holds the church relation/edge.
@@ -128,6 +132,13 @@ const (
 	ChurchTeamsInverseTable = "church_teams"
 	// ChurchTeamsColumn is the table column denoting the church_teams relation/edge.
 	ChurchTeamsColumn = "team_id"
+	// MemberTeamsTable is the table that holds the member_teams relation/edge.
+	MemberTeamsTable = "member_teams"
+	// MemberTeamsInverseTable is the table name for the MemberTeam entity.
+	// It exists in this package in order to avoid circular dependency with the "memberteam" package.
+	MemberTeamsInverseTable = "member_teams"
+	// MemberTeamsColumn is the table column denoting the member_teams relation/edge.
+	MemberTeamsColumn = "team_id"
 )
 
 // Columns holds all SQL columns for team fields.
@@ -311,6 +322,20 @@ func ByChurchTeams(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newChurchTeamsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByMemberTeamsCount orders the results by member_teams count.
+func ByMemberTeamsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newMemberTeamsStep(), opts...)
+	}
+}
+
+// ByMemberTeams orders the results by member_teams terms.
+func ByMemberTeams(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newMemberTeamsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newChurchStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -372,5 +397,12 @@ func newChurchTeamsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(ChurchTeamsInverseTable, ChurchTeamsFieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, ChurchTeamsTable, ChurchTeamsColumn),
+	)
+}
+func newMemberTeamsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(MemberTeamsInverseTable, MemberTeamFieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, MemberTeamsTable, MemberTeamsColumn),
 	)
 }

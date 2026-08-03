@@ -111,6 +111,66 @@ var (
 			},
 		},
 	}
+	// GuardianRelationshipsColumns holds the columns for the "guardian_relationships" table.
+	GuardianRelationshipsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "relationship", Type: field.TypeEnum, Enums: []string{"parent", "guardian", "grandparent", "sibling_guardian"}, Default: "parent"},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "child_member_id", Type: field.TypeUUID},
+		{Name: "guardian_member_id", Type: field.TypeUUID},
+	}
+	// GuardianRelationshipsTable holds the schema information for the "guardian_relationships" table.
+	GuardianRelationshipsTable = &schema.Table{
+		Name:       "guardian_relationships",
+		Columns:    GuardianRelationshipsColumns,
+		PrimaryKey: []*schema.Column{GuardianRelationshipsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "guardian_relationships_members_guardian_relationships_as_child",
+				Columns:    []*schema.Column{GuardianRelationshipsColumns[3]},
+				RefColumns: []*schema.Column{MembersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "guardian_relationships_members_guardian_relationships_as_guardian",
+				Columns:    []*schema.Column{GuardianRelationshipsColumns[4]},
+				RefColumns: []*schema.Column{MembersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "guardianrelationship_child_member_id_guardian_member_id",
+				Unique:  true,
+				Columns: []*schema.Column{GuardianRelationshipsColumns[3], GuardianRelationshipsColumns[4]},
+			},
+		},
+	}
+	// KidsMinistryProfilesColumns holds the columns for the "kids_ministry_profiles" table.
+	KidsMinistryProfilesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "grade_level", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "classroom", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "allergies", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "medical_notes", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "checkin_code", Type: field.TypeString, Unique: true, Nullable: true, Size: 2147483647},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "member_id", Type: field.TypeUUID, Unique: true},
+	}
+	// KidsMinistryProfilesTable holds the schema information for the "kids_ministry_profiles" table.
+	KidsMinistryProfilesTable = &schema.Table{
+		Name:       "kids_ministry_profiles",
+		Columns:    KidsMinistryProfilesColumns,
+		PrimaryKey: []*schema.Column{KidsMinistryProfilesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "kids_ministry_profiles_members_kids_ministry_profile",
+				Columns:    []*schema.Column{KidsMinistryProfilesColumns[7]},
+				RefColumns: []*schema.Column{MembersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+	}
 	// LocalChurchColumns holds the columns for the "local_church" table.
 	LocalChurchColumns = []*schema.Column{
 		{Name: "church_id", Type: field.TypeUUID},
@@ -129,15 +189,93 @@ var (
 	// MembersColumns holds the columns for the "members" table.
 	MembersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
-		{Name: "name", Type: field.TypeString, Size: 2147483647},
-		{Name: "email", Type: field.TypeString, Unique: true, Size: 2147483647},
-		{Name: "joined_at", Type: field.TypeTime},
+		{Name: "first_name", Type: field.TypeString, Size: 2147483647},
+		{Name: "surname", Type: field.TypeString, Size: 2147483647},
+		{Name: "email", Type: field.TypeString, Unique: true, Nullable: true, Size: 2147483647},
+		{Name: "phone_number", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "home_address", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "gender", Type: field.TypeEnum, Nullable: true, Enums: []string{"male", "female"}},
+		{Name: "date_of_birth_day", Type: field.TypeInt16, Nullable: true},
+		{Name: "date_of_birth_month", Type: field.TypeInt16, Nullable: true},
+		{Name: "marital_status", Type: field.TypeEnum, Nullable: true, Enums: []string{"single", "married", "widowed", "divorced", "separated"}},
+		{Name: "wedding_anniversary_day", Type: field.TypeInt16, Nullable: true},
+		{Name: "wedding_anniversary_month", Type: field.TypeInt16, Nullable: true},
+		{Name: "job_occupation", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "photo_url", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "emergency_contact_name", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "emergency_contact_phone", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "allergies", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "medical_notes", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "is_placeholder", Type: field.TypeBool, Default: false},
+		{Name: "source_team", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "created_by", Type: field.TypeUUID, Nullable: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "current_stage", Type: field.TypeEnum, Enums: []string{"first_time_guest", "foundation_class", "sunday_school_module_1", "sunday_school_module_2", "sunday_school_module_3", "membership_class", "stewardship"}, Default: "first_time_guest"},
 	}
 	// MembersTable holds the schema information for the "members" table.
 	MembersTable = &schema.Table{
 		Name:       "members",
 		Columns:    MembersColumns,
 		PrimaryKey: []*schema.Column{MembersColumns[0]},
+	}
+	// MemberTeamsColumns holds the columns for the "member_teams" table.
+	MemberTeamsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "is_primary", Type: field.TypeBool, Default: false},
+		{Name: "joined_at", Type: field.TypeTime},
+		{Name: "member_id", Type: field.TypeUUID},
+		{Name: "team_id", Type: field.TypeUUID},
+	}
+	// MemberTeamsTable holds the schema information for the "member_teams" table.
+	MemberTeamsTable = &schema.Table{
+		Name:       "member_teams",
+		Columns:    MemberTeamsColumns,
+		PrimaryKey: []*schema.Column{MemberTeamsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "member_teams_members_teams",
+				Columns:    []*schema.Column{MemberTeamsColumns[3]},
+				RefColumns: []*schema.Column{MembersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "member_teams_team_member_teams",
+				Columns:    []*schema.Column{MemberTeamsColumns[4]},
+				RefColumns: []*schema.Column{TeamColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "memberteam_member_id_team_id",
+				Unique:  true,
+				Columns: []*schema.Column{MemberTeamsColumns[3], MemberTeamsColumns[4]},
+			},
+		},
+	}
+	// MembershipStageHistoryColumns holds the columns for the "membership_stage_history" table.
+	MembershipStageHistoryColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "stage", Type: field.TypeEnum, Enums: []string{"first_time_guest", "foundation_class", "sunday_school_module_1", "sunday_school_module_2", "sunday_school_module_3", "membership_class", "stewardship"}},
+		{Name: "entered_at", Type: field.TypeTime},
+		{Name: "recorded_by", Type: field.TypeUUID, Nullable: true},
+		{Name: "notes", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "member_id", Type: field.TypeUUID},
+	}
+	// MembershipStageHistoryTable holds the schema information for the "membership_stage_history" table.
+	MembershipStageHistoryTable = &schema.Table{
+		Name:       "membership_stage_history",
+		Columns:    MembershipStageHistoryColumns,
+		PrimaryKey: []*schema.Column{MembershipStageHistoryColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "membership_stage_history_members_stage_histories",
+				Columns:    []*schema.Column{MembershipStageHistoryColumns[5]},
+				RefColumns: []*schema.Column{MembersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
 	}
 	// OtpInvitesColumns holds the columns for the "otp_invites" table.
 	OtpInvitesColumns = []*schema.Column{
@@ -557,8 +695,12 @@ var (
 		ChurchTeamsTable,
 		DistrictsTable,
 		FollowUpTable,
+		GuardianRelationshipsTable,
+		KidsMinistryProfilesTable,
 		LocalChurchTable,
 		MembersTable,
+		MemberTeamsTable,
+		MembershipStageHistoryTable,
 		OtpInvitesTable,
 		OutreachReportTable,
 		OutreachTargetsTable,
@@ -592,11 +734,29 @@ func init() {
 	FollowUpTable.Annotation = &entsql.Annotation{
 		Table: "follow_up",
 	}
+	GuardianRelationshipsTable.ForeignKeys[0].RefTable = MembersTable
+	GuardianRelationshipsTable.ForeignKeys[1].RefTable = MembersTable
+	GuardianRelationshipsTable.Annotation = &entsql.Annotation{
+		Table: "guardian_relationships",
+	}
+	KidsMinistryProfilesTable.ForeignKeys[0].RefTable = MembersTable
+	KidsMinistryProfilesTable.Annotation = &entsql.Annotation{
+		Table: "kids_ministry_profiles",
+	}
 	LocalChurchTable.Annotation = &entsql.Annotation{
 		Table: "local_church",
 	}
 	MembersTable.Annotation = &entsql.Annotation{
 		Table: "members",
+	}
+	MemberTeamsTable.ForeignKeys[0].RefTable = MembersTable
+	MemberTeamsTable.ForeignKeys[1].RefTable = TeamTable
+	MemberTeamsTable.Annotation = &entsql.Annotation{
+		Table: "member_teams",
+	}
+	MembershipStageHistoryTable.ForeignKeys[0].RefTable = MembersTable
+	MembershipStageHistoryTable.Annotation = &entsql.Annotation{
+		Table: "membership_stage_history",
 	}
 	OtpInvitesTable.ForeignKeys[0].RefTable = LocalChurchTable
 	OtpInvitesTable.ForeignKeys[1].RefTable = SectorTable

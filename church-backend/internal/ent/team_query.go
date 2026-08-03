@@ -15,6 +15,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/hofchurchng/church-backend/internal/ent/churchteams"
 	"github.com/hofchurchng/church-backend/internal/ent/localchurch"
+	"github.com/hofchurchng/church-backend/internal/ent/memberteam"
 	"github.com/hofchurchng/church-backend/internal/ent/outreachreport"
 	"github.com/hofchurchng/church-backend/internal/ent/predicate"
 	"github.com/hofchurchng/church-backend/internal/ent/sector"
@@ -42,6 +43,7 @@ type TeamQuery struct {
 	withTransportRequests *TransportRequestQuery
 	withUserTeams         *UserTeamQuery
 	withChurchTeams       *ChurchTeamsQuery
+	withMemberTeams       *MemberTeamQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -276,6 +278,28 @@ func (_q *TeamQuery) QueryChurchTeams() *ChurchTeamsQuery {
 	return query
 }
 
+// QueryMemberTeams chains the current query on the "member_teams" edge.
+func (_q *TeamQuery) QueryMemberTeams() *MemberTeamQuery {
+	query := (&MemberTeamClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(team.Table, team.FieldID, selector),
+			sqlgraph.To(memberteam.Table, memberteam.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, team.MemberTeamsTable, team.MemberTeamsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // First returns the first Team entity from the query.
 // Returns a *NotFoundError when no Team was found.
 func (_q *TeamQuery) First(ctx context.Context) (*Team, error) {
@@ -477,6 +501,7 @@ func (_q *TeamQuery) Clone() *TeamQuery {
 		withTransportRequests: _q.withTransportRequests.Clone(),
 		withUserTeams:         _q.withUserTeams.Clone(),
 		withChurchTeams:       _q.withChurchTeams.Clone(),
+		withMemberTeams:       _q.withMemberTeams.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -582,6 +607,17 @@ func (_q *TeamQuery) WithChurchTeams(opts ...func(*ChurchTeamsQuery)) *TeamQuery
 	return _q
 }
 
+// WithMemberTeams tells the query-builder to eager-load the nodes that are connected to
+// the "member_teams" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *TeamQuery) WithMemberTeams(opts ...func(*MemberTeamQuery)) *TeamQuery {
+	query := (&MemberTeamClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withMemberTeams = query
+	return _q
+}
+
 // GroupBy is used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
 //
@@ -660,7 +696,7 @@ func (_q *TeamQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Team, e
 	var (
 		nodes       = []*Team{}
 		_spec       = _q.querySpec()
-		loadedTypes = [9]bool{
+		loadedTypes = [10]bool{
 			_q.withChurch != nil,
 			_q.withSector != nil,
 			_q.withVolunteers != nil,
@@ -670,6 +706,7 @@ func (_q *TeamQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Team, e
 			_q.withTransportRequests != nil,
 			_q.withUserTeams != nil,
 			_q.withChurchTeams != nil,
+			_q.withMemberTeams != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -748,6 +785,13 @@ func (_q *TeamQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Team, e
 		if err := _q.loadChurchTeams(ctx, query, nodes,
 			func(n *Team) { n.Edges.ChurchTeams = []*ChurchTeams{} },
 			func(n *Team, e *ChurchTeams) { n.Edges.ChurchTeams = append(n.Edges.ChurchTeams, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withMemberTeams; query != nil {
+		if err := _q.loadMemberTeams(ctx, query, nodes,
+			func(n *Team) { n.Edges.MemberTeams = []*MemberTeam{} },
+			func(n *Team, e *MemberTeam) { n.Edges.MemberTeams = append(n.Edges.MemberTeams, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -1025,6 +1069,36 @@ func (_q *TeamQuery) loadChurchTeams(ctx context.Context, query *ChurchTeamsQuer
 	}
 	query.Where(predicate.ChurchTeams(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(team.ChurchTeamsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.TeamID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "team_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *TeamQuery) loadMemberTeams(ctx context.Context, query *MemberTeamQuery, nodes []*Team, init func(*Team), assign func(*Team, *MemberTeam)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*Team)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(memberteam.FieldTeamID)
+	}
+	query.Where(predicate.MemberTeam(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(team.MemberTeamsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {

@@ -10,8 +10,12 @@ import (
 	"github.com/hofchurchng/church-backend/internal/ent/churchteams"
 	"github.com/hofchurchng/church-backend/internal/ent/districts"
 	"github.com/hofchurchng/church-backend/internal/ent/followup"
+	"github.com/hofchurchng/church-backend/internal/ent/guardianrelationship"
+	"github.com/hofchurchng/church-backend/internal/ent/kidsministryprofile"
 	"github.com/hofchurchng/church-backend/internal/ent/localchurch"
 	"github.com/hofchurchng/church-backend/internal/ent/member"
+	"github.com/hofchurchng/church-backend/internal/ent/membershipstagehistory"
+	"github.com/hofchurchng/church-backend/internal/ent/memberteam"
 	"github.com/hofchurchng/church-backend/internal/ent/otpinvites"
 	"github.com/hofchurchng/church-backend/internal/ent/outreachreport"
 	"github.com/hofchurchng/church-backend/internal/ent/outreachtargets"
@@ -77,6 +81,28 @@ func init() {
 	followupDescID := followupFields[0].Descriptor()
 	// followup.DefaultID holds the default value on creation for the id field.
 	followup.DefaultID = followupDescID.Default.(func() uuid.UUID)
+	guardianrelationshipFields := schema.GuardianRelationship{}.Fields()
+	_ = guardianrelationshipFields
+	// guardianrelationshipDescCreatedAt is the schema descriptor for created_at field.
+	guardianrelationshipDescCreatedAt := guardianrelationshipFields[4].Descriptor()
+	// guardianrelationship.DefaultCreatedAt holds the default value on creation for the created_at field.
+	guardianrelationship.DefaultCreatedAt = guardianrelationshipDescCreatedAt.Default.(func() time.Time)
+	// guardianrelationshipDescID is the schema descriptor for id field.
+	guardianrelationshipDescID := guardianrelationshipFields[0].Descriptor()
+	// guardianrelationship.DefaultID holds the default value on creation for the id field.
+	guardianrelationship.DefaultID = guardianrelationshipDescID.Default.(func() uuid.UUID)
+	kidsministryprofileFields := schema.KidsMinistryProfile{}.Fields()
+	_ = kidsministryprofileFields
+	// kidsministryprofileDescUpdatedAt is the schema descriptor for updated_at field.
+	kidsministryprofileDescUpdatedAt := kidsministryprofileFields[7].Descriptor()
+	// kidsministryprofile.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	kidsministryprofile.DefaultUpdatedAt = kidsministryprofileDescUpdatedAt.Default.(func() time.Time)
+	// kidsministryprofile.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	kidsministryprofile.UpdateDefaultUpdatedAt = kidsministryprofileDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// kidsministryprofileDescID is the schema descriptor for id field.
+	kidsministryprofileDescID := kidsministryprofileFields[0].Descriptor()
+	// kidsministryprofile.DefaultID holds the default value on creation for the id field.
+	kidsministryprofile.DefaultID = kidsministryprofileDescID.Default.(func() uuid.UUID)
 	localchurchFields := schema.LocalChurch{}.Fields()
 	_ = localchurchFields
 	// localchurchDescCreatedAt is the schema descriptor for created_at field.
@@ -89,14 +115,48 @@ func init() {
 	localchurch.DefaultID = localchurchDescID.Default.(func() uuid.UUID)
 	memberFields := schema.Member{}.Fields()
 	_ = memberFields
-	// memberDescJoinedAt is the schema descriptor for joined_at field.
-	memberDescJoinedAt := memberFields[3].Descriptor()
-	// member.DefaultJoinedAt holds the default value on creation for the joined_at field.
-	member.DefaultJoinedAt = memberDescJoinedAt.Default.(func() time.Time)
+	// memberDescIsPlaceholder is the schema descriptor for is_placeholder field.
+	memberDescIsPlaceholder := memberFields[18].Descriptor()
+	// member.DefaultIsPlaceholder holds the default value on creation for the is_placeholder field.
+	member.DefaultIsPlaceholder = memberDescIsPlaceholder.Default.(bool)
+	// memberDescCreatedAt is the schema descriptor for created_at field.
+	memberDescCreatedAt := memberFields[21].Descriptor()
+	// member.DefaultCreatedAt holds the default value on creation for the created_at field.
+	member.DefaultCreatedAt = memberDescCreatedAt.Default.(func() time.Time)
+	// memberDescUpdatedAt is the schema descriptor for updated_at field.
+	memberDescUpdatedAt := memberFields[22].Descriptor()
+	// member.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	member.DefaultUpdatedAt = memberDescUpdatedAt.Default.(func() time.Time)
+	// member.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	member.UpdateDefaultUpdatedAt = memberDescUpdatedAt.UpdateDefault.(func() time.Time)
 	// memberDescID is the schema descriptor for id field.
 	memberDescID := memberFields[0].Descriptor()
 	// member.DefaultID holds the default value on creation for the id field.
 	member.DefaultID = memberDescID.Default.(func() uuid.UUID)
+	memberteamFields := schema.MemberTeam{}.Fields()
+	_ = memberteamFields
+	// memberteamDescIsPrimary is the schema descriptor for is_primary field.
+	memberteamDescIsPrimary := memberteamFields[3].Descriptor()
+	// memberteam.DefaultIsPrimary holds the default value on creation for the is_primary field.
+	memberteam.DefaultIsPrimary = memberteamDescIsPrimary.Default.(bool)
+	// memberteamDescJoinedAt is the schema descriptor for joined_at field.
+	memberteamDescJoinedAt := memberteamFields[4].Descriptor()
+	// memberteam.DefaultJoinedAt holds the default value on creation for the joined_at field.
+	memberteam.DefaultJoinedAt = memberteamDescJoinedAt.Default.(func() time.Time)
+	// memberteamDescID is the schema descriptor for id field.
+	memberteamDescID := memberteamFields[0].Descriptor()
+	// memberteam.DefaultID holds the default value on creation for the id field.
+	memberteam.DefaultID = memberteamDescID.Default.(func() uuid.UUID)
+	membershipstagehistoryFields := schema.MembershipStageHistory{}.Fields()
+	_ = membershipstagehistoryFields
+	// membershipstagehistoryDescEnteredAt is the schema descriptor for entered_at field.
+	membershipstagehistoryDescEnteredAt := membershipstagehistoryFields[3].Descriptor()
+	// membershipstagehistory.DefaultEnteredAt holds the default value on creation for the entered_at field.
+	membershipstagehistory.DefaultEnteredAt = membershipstagehistoryDescEnteredAt.Default.(func() time.Time)
+	// membershipstagehistoryDescID is the schema descriptor for id field.
+	membershipstagehistoryDescID := membershipstagehistoryFields[0].Descriptor()
+	// membershipstagehistory.DefaultID holds the default value on creation for the id field.
+	membershipstagehistory.DefaultID = membershipstagehistoryDescID.Default.(func() uuid.UUID)
 	otpinvitesFields := schema.OtpInvites{}.Fields()
 	_ = otpinvitesFields
 	// otpinvitesDescUsed is the schema descriptor for used field.

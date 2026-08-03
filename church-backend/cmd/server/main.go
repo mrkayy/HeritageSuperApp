@@ -87,7 +87,7 @@ func main() {
 
 	// Health check endpoint
 	api.GET("/health-check", func(c echo.Context) error {
-	if _, err := client.User.Query().Count(c.Request().Context()); err != nil {
+		if _, err := client.User.Query().Count(c.Request().Context()); err != nil {
 			return c.JSON(http.StatusInternalServerError, map[string]string{
 				"status":   "unhealthy",
 				"database": "disconnected",
@@ -105,18 +105,23 @@ func main() {
 	authHandler.RegisterProtected(authGroup.Group("", requireAuth))
 
 	// Protected module routes
-	membersGroup := api.Group("/members", requireAuth, middleware.RequireAnyRole(
+	requireAdminOrPastorOrLead := middleware.RequireAnyRole(
 		string(contracts.RoleTeamLead),
 		string(contracts.RoleResidentPastor),
 		string(contracts.RoleChurchAdmin),
-	))
+	)
+
+	membersGroup := api.Group("/members", requireAuth, requireAdminOrPastorOrLead)
 	membershipHandler.Register(membersGroup)
 
-	teamsGroup := api.Group("/teams", requireAuth)
+	teamsGroup := api.Group("/teams", requireAuth, requireAdminOrPastorOrLead)
 	teamsHandler.RegisterTeams(teamsGroup)
 
-	sectorsGroup := api.Group("/sectors", requireAuth)
+	sectorsGroup := api.Group("/sectors", requireAuth, requireAdminOrPastorOrLead)
 	teamsHandler.RegisterSectors(sectorsGroup)
+
+	churchesGroup := api.Group("/churches", requireAuth, requireAdminOrPastorOrLead)
+	teamsHandler.RegisterChurches(churchesGroup)
 
 	profileGroup := api.Group("/profile", requireAuth)
 	profileHandler.Register(profileGroup)

@@ -16,6 +16,14 @@ type Sector struct {
 	Name string
 }
 
+type LocalChurch struct {
+	ID          string
+	Name        string
+	Center      string
+	Description string
+	Slug        string
+}
+
 type TeamReader interface {
 	GetTeam(ctx context.Context, id string) (Team, error)
 	ListTeams(ctx context.Context) ([]Team, error)

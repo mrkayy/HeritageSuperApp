@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../shared/auth/AuthContext";
-import { fetchTeams, fetchSectors, updateProfile, Team, Sector } from "./api";
+import { fetchTeams, fetchSectors, updateProfile, fetchProfile, Team, Sector } from "./api";
 import "./OnboardingPage.css";
 
 export default function OnboardingPage() {
@@ -30,6 +30,26 @@ export default function OnboardingPage() {
       navigate("/", { replace: true });
     }
   }, [user, navigate]);
+
+  useEffect(() => {
+    setIsLoading(true);
+    fetchProfile()
+      .then((profile) => {
+        if (profile.firstName) setFirstName(profile.firstName);
+        if (profile.lastName) setLastName(profile.lastName);
+        if (profile.phoneNumber) setPhoneNumber(profile.phoneNumber);
+        if (profile.address) setAddress(profile.address);
+        if (profile.dateOfBirth) setDateOfBirth(profile.dateOfBirth);
+        if (profile.teamId) setSelectedTeam(profile.teamId);
+        if (profile.sectorId) setSelectedSector(profile.sectorId);
+      })
+      .catch((err) => {
+        console.error("Failed to load existing profile:", err);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  }, []);
 
   useEffect(() => {
     if (step === 2) {

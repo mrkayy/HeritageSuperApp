@@ -7,6 +7,7 @@ const AdminLoginPage = lazy(() => import("./features/auth/AdminLoginPage"));
 const DashboardPage = lazy(() => import("./features/dashboard/DashboardPage"));
 const OnboardingPage = lazy(() => import("./features/onboarding/OnboardingPage"));
 const MembershipPage = lazy(() => import("./features/membership/MembershipPage"));
+const OrganizationPage = lazy(() => import("./features/organization/OrganizationPage"));
 
 export default function AppRoutes() {
   return (
@@ -47,6 +48,14 @@ export default function AppRoutes() {
           element={
             <ProtectedRoute allowedRoles={["team_lead", "resident_pastor", "church_admin"]}>
               <MembershipPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/organization"
+          element={
+            <ProtectedRoute allowedRoles={["team_lead", "resident_pastor", "church_admin"]}>
+              <OrganizationPage />
             </ProtectedRoute>
           }
         />

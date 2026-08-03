@@ -2,6 +2,7 @@ package membership
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/hofchurchng/church-backend/internal/contracts"
 )
@@ -25,10 +26,35 @@ func (s *Service) ListMembers(ctx context.Context) ([]contracts.Member, error) {
 	return s.repo.List(ctx)
 }
 
-func (s *Service) AddMember(ctx context.Context, name string, email string) (contracts.Member, error) {
-	return s.repo.Add(ctx, name, email)
+func (s *Service) AddMember(ctx context.Context, in AddMemberInput) (contracts.Member, error) {
+	if in.FirstName == "" || in.Surname == "" {
+		return contracts.Member{}, fmt.Errorf("first name and surname are required")
+	}
+	return s.repo.Add(ctx, in)
 }
 
 func (s *Service) DeleteMember(ctx context.Context, id string) error {
 	return s.repo.Delete(ctx, id)
+}
+
+type ProfileMemberInput struct {
+	Name     string
+	Email    string
+	Role     string
+	TeamID   *string
+	SectorID *string
+	ChurchID *string
+}
+
+func (s *Service) ProfileMember(ctx context.Context, in ProfileMemberInput) (contracts.Member, error) {
+	if in.Name == "" || in.Email == "" {
+		return contracts.Member{}, fmt.Errorf("name and email are required")
+	}
+
+	// Validate role
+	if !contracts.IsValidRole(in.Role) {
+		return contracts.Member{}, fmt.Errorf("invalid role: %s", in.Role)
+	}
+
+	return s.repo.Profile(ctx, in.Name, in.Email, in.Role, in.TeamID, in.SectorID, in.ChurchID)
 }

@@ -16,8 +16,12 @@ import (
 	"github.com/hofchurchng/church-backend/internal/ent/churchteams"
 	"github.com/hofchurchng/church-backend/internal/ent/districts"
 	"github.com/hofchurchng/church-backend/internal/ent/followup"
+	"github.com/hofchurchng/church-backend/internal/ent/guardianrelationship"
+	"github.com/hofchurchng/church-backend/internal/ent/kidsministryprofile"
 	"github.com/hofchurchng/church-backend/internal/ent/localchurch"
 	"github.com/hofchurchng/church-backend/internal/ent/member"
+	"github.com/hofchurchng/church-backend/internal/ent/membershipstagehistory"
+	"github.com/hofchurchng/church-backend/internal/ent/memberteam"
 	"github.com/hofchurchng/church-backend/internal/ent/otpinvites"
 	"github.com/hofchurchng/church-backend/internal/ent/outreachreport"
 	"github.com/hofchurchng/church-backend/internal/ent/outreachtargets"
@@ -90,24 +94,28 @@ var (
 func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
-			churchevent.Table:      churchevent.ValidColumn,
-			churchteams.Table:      churchteams.ValidColumn,
-			districts.Table:        districts.ValidColumn,
-			followup.Table:         followup.ValidColumn,
-			localchurch.Table:      localchurch.ValidColumn,
-			member.Table:           member.ValidColumn,
-			otpinvites.Table:       otpinvites.ValidColumn,
-			outreachreport.Table:   outreachreport.ValidColumn,
-			outreachtargets.Table:  outreachtargets.ValidColumn,
-			sector.Table:           sector.ValidColumn,
-			soul.Table:             soul.ValidColumn,
-			souljournal.Table:      souljournal.ValidColumn,
-			team.Table:             team.ValidColumn,
-			teamvolunteers.Table:   teamvolunteers.ValidColumn,
-			transportrequest.Table: transportrequest.ValidColumn,
-			user.Table:             user.ValidColumn,
-			usersector.Table:       usersector.ValidColumn,
-			userteam.Table:         userteam.ValidColumn,
+			churchevent.Table:            churchevent.ValidColumn,
+			churchteams.Table:            churchteams.ValidColumn,
+			districts.Table:              districts.ValidColumn,
+			followup.Table:               followup.ValidColumn,
+			guardianrelationship.Table:   guardianrelationship.ValidColumn,
+			kidsministryprofile.Table:    kidsministryprofile.ValidColumn,
+			localchurch.Table:            localchurch.ValidColumn,
+			member.Table:                 member.ValidColumn,
+			memberteam.Table:             memberteam.ValidColumn,
+			membershipstagehistory.Table: membershipstagehistory.ValidColumn,
+			otpinvites.Table:             otpinvites.ValidColumn,
+			outreachreport.Table:         outreachreport.ValidColumn,
+			outreachtargets.Table:        outreachtargets.ValidColumn,
+			sector.Table:                 sector.ValidColumn,
+			soul.Table:                   soul.ValidColumn,
+			souljournal.Table:            souljournal.ValidColumn,
+			team.Table:                   team.ValidColumn,
+			teamvolunteers.Table:         teamvolunteers.ValidColumn,
+			transportrequest.Table:       transportrequest.ValidColumn,
+			user.Table:                   user.ValidColumn,
+			usersector.Table:             usersector.ValidColumn,
+			userteam.Table:               userteam.ValidColumn,
 		})
 	})
 	return columnCheck(t, c)

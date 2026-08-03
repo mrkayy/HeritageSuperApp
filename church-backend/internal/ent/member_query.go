@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"database/sql/driver"
 	"fmt"
 	"math"
 
@@ -12,17 +13,26 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
+	"github.com/hofchurchng/church-backend/internal/ent/guardianrelationship"
+	"github.com/hofchurchng/church-backend/internal/ent/kidsministryprofile"
 	"github.com/hofchurchng/church-backend/internal/ent/member"
+	"github.com/hofchurchng/church-backend/internal/ent/membershipstagehistory"
+	"github.com/hofchurchng/church-backend/internal/ent/memberteam"
 	"github.com/hofchurchng/church-backend/internal/ent/predicate"
 )
 
 // MemberQuery is the builder for querying Member entities.
 type MemberQuery struct {
 	config
-	ctx        *QueryContext
-	order      []member.OrderOption
-	inters     []Interceptor
-	predicates []predicate.Member
+	ctx                                 *QueryContext
+	order                               []member.OrderOption
+	inters                              []Interceptor
+	predicates                          []predicate.Member
+	withStageHistories                  *MembershipStageHistoryQuery
+	withTeams                           *MemberTeamQuery
+	withGuardianRelationshipsAsChild    *GuardianRelationshipQuery
+	withGuardianRelationshipsAsGuardian *GuardianRelationshipQuery
+	withKidsMinistryProfile             *KidsMinistryProfileQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -57,6 +67,116 @@ func (_q *MemberQuery) Unique(unique bool) *MemberQuery {
 func (_q *MemberQuery) Order(o ...member.OrderOption) *MemberQuery {
 	_q.order = append(_q.order, o...)
 	return _q
+}
+
+// QueryStageHistories chains the current query on the "stage_histories" edge.
+func (_q *MemberQuery) QueryStageHistories() *MembershipStageHistoryQuery {
+	query := (&MembershipStageHistoryClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(member.Table, member.FieldID, selector),
+			sqlgraph.To(membershipstagehistory.Table, membershipstagehistory.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, member.StageHistoriesTable, member.StageHistoriesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryTeams chains the current query on the "teams" edge.
+func (_q *MemberQuery) QueryTeams() *MemberTeamQuery {
+	query := (&MemberTeamClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(member.Table, member.FieldID, selector),
+			sqlgraph.To(memberteam.Table, memberteam.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, member.TeamsTable, member.TeamsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryGuardianRelationshipsAsChild chains the current query on the "guardian_relationships_as_child" edge.
+func (_q *MemberQuery) QueryGuardianRelationshipsAsChild() *GuardianRelationshipQuery {
+	query := (&GuardianRelationshipClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(member.Table, member.FieldID, selector),
+			sqlgraph.To(guardianrelationship.Table, guardianrelationship.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, member.GuardianRelationshipsAsChildTable, member.GuardianRelationshipsAsChildColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryGuardianRelationshipsAsGuardian chains the current query on the "guardian_relationships_as_guardian" edge.
+func (_q *MemberQuery) QueryGuardianRelationshipsAsGuardian() *GuardianRelationshipQuery {
+	query := (&GuardianRelationshipClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(member.Table, member.FieldID, selector),
+			sqlgraph.To(guardianrelationship.Table, guardianrelationship.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, member.GuardianRelationshipsAsGuardianTable, member.GuardianRelationshipsAsGuardianColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryKidsMinistryProfile chains the current query on the "kids_ministry_profile" edge.
+func (_q *MemberQuery) QueryKidsMinistryProfile() *KidsMinistryProfileQuery {
+	query := (&KidsMinistryProfileClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(member.Table, member.FieldID, selector),
+			sqlgraph.To(kidsministryprofile.Table, kidsministryprofile.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, member.KidsMinistryProfileTable, member.KidsMinistryProfileColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // First returns the first Member entity from the query.
@@ -246,15 +366,75 @@ func (_q *MemberQuery) Clone() *MemberQuery {
 		return nil
 	}
 	return &MemberQuery{
-		config:     _q.config,
-		ctx:        _q.ctx.Clone(),
-		order:      append([]member.OrderOption{}, _q.order...),
-		inters:     append([]Interceptor{}, _q.inters...),
-		predicates: append([]predicate.Member{}, _q.predicates...),
+		config:                              _q.config,
+		ctx:                                 _q.ctx.Clone(),
+		order:                               append([]member.OrderOption{}, _q.order...),
+		inters:                              append([]Interceptor{}, _q.inters...),
+		predicates:                          append([]predicate.Member{}, _q.predicates...),
+		withStageHistories:                  _q.withStageHistories.Clone(),
+		withTeams:                           _q.withTeams.Clone(),
+		withGuardianRelationshipsAsChild:    _q.withGuardianRelationshipsAsChild.Clone(),
+		withGuardianRelationshipsAsGuardian: _q.withGuardianRelationshipsAsGuardian.Clone(),
+		withKidsMinistryProfile:             _q.withKidsMinistryProfile.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
 	}
+}
+
+// WithStageHistories tells the query-builder to eager-load the nodes that are connected to
+// the "stage_histories" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *MemberQuery) WithStageHistories(opts ...func(*MembershipStageHistoryQuery)) *MemberQuery {
+	query := (&MembershipStageHistoryClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withStageHistories = query
+	return _q
+}
+
+// WithTeams tells the query-builder to eager-load the nodes that are connected to
+// the "teams" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *MemberQuery) WithTeams(opts ...func(*MemberTeamQuery)) *MemberQuery {
+	query := (&MemberTeamClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withTeams = query
+	return _q
+}
+
+// WithGuardianRelationshipsAsChild tells the query-builder to eager-load the nodes that are connected to
+// the "guardian_relationships_as_child" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *MemberQuery) WithGuardianRelationshipsAsChild(opts ...func(*GuardianRelationshipQuery)) *MemberQuery {
+	query := (&GuardianRelationshipClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withGuardianRelationshipsAsChild = query
+	return _q
+}
+
+// WithGuardianRelationshipsAsGuardian tells the query-builder to eager-load the nodes that are connected to
+// the "guardian_relationships_as_guardian" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *MemberQuery) WithGuardianRelationshipsAsGuardian(opts ...func(*GuardianRelationshipQuery)) *MemberQuery {
+	query := (&GuardianRelationshipClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withGuardianRelationshipsAsGuardian = query
+	return _q
+}
+
+// WithKidsMinistryProfile tells the query-builder to eager-load the nodes that are connected to
+// the "kids_ministry_profile" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *MemberQuery) WithKidsMinistryProfile(opts ...func(*KidsMinistryProfileQuery)) *MemberQuery {
+	query := (&KidsMinistryProfileClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withKidsMinistryProfile = query
+	return _q
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -263,12 +443,12 @@ func (_q *MemberQuery) Clone() *MemberQuery {
 // Example:
 //
 //	var v []struct {
-//		Name string `json:"name,omitempty"`
+//		FirstName string `json:"first_name,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Member.Query().
-//		GroupBy(member.FieldName).
+//		GroupBy(member.FieldFirstName).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (_q *MemberQuery) GroupBy(field string, fields ...string) *MemberGroupBy {
@@ -286,11 +466,11 @@ func (_q *MemberQuery) GroupBy(field string, fields ...string) *MemberGroupBy {
 // Example:
 //
 //	var v []struct {
-//		Name string `json:"name,omitempty"`
+//		FirstName string `json:"first_name,omitempty"`
 //	}
 //
 //	client.Member.Query().
-//		Select(member.FieldName).
+//		Select(member.FieldFirstName).
 //		Scan(ctx, &v)
 func (_q *MemberQuery) Select(fields ...string) *MemberSelect {
 	_q.ctx.Fields = append(_q.ctx.Fields, fields...)
@@ -333,8 +513,15 @@ func (_q *MemberQuery) prepareQuery(ctx context.Context) error {
 
 func (_q *MemberQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Member, error) {
 	var (
-		nodes = []*Member{}
-		_spec = _q.querySpec()
+		nodes       = []*Member{}
+		_spec       = _q.querySpec()
+		loadedTypes = [5]bool{
+			_q.withStageHistories != nil,
+			_q.withTeams != nil,
+			_q.withGuardianRelationshipsAsChild != nil,
+			_q.withGuardianRelationshipsAsGuardian != nil,
+			_q.withKidsMinistryProfile != nil,
+		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*Member).scanValues(nil, columns)
@@ -342,6 +529,7 @@ func (_q *MemberQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Membe
 	_spec.Assign = func(columns []string, values []any) error {
 		node := &Member{config: _q.config}
 		nodes = append(nodes, node)
+		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
 	for i := range hooks {
@@ -353,7 +541,193 @@ func (_q *MemberQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Membe
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+	if query := _q.withStageHistories; query != nil {
+		if err := _q.loadStageHistories(ctx, query, nodes,
+			func(n *Member) { n.Edges.StageHistories = []*MembershipStageHistory{} },
+			func(n *Member, e *MembershipStageHistory) { n.Edges.StageHistories = append(n.Edges.StageHistories, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withTeams; query != nil {
+		if err := _q.loadTeams(ctx, query, nodes,
+			func(n *Member) { n.Edges.Teams = []*MemberTeam{} },
+			func(n *Member, e *MemberTeam) { n.Edges.Teams = append(n.Edges.Teams, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withGuardianRelationshipsAsChild; query != nil {
+		if err := _q.loadGuardianRelationshipsAsChild(ctx, query, nodes,
+			func(n *Member) { n.Edges.GuardianRelationshipsAsChild = []*GuardianRelationship{} },
+			func(n *Member, e *GuardianRelationship) {
+				n.Edges.GuardianRelationshipsAsChild = append(n.Edges.GuardianRelationshipsAsChild, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withGuardianRelationshipsAsGuardian; query != nil {
+		if err := _q.loadGuardianRelationshipsAsGuardian(ctx, query, nodes,
+			func(n *Member) { n.Edges.GuardianRelationshipsAsGuardian = []*GuardianRelationship{} },
+			func(n *Member, e *GuardianRelationship) {
+				n.Edges.GuardianRelationshipsAsGuardian = append(n.Edges.GuardianRelationshipsAsGuardian, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withKidsMinistryProfile; query != nil {
+		if err := _q.loadKidsMinistryProfile(ctx, query, nodes, nil,
+			func(n *Member, e *KidsMinistryProfile) { n.Edges.KidsMinistryProfile = e }); err != nil {
+			return nil, err
+		}
+	}
 	return nodes, nil
+}
+
+func (_q *MemberQuery) loadStageHistories(ctx context.Context, query *MembershipStageHistoryQuery, nodes []*Member, init func(*Member), assign func(*Member, *MembershipStageHistory)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*Member)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(membershipstagehistory.FieldMemberID)
+	}
+	query.Where(predicate.MembershipStageHistory(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(member.StageHistoriesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.MemberID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "member_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *MemberQuery) loadTeams(ctx context.Context, query *MemberTeamQuery, nodes []*Member, init func(*Member), assign func(*Member, *MemberTeam)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*Member)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(memberteam.FieldMemberID)
+	}
+	query.Where(predicate.MemberTeam(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(member.TeamsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.MemberID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "member_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *MemberQuery) loadGuardianRelationshipsAsChild(ctx context.Context, query *GuardianRelationshipQuery, nodes []*Member, init func(*Member), assign func(*Member, *GuardianRelationship)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*Member)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(guardianrelationship.FieldChildMemberID)
+	}
+	query.Where(predicate.GuardianRelationship(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(member.GuardianRelationshipsAsChildColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.ChildMemberID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "child_member_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *MemberQuery) loadGuardianRelationshipsAsGuardian(ctx context.Context, query *GuardianRelationshipQuery, nodes []*Member, init func(*Member), assign func(*Member, *GuardianRelationship)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*Member)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(guardianrelationship.FieldGuardianMemberID)
+	}
+	query.Where(predicate.GuardianRelationship(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(member.GuardianRelationshipsAsGuardianColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.GuardianMemberID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "guardian_member_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *MemberQuery) loadKidsMinistryProfile(ctx context.Context, query *KidsMinistryProfileQuery, nodes []*Member, init func(*Member), assign func(*Member, *KidsMinistryProfile)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*Member)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(kidsministryprofile.FieldMemberID)
+	}
+	query.Where(predicate.KidsMinistryProfile(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(member.KidsMinistryProfileColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.MemberID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "member_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
 }
 
 func (_q *MemberQuery) sqlCount(ctx context.Context) (int, error) {

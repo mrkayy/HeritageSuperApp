@@ -57,6 +57,30 @@ func (f FollowUpFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, er
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.FollowUpMutation", m)
 }
 
+// The GuardianRelationshipFunc type is an adapter to allow the use of ordinary
+// function as GuardianRelationship mutator.
+type GuardianRelationshipFunc func(context.Context, *ent.GuardianRelationshipMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f GuardianRelationshipFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.GuardianRelationshipMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GuardianRelationshipMutation", m)
+}
+
+// The KidsMinistryProfileFunc type is an adapter to allow the use of ordinary
+// function as KidsMinistryProfile mutator.
+type KidsMinistryProfileFunc func(context.Context, *ent.KidsMinistryProfileMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f KidsMinistryProfileFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.KidsMinistryProfileMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.KidsMinistryProfileMutation", m)
+}
+
 // The LocalChurchFunc type is an adapter to allow the use of ordinary
 // function as LocalChurch mutator.
 type LocalChurchFunc func(context.Context, *ent.LocalChurchMutation) (ent.Value, error)
@@ -79,6 +103,30 @@ func (f MemberFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, erro
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.MemberMutation", m)
+}
+
+// The MemberTeamFunc type is an adapter to allow the use of ordinary
+// function as MemberTeam mutator.
+type MemberTeamFunc func(context.Context, *ent.MemberTeamMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f MemberTeamFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.MemberTeamMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.MemberTeamMutation", m)
+}
+
+// The MembershipStageHistoryFunc type is an adapter to allow the use of ordinary
+// function as MembershipStageHistory mutator.
+type MembershipStageHistoryFunc func(context.Context, *ent.MembershipStageHistoryMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f MembershipStageHistoryFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.MembershipStageHistoryMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.MembershipStageHistoryMutation", m)
 }
 
 // The OtpInvitesFunc type is an adapter to allow the use of ordinary

@@ -3,7 +3,6 @@ package auth
 import (
 	"context"
 	"errors"
-	"strings"
 
 	"github.com/hofchurchng/church-backend/internal/ent"
 	"github.com/hofchurchng/church-backend/internal/ent/member"
@@ -67,13 +66,8 @@ func (r *Repository) FindOrCreateByEmail(ctx context.Context, email string) (use
 	}
 
 	// Insert new user if they are profiled in members. Default role is 'member'.
-	firstName := m.Name
-	lastName := ""
-	parts := strings.SplitN(m.Name, " ", 2)
-	if len(parts) > 1 {
-		firstName = parts[0]
-		lastName = parts[1]
-	}
+	firstName := m.FirstName
+	lastName := m.Surname
 
 	newEu, err := r.db.User.Create().
 		SetEmail(email).

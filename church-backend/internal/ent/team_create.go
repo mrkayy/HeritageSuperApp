@@ -13,6 +13,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/hofchurchng/church-backend/internal/ent/churchteams"
 	"github.com/hofchurchng/church-backend/internal/ent/localchurch"
+	"github.com/hofchurchng/church-backend/internal/ent/memberteam"
 	"github.com/hofchurchng/church-backend/internal/ent/outreachreport"
 	"github.com/hofchurchng/church-backend/internal/ent/sector"
 	"github.com/hofchurchng/church-backend/internal/ent/soul"
@@ -233,6 +234,21 @@ func (_c *TeamCreate) AddChurchTeams(v ...*ChurchTeams) *TeamCreate {
 		ids[i] = v[i].ID
 	}
 	return _c.AddChurchTeamIDs(ids...)
+}
+
+// AddMemberTeamIDs adds the "member_teams" edge to the MemberTeam entity by IDs.
+func (_c *TeamCreate) AddMemberTeamIDs(ids ...uuid.UUID) *TeamCreate {
+	_c.mutation.AddMemberTeamIDs(ids...)
+	return _c
+}
+
+// AddMemberTeams adds the "member_teams" edges to the MemberTeam entity.
+func (_c *TeamCreate) AddMemberTeams(v ...*MemberTeam) *TeamCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddMemberTeamIDs(ids...)
 }
 
 // Mutation returns the TeamMutation object of the builder.
@@ -485,6 +501,22 @@ func (_c *TeamCreate) createSpec() (*Team, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(churchteams.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.MemberTeamsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   team.MemberTeamsTable,
+			Columns: []string{team.MemberTeamsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(memberteam.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

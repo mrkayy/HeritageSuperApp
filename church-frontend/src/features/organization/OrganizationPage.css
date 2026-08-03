@@ -1,0 +1,166 @@
+.org-page {
+  min-height: 100vh;
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  display: flex;
+  flex-direction: column;
+}
+
+.org-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-4) var(--space-8);
+  margin: var(--space-4);
+  border-radius: var(--radius-xl);
+}
+
+.org-main {
+  flex: 1;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.tabs-container {
+  display: flex;
+  gap: var(--space-3);
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: var(--space-3);
+}
+
+.tab-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-family: var(--font-family);
+  font-size: var(--fs-base);
+  font-weight: 600;
+  padding: var(--space-2) var(--space-4);
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.tab-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-elevated);
+}
+
+.tab-btn.active {
+  color: var(--gold-400);
+  background: rgba(212, 160, 23, 0.1);
+  box-shadow: inset 0 -2px 0 var(--gold-400);
+}
+
+/* Table overrides and org specific additions */
+.org-list-card {
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+}
+
+.org-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.org-table th {
+  padding: var(--space-4) var(--space-6);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-subtle);
+  background: rgba(255, 255, 255, 0.01);
+}
+
+.org-table td {
+  padding: var(--space-4) var(--space-6);
+  font-size: var(--fs-sm);
+  border-bottom: 1px solid var(--border-subtle);
+  vertical-align: middle;
+}
+
+.org-table tr:last-child td {
+  border-bottom: none;
+}
+
+.org-name-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.org-avatar {
+  width: 32px;
+  height: 32px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--fs-sm);
+}
+
+.slug-code {
+  font-family: monospace;
+  padding: var(--space-1) var(--space-2);
+  background: var(--bg-elevated);
+  border-radius: var(--radius-sm);
+  color: var(--gold-300);
+  font-size: var(--fs-xs);
+}
+
+.actions-cell {
+  display: flex;
+  gap: var(--space-2);
+  justify-content: flex-end;
+}
+
+.btn-danger-action {
+  color: var(--error) !important;
+  border-color: rgba(239, 68, 68, 0.15) !important;
+}
+
+.btn-danger-action:hover {
+  background: rgba(239, 68, 68, 0.08) !important;
+}
+
+.small {
+  font-size: var(--fs-xs);
+  margin-top: 2px;
+}
+
+@media (max-width: 768px) {
+  .org-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-4);
+    padding: var(--space-4);
+  }
+
+  .tabs-container {
+    flex-direction: column;
+    gap: var(--space-2);
+    border-bottom: none;
+  }
+
+  .tab-btn {
+    width: 100%;
+    text-align: left;
+  }
+
+  .org-table th:nth-child(2),
+  .org-table td:nth-child(2),
+  .org-table th:nth-child(3),
+  .org-table td:nth-child(3) {
+    display: none;
+  }
+}
