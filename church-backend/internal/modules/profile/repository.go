@@ -14,16 +14,24 @@ import (
 )
 
 type profileRow struct {
-	UserID          string
-	FirstName       string
-	LastName        string
-	ProfileImageURL string
-	DateOfBirth     *time.Time
-	Address         string
-	Email           string
-	PhoneNumber     string
-	TeamID          *string
-	SectorID        *string
+	UserID                  string
+	FirstName               string
+	LastName                string
+	ProfileImageURL         string
+	DateOfBirth             *time.Time
+	Address                 string
+	Email                   string
+	PhoneNumber             string
+	TeamID                  *string
+	SectorID                *string
+	MaritalStatus           *string
+	WeddingAnniversaryDay   *int16
+	WeddingAnniversaryMonth *int16
+	JobOccupation           *string
+	Allergies               *string
+	MedicalNotes            *string
+	EmergencyContactName    *string
+	EmergencyContactPhone   *string
 }
 
 type Repository struct {
@@ -67,17 +75,48 @@ func (r *Repository) GetByUserID(ctx context.Context, userID string) (profileRow
 		sectorID = &s
 	}
 
+	var maritalStatus *string
+	var anniversaryDay *int16
+	var anniversaryMonth *int16
+	var jobOccupation *string
+	var allergies *string
+	var medicalNotes *string
+	var emergencyContactName *string
+	var emergencyContactPhone *string
+
+	if m, err := r.db.Member.Query().Where(member.Email(u.Email)).Only(ctx); err == nil && m != nil {
+		if m.MaritalStatus != nil {
+			ms := string(*m.MaritalStatus)
+			maritalStatus = &ms
+		}
+		anniversaryDay = m.WeddingAnniversaryDay
+		anniversaryMonth = m.WeddingAnniversaryMonth
+		jobOccupation = m.JobOccupation
+		allergies = m.Allergies
+		medicalNotes = m.MedicalNotes
+		emergencyContactName = m.EmergencyContactName
+		emergencyContactPhone = m.EmergencyContactPhone
+	}
+
 	return profileRow{
-		UserID:          u.ID.String(),
-		FirstName:       u.FirstName,
-		LastName:        u.LastName,
-		ProfileImageURL: getString(u.ProfileImageURL),
-		DateOfBirth:     u.DateOfBirth,
-		Address:         getString(u.Address),
-		Email:           u.Email,
-		PhoneNumber:     getString(u.PhoneNumber),
-		TeamID:          teamID,
-		SectorID:        sectorID,
+		UserID:                  u.ID.String(),
+		FirstName:               u.FirstName,
+		LastName:                u.LastName,
+		ProfileImageURL:         getString(u.ProfileImageURL),
+		DateOfBirth:             u.DateOfBirth,
+		Address:                 getString(u.Address),
+		Email:                   u.Email,
+		PhoneNumber:             getString(u.PhoneNumber),
+		TeamID:                  teamID,
+		SectorID:                sectorID,
+		MaritalStatus:           maritalStatus,
+		WeddingAnniversaryDay:   anniversaryDay,
+		WeddingAnniversaryMonth: anniversaryMonth,
+		JobOccupation:           jobOccupation,
+		Allergies:               allergies,
+		MedicalNotes:            medicalNotes,
+		EmergencyContactName:    emergencyContactName,
+		EmergencyContactPhone:   emergencyContactPhone,
 	}, nil
 }
 
@@ -120,13 +159,62 @@ func (r *Repository) Upsert(ctx context.Context, p profileRow) error {
 
 	if err == nil {
 		// Sync details back to corresponding Member directory record if email matches
-		_ = r.db.Member.Update().
+		uBuilder := r.db.Member.Update().
 			Where(member.Email(p.Email)).
 			SetFirstName(p.FirstName).
 			SetSurname(p.LastName).
 			SetHomeAddress(p.Address).
-			SetPhoneNumber(p.PhoneNumber).
-			Exec(ctx)
+			SetPhoneNumber(p.PhoneNumber)
+
+		if p.MaritalStatus != nil && *p.MaritalStatus != "" {
+			uBuilder.SetMaritalStatus(member.MaritalStatus(*p.MaritalStatus))
+		} else {
+			uBuilder.ClearMaritalStatus()
+		}
+
+		if p.WeddingAnniversaryDay != nil {
+			uBuilder.SetWeddingAnniversaryDay(*p.WeddingAnniversaryDay)
+		} else {
+			uBuilder.ClearWeddingAnniversaryDay()
+		}
+
+		if p.WeddingAnniversaryMonth != nil {
+			uBuilder.SetWeddingAnniversaryMonth(*p.WeddingAnniversaryMonth)
+		} else {
+			uBuilder.ClearWeddingAnniversaryMonth()
+		}
+
+		if p.JobOccupation != nil && *p.JobOccupation != "" {
+			uBuilder.SetJobOccupation(*p.JobOccupation)
+		} else {
+			uBuilder.ClearJobOccupation()
+		}
+
+		if p.Allergies != nil && *p.Allergies != "" {
+			uBuilder.SetAllergies(*p.Allergies)
+		} else {
+			uBuilder.ClearAllergies()
+		}
+
+		if p.MedicalNotes != nil && *p.MedicalNotes != "" {
+			uBuilder.SetMedicalNotes(*p.MedicalNotes)
+		} else {
+			uBuilder.ClearMedicalNotes()
+		}
+
+		if p.EmergencyContactName != nil && *p.EmergencyContactName != "" {
+			uBuilder.SetEmergencyContactName(*p.EmergencyContactName)
+		} else {
+			uBuilder.ClearEmergencyContactName()
+		}
+
+		if p.EmergencyContactPhone != nil && *p.EmergencyContactPhone != "" {
+			uBuilder.SetEmergencyContactPhone(*p.EmergencyContactPhone)
+		} else {
+			uBuilder.ClearEmergencyContactPhone()
+		}
+
+		_ = uBuilder.Exec(ctx)
 	}
 
 	return err
@@ -367,6 +455,12 @@ func (r *Repository) AddKid(ctx context.Context, parentMemberID uuid.UUID, child
 		return contracts.Member{}, err
 	}
 
+	parent, err := tx.Member.Get(ctx, parentMemberID)
+	if err != nil {
+		tx.Rollback()
+		return contracts.Member{}, err
+	}
+
 	_, err = tx.GuardianRelationship.Create().
 		SetChildMemberID(cMember.ID).
 		SetGuardianMemberID(parentMemberID).
@@ -375,6 +469,28 @@ func (r *Repository) AddKid(ctx context.Context, parentMemberID uuid.UUID, child
 	if err != nil {
 		tx.Rollback()
 		return contracts.Member{}, err
+	}
+
+	// Auto-associate child with spouse if parent is married and has same surname + address
+	if parent.MaritalStatus != nil && *parent.MaritalStatus == member.MaritalStatusMarried && parent.Surname != "" {
+		spouseQuery := tx.Member.Query().
+			Where(
+				member.SurnameEQ(parent.Surname),
+				member.MaritalStatusEQ(member.MaritalStatusMarried),
+				member.IDNEQ(parent.ID),
+			)
+		if parent.HomeAddress != nil && *parent.HomeAddress != "" {
+			spouseQuery = spouseQuery.Where(member.HomeAddressEQ(*parent.HomeAddress))
+		}
+
+		spouse, err := spouseQuery.First(ctx)
+		if err == nil && spouse != nil {
+			_, _ = tx.GuardianRelationship.Create().
+				SetChildMemberID(cMember.ID).
+				SetGuardianMemberID(spouse.ID).
+				SetRelationship(guardianrelationship.RelationshipParent).
+				Save(ctx)
+		}
 	}
 
 	if err := tx.Commit(); err != nil {

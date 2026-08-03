@@ -13,6 +13,14 @@ export interface UserProfile {
   sectorId?: string;
   sectorName?: string;
   profileImageUrl?: string;
+  maritalStatus?: string;
+  weddingAnniversaryDay?: number;
+  weddingAnniversaryMonth?: number;
+  jobOccupation?: string;
+  allergies?: string;
+  medicalNotes?: string;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
 }
 
 export function fetchProfile() {

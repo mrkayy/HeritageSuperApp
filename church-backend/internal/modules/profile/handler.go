@@ -39,31 +39,47 @@ func (h *Handler) Register(g *echo.Group) {
 }
 
 type profileDTO struct {
-	FirstName       string  `json:"firstName"`
-	LastName        string  `json:"lastName"`
-	ProfileImageURL string  `json:"profileImageUrl"`
-	DateOfBirth     *string `json:"dateOfBirth,omitempty"` // "YYYY-MM-DD"
-	Address         string  `json:"address"`
-	Email           string  `json:"email"`
-	PhoneNumber     string  `json:"phoneNumber"`
-	TeamID          *string `json:"teamId,omitempty"`
-	TeamName        string  `json:"teamName,omitempty"`
-	SectorID        *string `json:"sectorId,omitempty"`
-	SectorName      string  `json:"sectorName,omitempty"`
+	FirstName               string  `json:"firstName"`
+	LastName                string  `json:"lastName"`
+	ProfileImageURL         string  `json:"profileImageUrl"`
+	DateOfBirth             *string `json:"dateOfBirth,omitempty"` // "YYYY-MM-DD"
+	Address                 string  `json:"address"`
+	Email                   string  `json:"email"`
+	PhoneNumber             string  `json:"phoneNumber"`
+	TeamID                  *string `json:"teamId,omitempty"`
+	TeamName                string  `json:"teamName,omitempty"`
+	SectorID                *string `json:"sectorId,omitempty"`
+	SectorName              string  `json:"sectorName,omitempty"`
+	MaritalStatus           *string `json:"maritalStatus,omitempty"`
+	WeddingAnniversaryDay   *int16  `json:"weddingAnniversaryDay,omitempty"`
+	WeddingAnniversaryMonth *int16  `json:"weddingAnniversaryMonth,omitempty"`
+	JobOccupation           *string `json:"jobOccupation,omitempty"`
+	Allergies               *string `json:"allergies,omitempty"`
+	MedicalNotes            *string `json:"medicalNotes,omitempty"`
+	EmergencyContactName    *string `json:"emergencyContactName,omitempty"`
+	EmergencyContactPhone   *string `json:"emergencyContactPhone,omitempty"`
 }
 
 func toOwnDTO(v OwnProfileView) profileDTO {
 	dto := profileDTO{
-		FirstName:       v.FirstName,
-		LastName:        v.LastName,
-		ProfileImageURL: v.ProfileImageURL,
-		Address:         v.Address,
-		Email:           v.Email,
-		PhoneNumber:     v.PhoneNumber,
-		TeamID:          v.TeamID,
-		TeamName:        v.TeamName,
-		SectorID:        v.SectorID,
-		SectorName:      v.SectorName,
+		FirstName:               v.FirstName,
+		LastName:                v.LastName,
+		ProfileImageURL:         v.ProfileImageURL,
+		Address:                 v.Address,
+		Email:                   v.Email,
+		PhoneNumber:             v.PhoneNumber,
+		TeamID:                  v.TeamID,
+		TeamName:                v.TeamName,
+		SectorID:                v.SectorID,
+		SectorName:              v.SectorName,
+		MaritalStatus:           v.MaritalStatus,
+		WeddingAnniversaryDay:   v.WeddingAnniversaryDay,
+		WeddingAnniversaryMonth: v.WeddingAnniversaryMonth,
+		JobOccupation:           v.JobOccupation,
+		Allergies:               v.Allergies,
+		MedicalNotes:            v.MedicalNotes,
+		EmergencyContactName:    v.EmergencyContactName,
+		EmergencyContactPhone:   v.EmergencyContactPhone,
 	}
 	if v.DateOfBirth != nil {
 		s := v.DateOfBirth.Format(dateLayout)
@@ -120,15 +136,23 @@ func (h *Handler) updateOwn(c echo.Context) error {
 	}
 
 	err := h.svc.UpdateProfile(c.Request().Context(), user.ID, UpdateProfileInput{
-		FirstName:       dto.FirstName,
-		LastName:        dto.LastName,
-		ProfileImageURL: dto.ProfileImageURL,
-		DateOfBirth:     dob,
-		Address:         dto.Address,
-		Email:           user.Email,
-		PhoneNumber:     dto.PhoneNumber,
-		TeamID:          dto.TeamID,
-		SectorID:        dto.SectorID,
+		FirstName:               dto.FirstName,
+		LastName:                dto.LastName,
+		ProfileImageURL:         dto.ProfileImageURL,
+		DateOfBirth:             dob,
+		Address:                 dto.Address,
+		Email:                   user.Email,
+		PhoneNumber:             dto.PhoneNumber,
+		TeamID:                  dto.TeamID,
+		SectorID:                dto.SectorID,
+		MaritalStatus:           dto.MaritalStatus,
+		WeddingAnniversaryDay:   dto.WeddingAnniversaryDay,
+		WeddingAnniversaryMonth: dto.WeddingAnniversaryMonth,
+		JobOccupation:           dto.JobOccupation,
+		Allergies:               dto.Allergies,
+		MedicalNotes:            dto.MedicalNotes,
+		EmergencyContactName:    dto.EmergencyContactName,
+		EmergencyContactPhone:   dto.EmergencyContactPhone,
 	})
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())

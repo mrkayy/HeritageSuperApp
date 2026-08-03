@@ -21,30 +21,46 @@ func NewService(repo *Repository, teams contracts.TeamReader, sectors contracts.
 }
 
 type UpdateProfileInput struct {
-	FirstName       string
-	LastName        string
-	ProfileImageURL string
-	DateOfBirth     *time.Time
-	Address         string
-	Email           string
-	PhoneNumber     string
-	TeamID          *string
-	SectorID        *string
+	FirstName               string
+	LastName                string
+	ProfileImageURL         string
+	DateOfBirth             *time.Time
+	Address                 string
+	Email                   string
+	PhoneNumber             string
+	TeamID                  *string
+	SectorID                *string
+	MaritalStatus           *string
+	WeddingAnniversaryDay   *int16
+	WeddingAnniversaryMonth *int16
+	JobOccupation           *string
+	Allergies               *string
+	MedicalNotes            *string
+	EmergencyContactName    *string
+	EmergencyContactPhone   *string
 }
 
 type OwnProfileView struct {
-	UserID          string
-	FirstName       string
-	LastName        string
-	ProfileImageURL string
-	DateOfBirth     *time.Time
-	Address         string
-	Email           string
-	PhoneNumber     string
-	TeamID          *string
-	TeamName        string
-	SectorID        *string
-	SectorName      string
+	UserID                  string
+	FirstName               string
+	LastName                string
+	ProfileImageURL         string
+	DateOfBirth             *time.Time
+	Address                 string
+	Email                   string
+	PhoneNumber             string
+	TeamID                  *string
+	TeamName                string
+	SectorID                *string
+	SectorName              string
+	MaritalStatus           *string
+	WeddingAnniversaryDay   *int16
+	WeddingAnniversaryMonth *int16
+	JobOccupation           *string
+	Allergies               *string
+	MedicalNotes            *string
+	EmergencyContactName    *string
+	EmergencyContactPhone   *string
 }
 
 var (
@@ -71,16 +87,24 @@ func (s *Service) UpdateProfile(ctx context.Context, userID string, in UpdatePro
 	}
 
 	return s.repo.Upsert(ctx, profileRow{
-		UserID:          userID,
-		FirstName:       in.FirstName,
-		LastName:        in.LastName,
-		ProfileImageURL: in.ProfileImageURL,
-		DateOfBirth:     in.DateOfBirth,
-		Address:         in.Address,
-		Email:           in.Email,
-		PhoneNumber:     in.PhoneNumber,
-		TeamID:          in.TeamID,
-		SectorID:        in.SectorID,
+		UserID:                  userID,
+		FirstName:               in.FirstName,
+		LastName:                in.LastName,
+		ProfileImageURL:         in.ProfileImageURL,
+		DateOfBirth:             in.DateOfBirth,
+		Address:                 in.Address,
+		Email:                   in.Email,
+		PhoneNumber:             in.PhoneNumber,
+		TeamID:                  in.TeamID,
+		SectorID:                in.SectorID,
+		MaritalStatus:           in.MaritalStatus,
+		WeddingAnniversaryDay:   in.WeddingAnniversaryDay,
+		WeddingAnniversaryMonth: in.WeddingAnniversaryMonth,
+		JobOccupation:           in.JobOccupation,
+		Allergies:               in.Allergies,
+		MedicalNotes:            in.MedicalNotes,
+		EmergencyContactName:    in.EmergencyContactName,
+		EmergencyContactPhone:   in.EmergencyContactPhone,
 	})
 }
 
@@ -94,16 +118,24 @@ func (s *Service) GetOwnProfile(ctx context.Context, userID string) (OwnProfileV
 	}
 
 	view := OwnProfileView{
-		UserID:          row.UserID,
-		FirstName:       row.FirstName,
-		LastName:        row.LastName,
-		ProfileImageURL: row.ProfileImageURL,
-		DateOfBirth:     row.DateOfBirth,
-		Address:         row.Address,
-		Email:           row.Email,
-		PhoneNumber:     row.PhoneNumber,
-		TeamID:          row.TeamID,
-		SectorID:        row.SectorID,
+		UserID:                  row.UserID,
+		FirstName:               row.FirstName,
+		LastName:                row.LastName,
+		ProfileImageURL:         row.ProfileImageURL,
+		DateOfBirth:             row.DateOfBirth,
+		Address:                 row.Address,
+		Email:                   row.Email,
+		PhoneNumber:             row.PhoneNumber,
+		TeamID:                  row.TeamID,
+		SectorID:                row.SectorID,
+		MaritalStatus:           row.MaritalStatus,
+		WeddingAnniversaryDay:   row.WeddingAnniversaryDay,
+		WeddingAnniversaryMonth: row.WeddingAnniversaryMonth,
+		JobOccupation:           row.JobOccupation,
+		Allergies:               row.Allergies,
+		MedicalNotes:            row.MedicalNotes,
+		EmergencyContactName:    row.EmergencyContactName,
+		EmergencyContactPhone:   row.EmergencyContactPhone,
 	}
 	if row.TeamID != nil {
 		if team, err := s.teams.GetTeam(ctx, *row.TeamID); err == nil {

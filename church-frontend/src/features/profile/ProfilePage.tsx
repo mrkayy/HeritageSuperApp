@@ -18,6 +18,14 @@ export default function ProfilePage() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [address, setAddress] = useState("");
   const [dob, setDob] = useState("");
+  const [maritalStatus, setMaritalStatus] = useState<string>("");
+  const [anniversaryDay, setAnniversaryDay] = useState<number | "">("");
+  const [anniversaryMonth, setAnniversaryMonth] = useState<number | "">("");
+  const [jobOccupation, setJobOccupation] = useState("");
+  const [allergies, setAllergies] = useState("");
+  const [medicalNotes, setMedicalNotes] = useState("");
+  const [emergencyContactName, setEmergencyContactName] = useState("");
+  const [emergencyContactPhone, setEmergencyContactPhone] = useState("");
   const [profileError, setProfileError] = useState<string | null>(null);
   const [profileSuccess, setProfileSuccess] = useState<string | null>(null);
 
@@ -67,6 +75,14 @@ export default function ProfilePage() {
       setPhoneNumber(profData.phoneNumber || "");
       setAddress(profData.address || "");
       setDob(profData.dateOfBirth ? profData.dateOfBirth.split("T")[0] : "");
+      setMaritalStatus(profData.maritalStatus || "");
+      setAnniversaryDay(profData.weddingAnniversaryDay ?? "");
+      setAnniversaryMonth(profData.weddingAnniversaryMonth ?? "");
+      setJobOccupation(profData.jobOccupation || "");
+      setAllergies(profData.allergies || "");
+      setMedicalNotes(profData.medicalNotes || "");
+      setEmergencyContactName(profData.emergencyContactName || "");
+      setEmergencyContactPhone(profData.emergencyContactPhone || "");
     } catch (err) {
       console.error(err);
       setError("Failed to load profile and family records.");
@@ -99,6 +115,14 @@ export default function ProfilePage() {
         dateOfBirth: dob ? dob : undefined,
         teamId: profile?.teamId,
         sectorId: profile?.sectorId,
+        maritalStatus: maritalStatus || undefined,
+        weddingAnniversaryDay: anniversaryDay !== "" ? Number(anniversaryDay) : undefined,
+        weddingAnniversaryMonth: anniversaryMonth !== "" ? Number(anniversaryMonth) : undefined,
+        jobOccupation: jobOccupation.trim() || undefined,
+        allergies: allergies.trim() || undefined,
+        medicalNotes: medicalNotes.trim() || undefined,
+        emergencyContactName: emergencyContactName.trim() || undefined,
+        emergencyContactPhone: emergencyContactPhone.trim() || undefined,
       });
       setProfile((prev) =>
         prev
@@ -109,6 +133,14 @@ export default function ProfilePage() {
               phoneNumber: phoneNumber.trim(),
               address: address.trim(),
               dateOfBirth: dob ? dob : undefined,
+              maritalStatus: maritalStatus || undefined,
+              weddingAnniversaryDay: anniversaryDay !== "" ? Number(anniversaryDay) : undefined,
+              weddingAnniversaryMonth: anniversaryMonth !== "" ? Number(anniversaryMonth) : undefined,
+              jobOccupation: jobOccupation.trim() || undefined,
+              allergies: allergies.trim() || undefined,
+              medicalNotes: medicalNotes.trim() || undefined,
+              emergencyContactName: emergencyContactName.trim() || undefined,
+              emergencyContactPhone: emergencyContactPhone.trim() || undefined,
             }
           : null
       );
@@ -316,6 +348,109 @@ export default function ProfilePage() {
                   />
                 </div>
 
+                <div className="form-grid-3" style={{ marginTop: "var(--space-3)" }}>
+                  <div className="input-group">
+                    <label className="input-label">Marital Status</label>
+                    <select
+                      className="input-field"
+                      value={maritalStatus}
+                      onChange={(e) => setMaritalStatus(e.target.value)}
+                    >
+                      <option value="">Select status</option>
+                      <option value="single">Single</option>
+                      <option value="married">Married</option>
+                      <option value="widowed">Widowed</option>
+                      <option value="divorced">Divorced</option>
+                      <option value="separated">Separated</option>
+                    </select>
+                  </div>
+                  {maritalStatus === "married" && (
+                    <>
+                      <div className="input-group">
+                        <label className="input-label">Anniversary Day</label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="31"
+                          className="input-field"
+                          placeholder="Day (1-31)"
+                          value={anniversaryDay}
+                          onChange={(e) => setAnniversaryDay(e.target.value === "" ? "" : Number(e.target.value))}
+                        />
+                      </div>
+                      <div className="input-group">
+                        <label className="input-label">Anniversary Month</label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="12"
+                          className="input-field"
+                          placeholder="Month (1-12)"
+                          value={anniversaryMonth}
+                          onChange={(e) => setAnniversaryMonth(e.target.value === "" ? "" : Number(e.target.value))}
+                        />
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                <div className="form-grid-2" style={{ marginTop: "var(--space-3)" }}>
+                  <div className="input-group">
+                    <label className="input-label">Job / Occupation</label>
+                    <input
+                      type="text"
+                      className="input-field"
+                      placeholder="e.g. Accountant, Doctor"
+                      value={jobOccupation}
+                      onChange={(e) => setJobOccupation(e.target.value)}
+                    />
+                  </div>
+                  <div className="input-group">
+                    <label className="input-label">Allergies (if any)</label>
+                    <input
+                      type="text"
+                      className="input-field"
+                      placeholder="e.g. Shellfish, Penicillin"
+                      value={allergies}
+                      onChange={(e) => setAllergies(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="input-group" style={{ marginTop: "var(--space-3)" }}>
+                  <label className="input-label">Medical Notes</label>
+                  <textarea
+                    className="input-field"
+                    placeholder="Provide any critical medical conditions or details"
+                    value={medicalNotes}
+                    onChange={(e) => setMedicalNotes(e.target.value)}
+                    style={{ minHeight: "60px", resize: "vertical" }}
+                  />
+                </div>
+
+                <div className="form-grid-2" style={{ marginTop: "var(--space-3)" }}>
+                  <div className="input-group">
+                    <label className="input-label">Emergency Contact Name</label>
+                    <input
+                      type="text"
+                      className="input-field"
+                      placeholder="Full Name"
+                      value={emergencyContactName}
+                      onChange={(e) => setEmergencyContactName(e.target.value)}
+                    />
+                  </div>
+                  <div className="input-group">
+                    <label className="input-label">Emergency Contact Phone</label>
+                    <input
+                      type="text"
+                      className="input-field"
+                      placeholder="Phone number"
+                      value={emergencyContactPhone}
+                      onChange={(e) => setEmergencyContactPhone(e.target.value)}
+                    />
+                  </div>
+                </div>
+
                 <div className="form-actions" style={{ display: "flex", gap: "var(--space-3)", marginTop: "var(--space-5)" }}>
                   <button type="button" className="btn btn-secondary" onClick={() => setIsEditingProfile(false)}>
                     Cancel
@@ -348,6 +483,35 @@ export default function ProfilePage() {
                 <div className="detail-row">
                   <span className="detail-label">Home Address</span>
                   <span className="detail-value">{profile?.address || "—"}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Marital Status</span>
+                  <span className="detail-value">
+                    {profile?.maritalStatus ? profile.maritalStatus.charAt(0).toUpperCase() + profile.maritalStatus.slice(1) : "—"}
+                    {profile?.maritalStatus === "married" && profile.weddingAnniversaryDay && profile.weddingAnniversaryMonth
+                      ? ` (Anniversary: ${profile.weddingAnniversaryDay}/${profile.weddingAnniversaryMonth})`
+                      : ""}
+                  </span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Job / Occupation</span>
+                  <span className="detail-value">{profile?.jobOccupation || "—"}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Allergies</span>
+                  <span className={`detail-value ${profile?.allergies ? "text-warning" : ""}`}>{profile?.allergies || "None"}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Medical Notes</span>
+                  <span className="detail-value">{profile?.medicalNotes || "None"}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Emergency Contact</span>
+                  <span className="detail-value">
+                    {profile?.emergencyContactName || profile?.emergencyContactPhone
+                      ? `${profile.emergencyContactName || "—"} (${profile.emergencyContactPhone || "—"})`
+                      : "—"}
+                  </span>
                 </div>
                 <div className="detail-row">
                   <span className="detail-label">Placement Info</span>
