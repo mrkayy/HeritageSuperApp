@@ -3,6 +3,7 @@ package config
 
 import (
 	"bufio"
+	"log"
 	"os"
 	"strings"
 )
@@ -20,10 +21,12 @@ type Config struct {
 func loadEnv() {
 	file, err := os.Open(".env")
 	if err != nil {
+		log.Printf("[config] warning: failed to open .env file: %v", err)
 		return
 	}
 	defer file.Close()
 
+	log.Println("[config] Loading .env file...")
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
@@ -39,6 +42,9 @@ func loadEnv() {
 		val := strings.Trim(strings.TrimSpace(parts[1]), `"'`)
 		if os.Getenv(key) == "" {
 			os.Setenv(key, val)
+			log.Printf("[config] Set env from .env: %s", key)
+		} else {
+			log.Printf("[config] Env %s already set in system, skipping", key)
 		}
 	}
 }
