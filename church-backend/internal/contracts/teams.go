@@ -12,8 +12,11 @@ type Team struct {
 }
 
 type Sector struct {
-	ID   string
-	Name string
+	ID          string
+	Name        string
+	ChurchID    string
+	ChurchName  string
+	MemberCount int
 }
 
 type LocalChurch struct {

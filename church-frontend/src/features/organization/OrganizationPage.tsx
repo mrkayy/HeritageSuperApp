@@ -236,6 +236,8 @@ export default function OrganizationPage() {
                 ) : activeTab === "sectors" ? (
                   <tr>
                     <th>Sector Name</th>
+                    <th>Linked Local Church</th>
+                    <th>Assigned Members</th>
                     <th style={{ textAlign: "right" }}>Actions</th>
                   </tr>
                 ) : (
@@ -272,6 +274,14 @@ export default function OrganizationPage() {
                       <div className="org-avatar">🌐</div>
                       <strong>{s.Name}</strong>
                     </td>
+                    <td>
+                      {s.ChurchName || <span className="text-secondary small" style={{ fontStyle: "italic" }}>None</span>}
+                    </td>
+                    <td>
+                      <span className="badge badge-gold" style={{ display: "inline-flex", minWidth: "24px", justifyContent: "center", padding: "2px 8px" }}>
+                        {s.MemberCount ?? 0}
+                      </span>
+                    </td>
                     <td style={{ textAlign: "right" }}>
                       <div className="actions-cell">
                         <button className="btn btn-secondary btn-sm" onClick={() => openEditModal(s)}>Edit</button>
@@ -304,7 +314,7 @@ export default function OrganizationPage() {
       {/* Editor Modal */}
       {showModal && (
         <div className="modal-overlay">
-          <div className="modal-content card animate-fade-in-up modal-small">
+          <div className="modal-content card animate-fade-in-up modal-large">
             <div className="modal-header" style={{ marginBottom: "var(--space-6)" }}>
               <h2>
                 {modalMode === "create" ? "Add" : "Edit"}{" "}
@@ -395,6 +405,7 @@ export default function OrganizationPage() {
                     <option value="">None</option>
                     {sectors.map((s) => (
                       <option key={s.ID} value={s.ID}>{s.Name}</option>
+                      
                     ))}
                   </select>
                 </div>

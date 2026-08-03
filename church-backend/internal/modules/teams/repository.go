@@ -71,6 +71,7 @@ func (r *Repository) CreateTeam(ctx context.Context, name string) (contracts.Tea
 func (r *Repository) ListSectors(ctx context.Context) ([]contracts.Sector, error) {
 	sectors, err := r.db.Sector.Query().
 		Order(ent.Asc(sector.FieldSectorName)).
+		WithChurch().
 		All(ctx)
 	if err != nil {
 		return nil, err
@@ -78,9 +79,24 @@ func (r *Repository) ListSectors(ctx context.Context) ([]contracts.Sector, error
 
 	out := make([]contracts.Sector, 0, len(sectors))
 	for _, s := range sectors {
+		churchID := ""
+		churchName := ""
+		if s.Edges.Church != nil {
+			churchID = s.Edges.Church.ID.String()
+			churchName = s.Edges.Church.Name
+			if s.Edges.Church.Center != "" {
+				churchName = churchName + " (" + s.Edges.Church.Center + ")"
+			}
+		}
+
+		cnt, _ := s.QueryUsers().Count(ctx)
+
 		out = append(out, contracts.Sector{
-			ID:   s.ID.String(),
-			Name: s.SectorName,
+			ID:          s.ID.String(),
+			Name:        s.SectorName,
+			ChurchID:    churchID,
+			ChurchName:  churchName,
+			MemberCount: cnt,
 		})
 	}
 	return out, nil
@@ -92,33 +108,36 @@ func (r *Repository) GetSector(ctx context.Context, id string) (contracts.Sector
 		return contracts.Sector{}, err
 	}
 
-	s, err := r.db.Sector.Get(ctx, uid)
+	s, err := r.db.Sector.Query().
+		Where(sector.IDEQ(uid)).
+		WithChurch().
+		Only(ctx)
 	if err != nil {
 		return contracts.Sector{}, err
 	}
 
+	churchID := ""
+	churchName := ""
+	if s.Edges.Church != nil {
+		churchID = s.Edges.Church.ID.String()
+		churchName = s.Edges.Church.Name
+		if s.Edges.Church.Center != "" {
+			churchName = churchName + " (" + s.Edges.Church.Center + ")"
+		}
+	}
+
+	cnt, _ := s.QueryUsers().Count(ctx)
+
 	return contracts.Sector{
-		ID:   s.ID.String(),
-		Name: s.SectorName,
+		ID:          s.ID.String(),
+		Name:        s.SectorName,
+		ChurchID:    churchID,
+		ChurchName:  churchName,
+		MemberCount: cnt,
 	}, nil
 }
 
 func (r *Repository) CreateSector(ctx context.Context, name string) (contracts.Sector, error) {
-	// The Prisma schema references church_id on Sector.
-	// Since we are creating a sector, but don't have a church_id passed in the contract,
-	// we either need to set a default or allow it to be optional (wait, the Prisma schema says `church_id String @db.Uuid` without a question mark, which means it is NOT optional. But wait, in the original teams database table:
-	// CREATE TABLE IF NOT EXISTS sectors (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), name TEXT NOT NULL UNIQUE);
-	// In the original SQL migrations, sector didn't even have a church_id!
-	// So in the database migration, if we transition to Ent's automatic migrations, we should handle this.
-	// Wait, since we are doing auto-migration, we can set church_id to a dummy/default UUID or make it optional in Ent.
-	// Let's check `internal/ent/schema/sector.go` where we defined:
-	// `field.UUID("church_id", uuid.UUID{})`
-	// Wait! If it's a required field in Ent, we will fail to create a sector unless we pass `church_id`.
-	// Since the contract `CreateSector` doesn't pass a church_id, let's look at where we can get it, or if we should make `church_id` optional in Sector schema.
-	// Let's make `church_id` optional/nullable in Sector schema! It's much safer so that existing code that creates sectors doesn't fail.
-	// Wait, let's write this repository first, then we can modify `internal/ent/schema/sector.go` to make `church_id` optional and rerun `go generate`.
-	// Actually, let's use a default UUID if none is provided, or make it optional. Let's make it optional.
-	// func (r *Repository) CreateSector(ctx context.Context, name string) (contracts.Sector, error) {
 	s, err := r.db.Sector.Create().
 		SetSectorName(name).
 		Save(ctx)
@@ -126,10 +145,7 @@ func (r *Repository) CreateSector(ctx context.Context, name string) (contracts.S
 		return contracts.Sector{}, err
 	}
 
-	return contracts.Sector{
-		ID:   s.ID.String(),
-		Name: s.SectorName,
-	}, nil
+	return r.GetSector(ctx, s.ID.String())
 }
 
 // --- LocalChurch CRUD ---
@@ -357,10 +373,7 @@ func (r *Repository) CreateSectorFull(ctx context.Context, name string, descript
 		return contracts.Sector{}, err
 	}
 
-	return contracts.Sector{
-		ID:   s.ID.String(),
-		Name: s.SectorName,
-	}, nil
+	return r.GetSector(ctx, s.ID.String())
 }
 
 func (r *Repository) UpdateSector(ctx context.Context, id, name string, description *string, churchID *string) (contracts.Sector, error) {
@@ -389,10 +402,7 @@ func (r *Repository) UpdateSector(ctx context.Context, id, name string, descript
 		return contracts.Sector{}, err
 	}
 
-	return contracts.Sector{
-		ID:   s.ID.String(),
-		Name: s.SectorName,
-	}, nil
+	return r.GetSector(ctx, s.ID.String())
 }
 
 func (r *Repository) DeleteSector(ctx context.Context, id string) error {
