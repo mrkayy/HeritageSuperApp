@@ -35,6 +35,8 @@ export default function ProfilePage() {
   const [editKidId, setEditKidId] = useState<string | null>(null);
   const [kidError, setKidError] = useState<string | null>(null);
   const [isSubmittingKid, setIsSubmittingKid] = useState(false);
+  const [kidModalStep, setKidModalStep] = useState(1);
+  const [kidCategory, setKidCategory] = useState<"child" | "teen">("child");
 
   // Lookup data for kids assignments
   const [churches, setChurches] = useState<any[]>([]);
@@ -201,6 +203,8 @@ export default function ProfilePage() {
     setKidModalMode("edit");
     setEditKidId(k.id);
     setKidError(null);
+    setKidModalStep(1);
+    setKidCategory(k.email || k.phoneNumber ? "teen" : "child");
 
     setKidFirstName(k.firstName || "");
     setKidSurname(k.surname || "");
@@ -224,6 +228,8 @@ export default function ProfilePage() {
     setKidModalMode("create");
     setEditKidId(null);
     setKidError(null);
+    setKidModalStep(1);
+    setKidCategory("child");
 
     // Reset fields
     setKidFirstName("");
@@ -600,175 +606,283 @@ export default function ProfilePage() {
       {/* Kid Editor Modal */}
       {showKidModal && (
         <div className="modal-overlay">
-          <div className="modal-content card animate-fade-in-up modal-small" style={{ maxHeight: "90vh", overflowY: "auto" }}>
-            <div className="modal-header" style={{ marginBottom: "var(--space-5)" }}>
-              <h2>{kidModalMode === "create" ? "Add Child/Teenager" : "Edit Child Details"}</h2>
-              <p className="text-secondary" style={{ fontSize: "var(--fs-sm)" }}>
-                {kidModalMode === "create" ? "Register your teenager/child to link records with your guardian profile." : "Update details for your child."}
-              </p>
+          <div className="modal-content card animate-fade-in-up modal-small" style={{ maxHeight: "95vh", overflowY: "auto" }}>
+            <div className="modal-header" style={{ marginBottom: "var(--space-4)" }}>
+              <h2>{kidModalMode === "create" ? "Add Child / Teenager" : "Edit Child Details"}</h2>
+              <div className="stepper-indicator" style={{ display: "flex", gap: "var(--space-2)", marginTop: "var(--space-3)", flexWrap: "wrap" }}>
+                <span className={`step-dot ${kidModalStep >= 1 ? "active" : ""}`}>1. Identity</span>
+                <span className="step-arrow">→</span>
+                <span className={`step-dot ${kidModalStep >= 2 ? "active" : ""}`}>2. Placements</span>
+                <span className="step-arrow">→</span>
+                <span className={`step-dot ${kidModalStep >= 3 ? "active" : ""}`}>3. Care & Health</span>
+              </div>
             </div>
 
             {kidError && <div className="alert alert-error" style={{ marginBottom: "var(--space-4)" }}>{kidError}</div>}
 
             <form onSubmit={handleKidSubmit} style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-              <div className="form-grid-2">
-                <div className="input-group">
-                  <label className="input-label">First Name *</label>
-                  <input
-                    type="text"
-                    className="input-field"
-                    placeholder="e.g. Samuel"
-                    value={kidFirstName}
-                    onChange={(e) => setKidFirstName(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="input-group">
-                  <label className="input-label">Surname *</label>
-                  <input
-                    type="text"
-                    className="input-field"
-                    placeholder="e.g. George"
-                    value={kidSurname}
-                    onChange={(e) => setKidSurname(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
+              
+              {/* Step 1: Category Selection & Core Identity */}
+              {kidModalStep === 1 && (
+                <div className="stepper-step animate-slide-in" style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+                  <label className="input-label" style={{ marginBottom: "calc(-1 * var(--space-2))" }}>Select Profile Category</label>
+                  <div className="category-cards-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-4)" }}>
+                    <div
+                      className={`category-select-card card ${kidCategory === "child" ? "selected" : ""}`}
+                      onClick={() => setKidCategory("child")}
+                      style={{
+                        cursor: "pointer",
+                        padding: "var(--space-4)",
+                        borderRadius: "var(--radius-lg)",
+                        border: kidCategory === "child" ? "2px solid var(--primary)" : "1px solid var(--border-subtle)",
+                        background: kidCategory === "child" ? "rgba(14, 165, 233, 0.03)" : "transparent",
+                        transition: "all var(--duration-fast) var(--ease-out)"
+                      }}
+                    >
+                      <div style={{ fontSize: "var(--fs-2xl)", marginBottom: "var(--space-1)" }}>👶</div>
+                      <strong style={{ display: "block", color: "var(--text-primary)" }}>Child Profile</strong>
+                      <p className="text-secondary" style={{ fontSize: "var(--fs-xs)", margin: "var(--space-1) 0 0 0", lineHeight: "1.3" }}>
+                        Age 0-12. Primary school, Kids Church/Sunday school placements.
+                      </p>
+                    </div>
+                    <div
+                      className={`category-select-card card ${kidCategory === "teen" ? "selected" : ""}`}
+                      onClick={() => setKidCategory("teen")}
+                      style={{
+                        cursor: "pointer",
+                        padding: "var(--space-4)",
+                        borderRadius: "var(--radius-lg)",
+                        border: kidCategory === "teen" ? "2px solid var(--primary)" : "1px solid var(--border-subtle)",
+                        background: kidCategory === "teen" ? "rgba(14, 165, 233, 0.03)" : "transparent",
+                        transition: "all var(--duration-fast) var(--ease-out)"
+                      }}
+                    >
+                      <div style={{ fontSize: "var(--fs-2xl)", marginBottom: "var(--space-1)" }}>🎒</div>
+                      <strong style={{ display: "block", color: "var(--text-primary)" }}>Teenager Profile</strong>
+                      <p className="text-secondary" style={{ fontSize: "var(--fs-xs)", margin: "var(--space-1) 0 0 0", lineHeight: "1.3" }}>
+                        Age 13-19. Secondary school, Youth Ministry & Teen Church.
+                      </p>
+                    </div>
+                  </div>
 
-              <div className="form-grid-2">
-                <div className="input-group">
-                  <label className="input-label">Email (Optional)</label>
-                  <input
-                    type="email"
-                    className="input-field"
-                    placeholder="e.g. sam@gmail.com"
-                    value={kidEmail}
-                    onChange={(e) => setKidEmail(e.target.value)}
-                  />
-                </div>
-                <div className="input-group">
-                  <label className="input-label">Phone Number (Optional)</label>
-                  <input
-                    type="text"
-                    className="input-field"
-                    placeholder="e.g. +234..."
-                    value={kidPhone}
-                    onChange={(e) => setKidPhone(e.target.value)}
-                  />
-                </div>
-              </div>
+                  <div className="form-grid-2">
+                    <div className="input-group">
+                      <label className="input-label">First Name *</label>
+                      <input
+                        type="text"
+                        className="input-field"
+                        placeholder="e.g. Samuel"
+                        value={kidFirstName}
+                        onChange={(e) => setKidFirstName(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="input-group">
+                      <label className="input-label">Surname *</label>
+                      <input
+                        type="text"
+                        className="input-field"
+                        placeholder="e.g. George"
+                        value={kidSurname}
+                        onChange={(e) => setKidSurname(e.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
 
-              <div className="form-grid-3">
-                <div className="input-group">
-                  <label className="input-label">Gender</label>
-                  <select
-                    className="input-field"
-                    value={kidGender}
-                    onChange={(e) => setKidGender(e.target.value as any)}
-                  >
-                    <option value="">Select Gender</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                  </select>
+                  <div className="input-group">
+                    <label className="input-label">Gender</label>
+                    <select
+                      className="input-field"
+                      value={kidGender}
+                      onChange={(e) => setKidGender(e.target.value as any)}
+                    >
+                      <option value="">Select Gender</option>
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                    </select>
+                  </div>
                 </div>
-                <div className="input-group">
-                  <label className="input-label">Birth Day</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="31"
-                    className="input-field"
-                    placeholder="Day (1-31)"
-                    value={kidDobDay}
-                    onChange={(e) => setKidDobDay(e.target.value === "" ? "" : Number(e.target.value))}
-                  />
-                </div>
-                <div className="input-group">
-                  <label className="input-label">Birth Month</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="12"
-                    className="input-field"
-                    placeholder="Month (1-12)"
-                    value={kidDobMonth}
-                    onChange={(e) => setKidDobMonth(e.target.value === "" ? "" : Number(e.target.value))}
-                  />
-                </div>
-              </div>
+              )}
 
-              <div className="form-grid-3">
-                <div className="input-group">
-                  <label className="input-label">Local Church Center</label>
-                  <select
-                    className="input-field"
-                    value={kidChurchId}
-                    onChange={(e) => setKidChurchId(e.target.value)}
-                  >
-                    <option value="">None / Not Assigned</option>
-                    {churches.map((c) => (
-                      <option key={c.ID} value={c.ID}>{c.Name} {c.Center ? `(${c.Center})` : ""}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="input-group">
-                  <label className="input-label">Assigned Sector</label>
-                  <select
-                    className="input-field"
-                    value={kidSectorId}
-                    onChange={(e) => setKidSectorId(e.target.value)}
-                  >
-                    <option value="">None / Not Assigned</option>
-                    {sectors.map((s) => (
-                      <option key={s.ID} value={s.ID}>{s.Name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="input-group">
-                  <label className="input-label">Primary Team</label>
-                  <select
-                    className="input-field"
-                    value={kidTeamId}
-                    onChange={(e) => setKidTeamId(e.target.value)}
-                  >
-                    <option value="">None / Not Assigned</option>
-                    {teams.map((t) => (
-                      <option key={t.ID} value={t.ID}>{t.Name}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
+              {/* Step 2: Birth Details & placements */}
+              {kidModalStep === 2 && (
+                <div className="stepper-step animate-slide-in" style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+                  <div className="form-grid-2">
+                    <div className="input-group">
+                      <label className="input-label">Birth Day</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="31"
+                        className="input-field"
+                        placeholder="Day (1-31)"
+                        value={kidDobDay}
+                        onChange={(e) => setKidDobDay(e.target.value === "" ? "" : Number(e.target.value))}
+                      />
+                    </div>
+                    <div className="input-group">
+                      <label className="input-label">Birth Month</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="12"
+                        className="input-field"
+                        placeholder="Month (1-12)"
+                        value={kidDobMonth}
+                        onChange={(e) => setKidDobMonth(e.target.value === "" ? "" : Number(e.target.value))}
+                      />
+                    </div>
+                  </div>
 
-              <div className="input-group">
-                <label className="input-label">Allergies</label>
-                <input
-                  type="text"
-                  className="input-field"
-                  placeholder="e.g. Lactose, Eggs (leave blank if none)"
-                  value={kidAllergies}
-                  onChange={(e) => setKidAllergies(e.target.value)}
-                />
-              </div>
+                  <div className="form-grid-3">
+                    <div className="input-group">
+                      <label className="input-label">Local Church Center</label>
+                      <select
+                        className="input-field"
+                        value={kidChurchId}
+                        onChange={(e) => setKidChurchId(e.target.value)}
+                      >
+                        <option value="">None / Not Assigned</option>
+                        {churches.map((c) => (
+                          <option key={c.ID} value={c.ID}>{c.Name} {c.Center ? `(${c.Center})` : ""}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="input-group">
+                      <label className="input-label">Assigned Sector</label>
+                      <select
+                        className="input-field"
+                        value={kidSectorId}
+                        onChange={(e) => setKidSectorId(e.target.value)}
+                      >
+                        <option value="">None / Not Assigned</option>
+                        {sectors.map((s) => (
+                          <option key={s.ID} value={s.ID}>{s.Name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="input-group">
+                      <label className="input-label">Primary Team</label>
+                      <select
+                        className="input-field"
+                        value={kidTeamId}
+                        onChange={(e) => setKidTeamId(e.target.value)}
+                      >
+                        <option value="">None / Not Assigned</option>
+                        {teams.map((t) => (
+                          <option key={t.ID} value={t.ID}>{t.Name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
 
-              <div className="input-group">
-                <label className="input-label">Medical Notes</label>
-                <textarea
-                  className="input-field"
-                  placeholder="Critical conditions or notes"
-                  value={kidMedicalNotes}
-                  onChange={(e) => setKidMedicalNotes(e.target.value)}
-                  style={{ minHeight: "60px", resize: "vertical" }}
-                />
-              </div>
+                  {kidCategory === "teen" && (
+                    <div className="form-grid-2" style={{ padding: "var(--space-4)", background: "rgba(15, 23, 42, 0.015)", borderRadius: "var(--radius-lg)", border: "1px dashed var(--border-subtle)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+                      <div className="input-group">
+                        <label className="input-label">Email (Optional)</label>
+                        <input
+                          type="email"
+                          className="input-field"
+                          placeholder="e.g. samuel@gmail.com"
+                          value={kidEmail}
+                          onChange={(e) => setKidEmail(e.target.value)}
+                        />
+                      </div>
+                      <div className="input-group">
+                        <label className="input-label">Phone Number (Optional)</label>
+                        <input
+                          type="text"
+                          className="input-field"
+                          placeholder="e.g. +234..."
+                          value={kidPhone}
+                          onChange={(e) => setKidPhone(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Step 3: Care & Health Details */}
+              {kidModalStep === 3 && (
+                <div className="stepper-step animate-slide-in" style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+                  <div className="input-group">
+                    <label className="input-label">Allergies (leave blank if none)</label>
+                    <input
+                      type="text"
+                      className="input-field"
+                      placeholder="e.g. Lactose Intolerance, Peanuts"
+                      value={kidAllergies}
+                      onChange={(e) => setKidAllergies(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="input-group">
+                    <label className="input-label">Medical Notes / Care Instructions</label>
+                    <textarea
+                      className="input-field"
+                      placeholder="Specify critical medical details, prescription info, or care directives."
+                      value={kidMedicalNotes}
+                      onChange={(e) => setKidMedicalNotes(e.target.value)}
+                      style={{ minHeight: "80px", resize: "vertical" }}
+                    />
+                  </div>
+
+                  <div className="form-grid-2" style={{ padding: "var(--space-4)", background: "rgba(245, 158, 11, 0.02)", borderRadius: "var(--radius-lg)", border: "1px solid rgba(245, 158, 11, 0.12)" }}>
+                    <div className="input-group">
+                      <label className="input-label" style={{ color: "var(--warning)" }}>Emergency Contact Name</label>
+                      <input
+                        type="text"
+                        className="input-field"
+                        placeholder="e.g. Grandma, Uncle"
+                        value={kidAddress}
+                        onChange={(e) => setKidAddress(e.target.value)}
+                      />
+                    </div>
+                    <div className="input-group">
+                      <label className="input-label" style={{ color: "var(--warning)" }}>Emergency Contact Phone</label>
+                      <input
+                        type="text"
+                        className="input-field"
+                        placeholder="Phone number"
+                        value={kidPhone}
+                        onChange={(e) => setKidPhone(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="modal-actions" style={{ display: "flex", justifyContent: "flex-end", gap: "var(--space-3)", marginTop: "var(--space-4)" }}>
                 <button type="button" className="btn btn-secondary" onClick={closeKidModal} disabled={isSubmittingKid}>
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary" disabled={isSubmittingKid}>
-                  {isSubmittingKid ? "Saving..." : "Save Details"}
-                </button>
+                {kidModalStep > 1 && (
+                  <button type="button" className="btn btn-secondary" onClick={() => setKidModalStep(prev => prev - 1)} disabled={isSubmittingKid}>
+                    ← Back
+                  </button>
+                )}
+                {kidModalStep < 3 ? (
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={() => {
+                      if (kidModalStep === 1 && (!kidFirstName.trim() || !kidSurname.trim())) {
+                        setKidError("Child's first name and surname are required.");
+                        return;
+                      }
+                      setKidError(null);
+                      setKidModalStep(prev => prev + 1);
+                    }}
+                  >
+                    Next Step →
+                  </button>
+                ) : (
+                  <button type="submit" className="btn btn-primary" disabled={isSubmittingKid}>
+                    {isSubmittingKid ? "Saving..." : "Save Details"}
+                  </button>
+                )}
               </div>
             </form>
           </div>

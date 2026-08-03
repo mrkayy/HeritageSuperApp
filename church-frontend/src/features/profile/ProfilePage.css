@@ -198,3 +198,44 @@
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+/* Stepper Indicator & Category Selection styling */
+.stepper-indicator {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.step-dot {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--text-tertiary);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-md);
+  background: var(--bg-hover);
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.step-dot.active {
+  color: var(--primary);
+  background: rgba(14, 165, 233, 0.08);
+}
+
+.step-arrow {
+  color: var(--text-tertiary);
+  font-size: var(--fs-xs);
+}
+
+.category-select-card {
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.category-select-card:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+  border-color: var(--primary-light) !important;
+}
+
+.category-select-card.selected {
+  box-shadow: var(--shadow-md);
+}
