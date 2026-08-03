@@ -304,7 +304,7 @@ export default function OrganizationPage() {
       {/* Editor Modal */}
       {showModal && (
         <div className="modal-overlay">
-          <div className={`modal-content card animate-fade-in-up ${activeTab === "churches" ? "modal-large" : "modal-small"}`}>
+          <div className="modal-content card animate-fade-in-up modal-small">
             <div className="modal-header" style={{ marginBottom: "var(--space-6)" }}>
               <h2>
                 {modalMode === "create" ? "Add" : "Edit"}{" "}
@@ -318,144 +318,102 @@ export default function OrganizationPage() {
               </div>
             )}
 
-            <div className="modal-body-layout">
-              <form onSubmit={handleSubmit} className="modal-form-content">
-                <div className="input-group">
-                  <label className="input-label">Name *</label>
-                  <input
-                    type="text"
-                    className="input-field"
-                    value={fieldName}
-                    onChange={(e) => setFieldName(e.target.value)}
-                    placeholder={`Enter ${activeTab.slice(0, -1)} name`}
-                    required
-                  />
-                </div>
-
-                {activeTab === "churches" && (
-                  <>
-                    <div className="input-group">
-                      <label className="input-label">Center Location *</label>
-                      <input
-                        type="text"
-                        className="input-field"
-                        value={fieldCenter}
-                        onChange={(e) => setFieldCenter(e.target.value)}
-                        placeholder="e.g. Lagos Headquarters"
-                        required
-                      />
-                    </div>
-                    <div className="input-group">
-                      <label className="input-label">Slug (URL friendly key)</label>
-                      <input
-                        type="text"
-                        className="input-field"
-                        value={fieldSlug}
-                        onChange={(e) => setFieldSlug(e.target.value)}
-                        placeholder="e.g. lagos-hq (optional)"
-                      />
-                    </div>
-                  </>
-                )}
-
-                <div className="input-group">
-                  <label className="input-label">Description (Optional)</label>
-                  <input
-                    type="text"
-                    className="input-field"
-                    value={fieldDescription}
-                    onChange={(e) => setFieldDescription(e.target.value)}
-                    placeholder="Brief description"
-                  />
-                </div>
-
-                {activeTab !== "churches" && (
-                  <div className="input-group">
-                    <label className="input-label">Linked Local Church (Optional)</label>
-                    <select
-                      className="input-field"
-                      value={fieldChurchId}
-                      onChange={(e) => setFieldChurchId(e.target.value)}
-                    >
-                      <option value="">None</option>
-                      {churches.map((c) => (
-                        <option key={c.ID} value={c.ID}>{c.Name}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                {activeTab === "teams" && (
-                  <div className="input-group">
-                    <label className="input-label">Linked Sector (Optional)</label>
-                    <select
-                      className="input-field"
-                      value={fieldSectorId}
-                      onChange={(e) => setFieldSectorId(e.target.value)}
-                    >
-                      <option value="">None</option>
-                      {sectors.map((s) => (
-                        <option key={s.ID} value={s.ID}>{s.Name}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                <div className="modal-actions">
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={() => setShowModal(false)}
-                    disabled={isSubmitting}
-                  >
-                    Cancel
-                  </button>
-                  <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
-                    {isSubmitting ? "Saving..." : "Save Changes"}
-                  </button>
-                </div>
-              </form>
+            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+              <div className="input-group">
+                <label className="input-label">Name *</label>
+                <input
+                  type="text"
+                  className="input-field"
+                  value={fieldName}
+                  onChange={(e) => setFieldName(e.target.value)}
+                  placeholder={`Enter ${activeTab.slice(0, -1)} name`}
+                  required
+                />
+              </div>
 
               {activeTab === "churches" && (
-                <div className="live-preview-container">
-                  <span className="preview-tag">Live Preview</span>
-                  <div className="preview-church-card">
-                    <div className="preview-card-header">
-                      <div className="preview-avatar">🏫</div>
-                      <div className="preview-title-block">
-                        <span className="preview-label">Local Church</span>
-                        <h4>{fieldName.trim() || "God's Heritage of Faith Church"}</h4>
-                      </div>
-                    </div>
-                    <div className="preview-card-body">
-                      <div className="preview-detail-row">
-                        <span className="detail-icon">📍</span>
-                        <div>
-                          <span className="detail-label">Center Location</span>
-                          <span className="detail-value">{fieldCenter.trim() || "Center Location (Required)"}</span>
-                        </div>
-                      </div>
-                      <div className="preview-detail-row">
-                        <span className="detail-icon">🔗</span>
-                        <div>
-                          <span className="detail-label">URL Slug</span>
-                          <span className="detail-value">
-                            <code>/{fieldSlug.trim() || fieldName.toLowerCase().replace(/\s+/g, "-") || "slug-url"}</code>
-                          </span>
-                        </div>
-                      </div>
-                      <div className="preview-detail-row">
-                        <span className="detail-icon">📝</span>
-                        <div>
-                          <span className="detail-label">Description</span>
-                          <p className="detail-text">{fieldDescription.trim() || "A vibrant church center of God's Heritage of Faith."}</p>
-                        </div>
-                      </div>
-                    </div>
+                <>
+                  <div className="input-group">
+                    <label className="input-label">Center Location *</label>
+                    <input
+                      type="text"
+                      className="input-field"
+                      value={fieldCenter}
+                      onChange={(e) => setFieldCenter(e.target.value)}
+                      placeholder="e.g. Lagos Headquarters"
+                      required
+                    />
                   </div>
+                  <div className="input-group">
+                    <label className="input-label">Slug (URL friendly key)</label>
+                    <input
+                      type="text"
+                      className="input-field"
+                      value={fieldSlug}
+                      onChange={(e) => setFieldSlug(e.target.value)}
+                      placeholder="e.g. lagos-hq (optional)"
+                    />
+                  </div>
+                </>
+              )}
+
+              <div className="input-group">
+                <label className="input-label">Description (Optional)</label>
+                <input
+                  type="text"
+                  className="input-field"
+                  value={fieldDescription}
+                  onChange={(e) => setFieldDescription(e.target.value)}
+                  placeholder="Brief description"
+                />
+              </div>
+
+              {activeTab !== "churches" && (
+                <div className="input-group">
+                  <label className="input-label">Linked Local Church (Optional)</label>
+                  <select
+                    className="input-field"
+                    value={fieldChurchId}
+                    onChange={(e) => setFieldChurchId(e.target.value)}
+                  >
+                    <option value="">None</option>
+                    {churches.map((c) => (
+                      <option key={c.ID} value={c.ID}>{c.Name}</option>
+                    ))}
+                  </select>
                 </div>
               )}
-            </div>
+
+              {activeTab === "teams" && (
+                <div className="input-group">
+                  <label className="input-label">Linked Sector (Optional)</label>
+                  <select
+                    className="input-field"
+                    value={fieldSectorId}
+                    onChange={(e) => setFieldSectorId(e.target.value)}
+                  >
+                    <option value="">None</option>
+                    {sectors.map((s) => (
+                      <option key={s.ID} value={s.ID}>{s.Name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setShowModal(false)}
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+                  {isSubmitting ? "Saving..." : "Save Changes"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
