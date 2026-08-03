@@ -89,7 +89,7 @@ func (r *Repository) ListSectors(ctx context.Context) ([]contracts.Sector, error
 			}
 		}
 
-		cnt, _ := s.QueryUsers().Count(ctx)
+		cnt, _ := s.QueryMembers().Count(ctx)
 
 		out = append(out, contracts.Sector{
 			ID:          s.ID.String(),
@@ -126,7 +126,7 @@ func (r *Repository) GetSector(ctx context.Context, id string) (contracts.Sector
 		}
 	}
 
-	cnt, _ := s.QueryUsers().Count(ctx)
+	cnt, _ := s.QueryMembers().Count(ctx)
 
 	return contracts.Sector{
 		ID:          s.ID.String(),
