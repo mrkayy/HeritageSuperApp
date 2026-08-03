@@ -14,10 +14,13 @@ import (
 	"github.com/google/uuid"
 	"github.com/hofchurchng/church-backend/internal/ent/guardianrelationship"
 	"github.com/hofchurchng/church-backend/internal/ent/kidsministryprofile"
+	"github.com/hofchurchng/church-backend/internal/ent/localchurch"
 	"github.com/hofchurchng/church-backend/internal/ent/member"
 	"github.com/hofchurchng/church-backend/internal/ent/membershipstagehistory"
 	"github.com/hofchurchng/church-backend/internal/ent/memberteam"
 	"github.com/hofchurchng/church-backend/internal/ent/predicate"
+	"github.com/hofchurchng/church-backend/internal/ent/sector"
+	"github.com/hofchurchng/church-backend/internal/ent/team"
 )
 
 // MemberUpdate is the builder for updating Member entities.
@@ -455,6 +458,66 @@ func (_u *MemberUpdate) ClearCreatedBy() *MemberUpdate {
 	return _u
 }
 
+// SetLocalChurchID sets the "local_church_id" field.
+func (_u *MemberUpdate) SetLocalChurchID(v uuid.UUID) *MemberUpdate {
+	_u.mutation.SetLocalChurchID(v)
+	return _u
+}
+
+// SetNillableLocalChurchID sets the "local_church_id" field if the given value is not nil.
+func (_u *MemberUpdate) SetNillableLocalChurchID(v *uuid.UUID) *MemberUpdate {
+	if v != nil {
+		_u.SetLocalChurchID(*v)
+	}
+	return _u
+}
+
+// ClearLocalChurchID clears the value of the "local_church_id" field.
+func (_u *MemberUpdate) ClearLocalChurchID() *MemberUpdate {
+	_u.mutation.ClearLocalChurchID()
+	return _u
+}
+
+// SetSectorID sets the "sector_id" field.
+func (_u *MemberUpdate) SetSectorID(v uuid.UUID) *MemberUpdate {
+	_u.mutation.SetSectorID(v)
+	return _u
+}
+
+// SetNillableSectorID sets the "sector_id" field if the given value is not nil.
+func (_u *MemberUpdate) SetNillableSectorID(v *uuid.UUID) *MemberUpdate {
+	if v != nil {
+		_u.SetSectorID(*v)
+	}
+	return _u
+}
+
+// ClearSectorID clears the value of the "sector_id" field.
+func (_u *MemberUpdate) ClearSectorID() *MemberUpdate {
+	_u.mutation.ClearSectorID()
+	return _u
+}
+
+// SetTeamID sets the "team_id" field.
+func (_u *MemberUpdate) SetTeamID(v uuid.UUID) *MemberUpdate {
+	_u.mutation.SetTeamID(v)
+	return _u
+}
+
+// SetNillableTeamID sets the "team_id" field if the given value is not nil.
+func (_u *MemberUpdate) SetNillableTeamID(v *uuid.UUID) *MemberUpdate {
+	if v != nil {
+		_u.SetTeamID(*v)
+	}
+	return _u
+}
+
+// ClearTeamID clears the value of the "team_id" field.
+func (_u *MemberUpdate) ClearTeamID() *MemberUpdate {
+	_u.mutation.ClearTeamID()
+	return _u
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (_u *MemberUpdate) SetCreatedAt(v time.Time) *MemberUpdate {
 	_u.mutation.SetCreatedAt(v)
@@ -568,6 +631,21 @@ func (_u *MemberUpdate) SetKidsMinistryProfile(v *KidsMinistryProfile) *MemberUp
 	return _u.SetKidsMinistryProfileID(v.ID)
 }
 
+// SetLocalChurch sets the "local_church" edge to the LocalChurch entity.
+func (_u *MemberUpdate) SetLocalChurch(v *LocalChurch) *MemberUpdate {
+	return _u.SetLocalChurchID(v.ID)
+}
+
+// SetSector sets the "sector" edge to the Sector entity.
+func (_u *MemberUpdate) SetSector(v *Sector) *MemberUpdate {
+	return _u.SetSectorID(v.ID)
+}
+
+// SetTeam sets the "team" edge to the Team entity.
+func (_u *MemberUpdate) SetTeam(v *Team) *MemberUpdate {
+	return _u.SetTeamID(v.ID)
+}
+
 // Mutation returns the MemberMutation object of the builder.
 func (_u *MemberUpdate) Mutation() *MemberMutation {
 	return _u.mutation
@@ -660,6 +738,24 @@ func (_u *MemberUpdate) RemoveGuardianRelationshipsAsGuardian(v ...*GuardianRela
 // ClearKidsMinistryProfile clears the "kids_ministry_profile" edge to the KidsMinistryProfile entity.
 func (_u *MemberUpdate) ClearKidsMinistryProfile() *MemberUpdate {
 	_u.mutation.ClearKidsMinistryProfile()
+	return _u
+}
+
+// ClearLocalChurch clears the "local_church" edge to the LocalChurch entity.
+func (_u *MemberUpdate) ClearLocalChurch() *MemberUpdate {
+	_u.mutation.ClearLocalChurch()
+	return _u
+}
+
+// ClearSector clears the "sector" edge to the Sector entity.
+func (_u *MemberUpdate) ClearSector() *MemberUpdate {
+	_u.mutation.ClearSector()
+	return _u
+}
+
+// ClearTeam clears the "team" edge to the Team entity.
+func (_u *MemberUpdate) ClearTeam() *MemberUpdate {
+	_u.mutation.ClearTeam()
 	return _u
 }
 
@@ -1071,6 +1167,93 @@ func (_u *MemberUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(kidsministryprofile.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.LocalChurchCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   member.LocalChurchTable,
+			Columns: []string{member.LocalChurchColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(localchurch.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.LocalChurchIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   member.LocalChurchTable,
+			Columns: []string{member.LocalChurchColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(localchurch.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.SectorCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   member.SectorTable,
+			Columns: []string{member.SectorColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(sector.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.SectorIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   member.SectorTable,
+			Columns: []string{member.SectorColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(sector.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.TeamCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   member.TeamTable,
+			Columns: []string{member.TeamColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(team.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.TeamIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   member.TeamTable,
+			Columns: []string{member.TeamColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(team.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -1520,6 +1703,66 @@ func (_u *MemberUpdateOne) ClearCreatedBy() *MemberUpdateOne {
 	return _u
 }
 
+// SetLocalChurchID sets the "local_church_id" field.
+func (_u *MemberUpdateOne) SetLocalChurchID(v uuid.UUID) *MemberUpdateOne {
+	_u.mutation.SetLocalChurchID(v)
+	return _u
+}
+
+// SetNillableLocalChurchID sets the "local_church_id" field if the given value is not nil.
+func (_u *MemberUpdateOne) SetNillableLocalChurchID(v *uuid.UUID) *MemberUpdateOne {
+	if v != nil {
+		_u.SetLocalChurchID(*v)
+	}
+	return _u
+}
+
+// ClearLocalChurchID clears the value of the "local_church_id" field.
+func (_u *MemberUpdateOne) ClearLocalChurchID() *MemberUpdateOne {
+	_u.mutation.ClearLocalChurchID()
+	return _u
+}
+
+// SetSectorID sets the "sector_id" field.
+func (_u *MemberUpdateOne) SetSectorID(v uuid.UUID) *MemberUpdateOne {
+	_u.mutation.SetSectorID(v)
+	return _u
+}
+
+// SetNillableSectorID sets the "sector_id" field if the given value is not nil.
+func (_u *MemberUpdateOne) SetNillableSectorID(v *uuid.UUID) *MemberUpdateOne {
+	if v != nil {
+		_u.SetSectorID(*v)
+	}
+	return _u
+}
+
+// ClearSectorID clears the value of the "sector_id" field.
+func (_u *MemberUpdateOne) ClearSectorID() *MemberUpdateOne {
+	_u.mutation.ClearSectorID()
+	return _u
+}
+
+// SetTeamID sets the "team_id" field.
+func (_u *MemberUpdateOne) SetTeamID(v uuid.UUID) *MemberUpdateOne {
+	_u.mutation.SetTeamID(v)
+	return _u
+}
+
+// SetNillableTeamID sets the "team_id" field if the given value is not nil.
+func (_u *MemberUpdateOne) SetNillableTeamID(v *uuid.UUID) *MemberUpdateOne {
+	if v != nil {
+		_u.SetTeamID(*v)
+	}
+	return _u
+}
+
+// ClearTeamID clears the value of the "team_id" field.
+func (_u *MemberUpdateOne) ClearTeamID() *MemberUpdateOne {
+	_u.mutation.ClearTeamID()
+	return _u
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (_u *MemberUpdateOne) SetCreatedAt(v time.Time) *MemberUpdateOne {
 	_u.mutation.SetCreatedAt(v)
@@ -1633,6 +1876,21 @@ func (_u *MemberUpdateOne) SetKidsMinistryProfile(v *KidsMinistryProfile) *Membe
 	return _u.SetKidsMinistryProfileID(v.ID)
 }
 
+// SetLocalChurch sets the "local_church" edge to the LocalChurch entity.
+func (_u *MemberUpdateOne) SetLocalChurch(v *LocalChurch) *MemberUpdateOne {
+	return _u.SetLocalChurchID(v.ID)
+}
+
+// SetSector sets the "sector" edge to the Sector entity.
+func (_u *MemberUpdateOne) SetSector(v *Sector) *MemberUpdateOne {
+	return _u.SetSectorID(v.ID)
+}
+
+// SetTeam sets the "team" edge to the Team entity.
+func (_u *MemberUpdateOne) SetTeam(v *Team) *MemberUpdateOne {
+	return _u.SetTeamID(v.ID)
+}
+
 // Mutation returns the MemberMutation object of the builder.
 func (_u *MemberUpdateOne) Mutation() *MemberMutation {
 	return _u.mutation
@@ -1725,6 +1983,24 @@ func (_u *MemberUpdateOne) RemoveGuardianRelationshipsAsGuardian(v ...*GuardianR
 // ClearKidsMinistryProfile clears the "kids_ministry_profile" edge to the KidsMinistryProfile entity.
 func (_u *MemberUpdateOne) ClearKidsMinistryProfile() *MemberUpdateOne {
 	_u.mutation.ClearKidsMinistryProfile()
+	return _u
+}
+
+// ClearLocalChurch clears the "local_church" edge to the LocalChurch entity.
+func (_u *MemberUpdateOne) ClearLocalChurch() *MemberUpdateOne {
+	_u.mutation.ClearLocalChurch()
+	return _u
+}
+
+// ClearSector clears the "sector" edge to the Sector entity.
+func (_u *MemberUpdateOne) ClearSector() *MemberUpdateOne {
+	_u.mutation.ClearSector()
+	return _u
+}
+
+// ClearTeam clears the "team" edge to the Team entity.
+func (_u *MemberUpdateOne) ClearTeam() *MemberUpdateOne {
+	_u.mutation.ClearTeam()
 	return _u
 }
 
@@ -2166,6 +2442,93 @@ func (_u *MemberUpdateOne) sqlSave(ctx context.Context) (_node *Member, err erro
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(kidsministryprofile.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.LocalChurchCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   member.LocalChurchTable,
+			Columns: []string{member.LocalChurchColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(localchurch.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.LocalChurchIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   member.LocalChurchTable,
+			Columns: []string{member.LocalChurchColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(localchurch.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.SectorCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   member.SectorTable,
+			Columns: []string{member.SectorColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(sector.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.SectorIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   member.SectorTable,
+			Columns: []string{member.SectorColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(sector.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.TeamCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   member.TeamTable,
+			Columns: []string{member.TeamColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(team.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.TeamIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   member.TeamTable,
+			Columns: []string{member.TeamColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(team.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

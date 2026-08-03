@@ -25,6 +25,8 @@ const (
 	FieldSlug = "slug"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
+	// EdgeMembers holds the string denoting the members edge name in mutations.
+	EdgeMembers = "members"
 	// EdgeSectors holds the string denoting the sectors edge name in mutations.
 	EdgeSectors = "sectors"
 	// EdgeTeams holds the string denoting the teams edge name in mutations.
@@ -37,6 +39,8 @@ const (
 	EdgeChurchTeams = "church_teams"
 	// EdgeChurchEvents holds the string denoting the church_events edge name in mutations.
 	EdgeChurchEvents = "church_events"
+	// MemberFieldID holds the string denoting the ID field of the Member.
+	MemberFieldID = "id"
 	// SectorFieldID holds the string denoting the ID field of the Sector.
 	SectorFieldID = "sector_id"
 	// TeamFieldID holds the string denoting the ID field of the Team.
@@ -51,6 +55,13 @@ const (
 	ChurchEventFieldID = "id"
 	// Table holds the table name of the localchurch in the database.
 	Table = "local_church"
+	// MembersTable is the table that holds the members relation/edge.
+	MembersTable = "members"
+	// MembersInverseTable is the table name for the Member entity.
+	// It exists in this package in order to avoid circular dependency with the "member" package.
+	MembersInverseTable = "members"
+	// MembersColumn is the table column denoting the members relation/edge.
+	MembersColumn = "local_church_id"
 	// SectorsTable is the table that holds the sectors relation/edge.
 	SectorsTable = "sector"
 	// SectorsInverseTable is the table name for the Sector entity.
@@ -155,6 +166,20 @@ func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
 }
 
+// ByMembersCount orders the results by members count.
+func ByMembersCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newMembersStep(), opts...)
+	}
+}
+
+// ByMembers orders the results by members terms.
+func ByMembers(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newMembersStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // BySectorsCount orders the results by sectors count.
 func BySectorsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -237,6 +262,13 @@ func ByChurchEvents(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newChurchEventsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
+}
+func newMembersStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(MembersInverseTable, MemberFieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, MembersTable, MembersColumn),
+	)
 }
 func newSectorsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(

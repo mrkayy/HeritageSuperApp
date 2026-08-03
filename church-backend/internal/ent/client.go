@@ -1416,6 +1416,22 @@ func (c *LocalChurchClient) GetX(ctx context.Context, id uuid.UUID) *LocalChurch
 	return obj
 }
 
+// QueryMembers queries the members edge of a LocalChurch.
+func (c *LocalChurchClient) QueryMembers(_m *LocalChurch) *MemberQuery {
+	query := (&MemberClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(localchurch.Table, localchurch.FieldID, id),
+			sqlgraph.To(member.Table, member.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, localchurch.MembersTable, localchurch.MembersColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QuerySectors queries the sectors edge of a LocalChurch.
 func (c *LocalChurchClient) QuerySectors(_m *LocalChurch) *SectorQuery {
 	query := (&SectorClient{config: c.config}).Query()
@@ -1718,6 +1734,54 @@ func (c *MemberClient) QueryKidsMinistryProfile(_m *Member) *KidsMinistryProfile
 			sqlgraph.From(member.Table, member.FieldID, id),
 			sqlgraph.To(kidsministryprofile.Table, kidsministryprofile.FieldID),
 			sqlgraph.Edge(sqlgraph.O2O, false, member.KidsMinistryProfileTable, member.KidsMinistryProfileColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryLocalChurch queries the local_church edge of a Member.
+func (c *MemberClient) QueryLocalChurch(_m *Member) *LocalChurchQuery {
+	query := (&LocalChurchClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(member.Table, member.FieldID, id),
+			sqlgraph.To(localchurch.Table, localchurch.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, member.LocalChurchTable, member.LocalChurchColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QuerySector queries the sector edge of a Member.
+func (c *MemberClient) QuerySector(_m *Member) *SectorQuery {
+	query := (&SectorClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(member.Table, member.FieldID, id),
+			sqlgraph.To(sector.Table, sector.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, member.SectorTable, member.SectorColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryTeam queries the team edge of a Member.
+func (c *MemberClient) QueryTeam(_m *Member) *TeamQuery {
+	query := (&TeamClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(member.Table, member.FieldID, id),
+			sqlgraph.To(team.Table, team.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, member.TeamTable, member.TeamColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
@@ -2699,6 +2763,22 @@ func (c *SectorClient) GetX(ctx context.Context, id uuid.UUID) *Sector {
 	return obj
 }
 
+// QueryMembers queries the members edge of a Sector.
+func (c *SectorClient) QueryMembers(_m *Sector) *MemberQuery {
+	query := (&MemberClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(sector.Table, sector.FieldID, id),
+			sqlgraph.To(member.Table, member.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, sector.MembersTable, sector.MembersColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryChurch queries the church edge of a Sector.
 func (c *SectorClient) QueryChurch(_m *Sector) *LocalChurchQuery {
 	query := (&LocalChurchClient{config: c.config}).Query()
@@ -3352,6 +3432,22 @@ func (c *TeamClient) GetX(ctx context.Context, id uuid.UUID) *Team {
 		panic(err)
 	}
 	return obj
+}
+
+// QueryMembers queries the members edge of a Team.
+func (c *TeamClient) QueryMembers(_m *Team) *MemberQuery {
+	query := (&MemberClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(team.Table, team.FieldID, id),
+			sqlgraph.To(member.Table, member.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, team.MembersTable, team.MembersColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
 }
 
 // QueryChurch queries the church edge of a Team.

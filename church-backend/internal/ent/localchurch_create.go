@@ -14,6 +14,7 @@ import (
 	"github.com/hofchurchng/church-backend/internal/ent/churchevent"
 	"github.com/hofchurchng/church-backend/internal/ent/churchteams"
 	"github.com/hofchurchng/church-backend/internal/ent/localchurch"
+	"github.com/hofchurchng/church-backend/internal/ent/member"
 	"github.com/hofchurchng/church-backend/internal/ent/otpinvites"
 	"github.com/hofchurchng/church-backend/internal/ent/sector"
 	"github.com/hofchurchng/church-backend/internal/ent/team"
@@ -85,6 +86,21 @@ func (_c *LocalChurchCreate) SetNillableID(v *uuid.UUID) *LocalChurchCreate {
 		_c.SetID(*v)
 	}
 	return _c
+}
+
+// AddMemberIDs adds the "members" edge to the Member entity by IDs.
+func (_c *LocalChurchCreate) AddMemberIDs(ids ...uuid.UUID) *LocalChurchCreate {
+	_c.mutation.AddMemberIDs(ids...)
+	return _c
+}
+
+// AddMembers adds the "members" edges to the Member entity.
+func (_c *LocalChurchCreate) AddMembers(v ...*Member) *LocalChurchCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddMemberIDs(ids...)
 }
 
 // AddSectorIDs adds the "sectors" edge to the Sector entity by IDs.
@@ -290,6 +306,22 @@ func (_c *LocalChurchCreate) createSpec() (*LocalChurch, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.CreatedAt(); ok {
 		_spec.SetField(localchurch.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
+	}
+	if nodes := _c.mutation.MembersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   localchurch.MembersTable,
+			Columns: []string{localchurch.MembersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(member.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := _c.mutation.SectorsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

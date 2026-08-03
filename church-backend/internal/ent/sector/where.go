@@ -286,6 +286,29 @@ func CreatedAtLTE(v time.Time) predicate.Sector {
 	return predicate.Sector(sql.FieldLTE(FieldCreatedAt, v))
 }
 
+// HasMembers applies the HasEdge predicate on the "members" edge.
+func HasMembers() predicate.Sector {
+	return predicate.Sector(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, MembersTable, MembersColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasMembersWith applies the HasEdge predicate on the "members" edge with a given conditions (other predicates).
+func HasMembersWith(preds ...predicate.Member) predicate.Sector {
+	return predicate.Sector(func(s *sql.Selector) {
+		step := newMembersStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasChurch applies the HasEdge predicate on the "church" edge.
 func HasChurch() predicate.Sector {
 	return predicate.Sector(func(s *sql.Selector) {

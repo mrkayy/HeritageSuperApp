@@ -212,12 +212,35 @@ var (
 		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
 		{Name: "updated_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
 		{Name: "current_stage", Type: field.TypeEnum, Enums: []string{"first_time_guest", "foundation_class", "sunday_school_module_1", "sunday_school_module_2", "sunday_school_module_3", "membership_class", "stewardship"}, Default: "'first_time_guest'"},
+		{Name: "local_church_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "sector_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "team_id", Type: field.TypeUUID, Nullable: true},
 	}
 	// MembersTable holds the schema information for the "members" table.
 	MembersTable = &schema.Table{
 		Name:       "members",
 		Columns:    MembersColumns,
 		PrimaryKey: []*schema.Column{MembersColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "members_local_church_members",
+				Columns:    []*schema.Column{MembersColumns[24]},
+				RefColumns: []*schema.Column{LocalChurchColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "members_sector_members",
+				Columns:    []*schema.Column{MembersColumns[25]},
+				RefColumns: []*schema.Column{SectorColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "members_team_members",
+				Columns:    []*schema.Column{MembersColumns[26]},
+				RefColumns: []*schema.Column{TeamColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
 	}
 	// MemberTeamsColumns holds the columns for the "member_teams" table.
 	MemberTeamsColumns = []*schema.Column{
@@ -746,6 +769,9 @@ func init() {
 	LocalChurchTable.Annotation = &entsql.Annotation{
 		Table: "local_church",
 	}
+	MembersTable.ForeignKeys[0].RefTable = LocalChurchTable
+	MembersTable.ForeignKeys[1].RefTable = SectorTable
+	MembersTable.ForeignKeys[2].RefTable = TeamTable
 	MembersTable.Annotation = &entsql.Annotation{
 		Table: "members",
 	}

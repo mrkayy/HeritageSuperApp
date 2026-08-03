@@ -19,6 +19,7 @@ func (h *Handler) Register(g *echo.Group) {
 	g.GET("", h.list)
 	g.GET("/:id", h.get)
 	g.POST("", h.add)
+	g.PUT("/:id", h.update)
 	g.DELETE("/:id", h.delete)
 }
 
@@ -60,6 +61,9 @@ type createPayload struct {
 	IsPlaceholder           bool    `json:"isPlaceholder"`
 	SourceTeam              *string `json:"sourceTeam"`
 	CurrentStage            *string `json:"currentStage"`
+	LocalChurchID           *string `json:"localChurchId"`
+	SectorID                *string `json:"sectorId"`
+	TeamID                  *string `json:"teamId"`
 }
 
 func (h *Handler) add(c echo.Context) error {
@@ -92,11 +96,55 @@ func (h *Handler) add(c echo.Context) error {
 		IsPlaceholder:           p.IsPlaceholder,
 		SourceTeam:              p.SourceTeam,
 		CurrentStage:            p.CurrentStage,
+		LocalChurchID:           p.LocalChurchID,
+		SectorID:                p.SectorID,
+		TeamID:                  p.TeamID,
 	})
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 	return c.JSON(http.StatusCreated, member)
+}
+
+func (h *Handler) update(c echo.Context) error {
+	id := c.Param("id")
+	var p createPayload
+	if err := c.Bind(&p); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+	if p.FirstName == "" || p.Surname == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "firstName and surname are required")
+	}
+
+	member, err := h.svc.UpdateMember(c.Request().Context(), id, AddMemberInput{
+		FirstName:               p.FirstName,
+		Surname:                 p.Surname,
+		Email:                   p.Email,
+		PhoneNumber:             p.PhoneNumber,
+		HomeAddress:             p.HomeAddress,
+		Gender:                  p.Gender,
+		DateOfBirthDay:          p.DateOfBirthDay,
+		DateOfBirthMonth:        p.DateOfBirthMonth,
+		MaritalStatus:           p.MaritalStatus,
+		WeddingAnniversaryDay:   p.WeddingAnniversaryDay,
+		WeddingAnniversaryMonth: p.WeddingAnniversaryMonth,
+		JobOccupation:           p.JobOccupation,
+		PhotoURL:                p.PhotoURL,
+		EmergencyContactName:    p.EmergencyContactName,
+		EmergencyContactPhone:   p.EmergencyContactPhone,
+		Allergies:               p.Allergies,
+		MedicalNotes:            p.MedicalNotes,
+		IsPlaceholder:           p.IsPlaceholder,
+		SourceTeam:              p.SourceTeam,
+		CurrentStage:            p.CurrentStage,
+		LocalChurchID:           p.LocalChurchID,
+		SectorID:                p.SectorID,
+		TeamID:                  p.TeamID,
+	})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	return c.JSON(http.StatusOK, member)
 }
 
 func (h *Handler) delete(c echo.Context) error {

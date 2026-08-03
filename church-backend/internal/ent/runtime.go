@@ -128,11 +128,11 @@ func init() {
 	// member.DefaultIsPlaceholder holds the default value on creation for the is_placeholder field.
 	member.DefaultIsPlaceholder = memberDescIsPlaceholder.Default.(bool)
 	// memberDescCreatedAt is the schema descriptor for created_at field.
-	memberDescCreatedAt := memberFields[21].Descriptor()
+	memberDescCreatedAt := memberFields[24].Descriptor()
 	// member.DefaultCreatedAt holds the default value on creation for the created_at field.
 	member.DefaultCreatedAt = memberDescCreatedAt.Default.(func() time.Time)
 	// memberDescUpdatedAt is the schema descriptor for updated_at field.
-	memberDescUpdatedAt := memberFields[22].Descriptor()
+	memberDescUpdatedAt := memberFields[25].Descriptor()
 	// member.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	member.DefaultUpdatedAt = memberDescUpdatedAt.Default.(func() time.Time)
 	// member.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.

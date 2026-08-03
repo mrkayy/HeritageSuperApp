@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { listMembers, createMember, deleteMember, Member, CreateMemberPayload } from "./api";
+import { listMembers, createMember, updateMember, deleteMember, Member, CreateMemberPayload } from "./api";
+import { listChurches, listSectors, listTeams } from "../organization/api";
 import "./MembershipPage.css";
 
 export default function MembershipPage() {
@@ -14,8 +15,15 @@ export default function MembershipPage() {
 
   // Modal State
   const [showModal, setShowModal] = useState(false);
+  const [modalMode, setModalMode] = useState<"create" | "edit">("create");
+  const [editId, setEditId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
+
+  // Lookup Lists
+  const [churches, setChurches] = useState<any[]>([]);
+  const [sectors, setSectors] = useState<any[]>([]);
+  const [teams, setTeams] = useState<any[]>([]);
 
   // Form Fields
   const [firstName, setFirstName] = useState("");
@@ -35,10 +43,29 @@ export default function MembershipPage() {
   const [isPlaceholder, setIsPlaceholder] = useState(false);
   const [sourceTeam, setSourceTeam] = useState("");
   const [currentStage, setCurrentStage] = useState("first_time_guest");
+  const [localChurchId, setLocalChurchId] = useState("");
+  const [sectorId, setSectorId] = useState("");
+  const [teamId, setTeamId] = useState("");
 
   useEffect(() => {
     fetchMembers();
+    fetchLookups();
   }, []);
+
+  async function fetchLookups() {
+    try {
+      const [cData, sData, tData] = await Promise.all([
+        listChurches(),
+        listSectors(),
+        listTeams()
+      ]);
+      setChurches(cData);
+      setSectors(sData);
+      setTeams(tData);
+    } catch (err) {
+      console.error("Failed to load organization dropdowns:", err);
+    }
+  }
 
   async function fetchMembers() {
     setIsLoading(true);
@@ -54,7 +81,7 @@ export default function MembershipPage() {
     }
   }
 
-  async function handleCreateMember(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!email.trim()) {
       setModalError("Email is required for profiling.");
@@ -82,22 +109,66 @@ export default function MembershipPage() {
       isPlaceholder,
       sourceTeam: sourceTeam.trim() || undefined,
       currentStage,
+      localChurchId: localChurchId || undefined,
+      sectorId: sectorId || undefined,
+      teamId: teamId || undefined,
     };
 
     try {
-      const created = await createMember(payload);
-      setMembers((prev) => [...prev, created]);
-      closeModal();
+      if (modalMode === "edit" && editId) {
+        const updated = await updateMember(editId, payload);
+        setMembers((prev) => prev.map((m) => (m.id === editId ? updated : m)));
+        if (selectedMember?.id === editId) {
+          setSelectedMember(updated);
+        }
+        closeModal();
+      } else {
+        const created = await createMember(payload);
+        setMembers((prev) => [...prev, created]);
+        closeModal();
+      }
     } catch (err) {
       console.error(err);
-      setModalError("Failed to profile new member. Verify inputs and check if email is unique.");
+      setModalError(modalMode === "edit" ? "Failed to update member profile." : "Failed to profile new member. Verify inputs and check if email is unique.");
     } finally {
       setIsSubmitting(false);
     }
   }
 
+  function openEditModal(m: Member) {
+    setModalMode("edit");
+    setEditId(m.id);
+    setModalError(null);
+
+    setFirstName(m.firstName || "");
+    setSurname(m.surname || "");
+    setEmail(m.email || "");
+    setPhoneNumber(m.phoneNumber || "");
+    setHomeAddress(m.homeAddress || "");
+    setGender(m.gender || "");
+    setDobDay(m.dateOfBirthDay || "");
+    setDobMonth(m.dateOfBirthMonth || "");
+    setMaritalStatus(m.maritalStatus || "");
+    setAnniversaryDay(m.weddingAnniversaryDay || "");
+    setAnniversaryMonth(m.weddingAnniversaryMonth || "");
+    setJobOccupation(m.jobOccupation || "");
+    setAllergies(m.allergies || "");
+    setMedicalNotes(m.medicalNotes || "");
+    setIsPlaceholder(m.isPlaceholder);
+    setSourceTeam(m.sourceTeam || "");
+    setCurrentStage(m.currentStage || "first_time_guest");
+    setLocalChurchId(m.localChurchId || "");
+    setSectorId(m.sectorId || "");
+    setTeamId(m.teamId || "");
+
+    setShowModal(true);
+  }
+
   function closeModal() {
     setShowModal(false);
+    setModalMode("create");
+    setEditId(null);
+    setModalError(null);
     setFirstName("");
     setSurname("");
     setEmail("");
@@ -115,7 +186,9 @@ export default function MembershipPage() {
     setIsPlaceholder(false);
     setSourceTeam("");
     setCurrentStage("first_time_guest");
-    setModalError(null);
+    setLocalChurchId("");
+    setSectorId("");
+    setTeamId("");
   }
 
   async function handleDeleteMember(id: string, name: string) {
@@ -243,18 +316,20 @@ export default function MembershipPage() {
                         </span>
                       </td>
                       <td style={{ textAlign: "right" }} onClick={(e) => e.stopPropagation()}>
-                        <button
-                          className="btn btn-secondary"
-                          onClick={() => handleDeleteMember(m.id, m.name)}
-                          style={{
-                            padding: "var(--space-2) var(--space-3)",
-                            color: "var(--error)",
-                            borderColor: "rgba(239, 68, 68, 0.15)",
-                            backgroundColor: "rgba(239, 68, 68, 0.02)"
-                          }}
-                        >
-                          Delete
-                        </button>
+                        <div style={{ display: "inline-flex", gap: "var(--space-2)", justifyContent: "flex-end" }}>
+                          <button
+                            className="btn btn-secondary btn-sm"
+                            onClick={() => openEditModal(m)}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            className="btn btn-secondary btn-sm btn-danger-action"
+                            onClick={() => handleDeleteMember(m.id, m.name)}
+                          >
+                            Delete
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -267,7 +342,10 @@ export default function MembershipPage() {
               <aside className="member-detail-panel card animate-fade-in-right">
                 <div className="panel-header">
                   <h2>Member Details</h2>
-                  <button className="close-btn" onClick={() => setSelectedMember(null)}>×</button>
+                  <div style={{ display: "flex", gap: "var(--space-2)", alignItems: "center" }}>
+                    <button className="btn btn-secondary btn-sm" onClick={() => openEditModal(selectedMember)}>Edit</button>
+                    <button className="close-btn" onClick={() => setSelectedMember(null)}>×</button>
+                  </div>
                 </div>
 
                 <div className="panel-avatar-section">
@@ -341,6 +419,22 @@ export default function MembershipPage() {
                     <span className="info-value">{selectedMember.medicalNotes || "None"}</span>
                   </div>
 
+                  <div className="info-group">
+                    <span className="info-label">Local Church Center</span>
+                    <span className="info-value">{selectedMember.localChurchName || "—"}</span>
+                  </div>
+
+                  <div className="info-row">
+                    <div className="info-group">
+                      <span className="info-label">Assigned Sector</span>
+                      <span className="info-value">{selectedMember.sectorName || "—"}</span>
+                    </div>
+                    <div className="info-group">
+                      <span className="info-label">Assigned Team</span>
+                      <span className="info-value">{selectedMember.teamName || "—"}</span>
+                    </div>
+                  </div>
+
                   <div className="info-row">
                     <div className="info-group">
                       <span className="info-label">Source Team</span>
@@ -365,8 +459,12 @@ export default function MembershipPage() {
         <div className="modal-overlay">
           <div className="modal-content card animate-fade-in-up" style={{ maxWidth: "680px", width: "100%", maxHeight: "90vh", overflowY: "auto" }}>
             <div className="modal-header" style={{ marginBottom: "var(--space-4)" }}>
-              <h2 style={{ fontSize: "var(--fs-2xl)", color: "var(--text-primary)" }}>Profile New Member</h2>
-              <p className="text-secondary" style={{ fontSize: "var(--fs-sm)" }}>Register a new member in the central directory with details.</p>
+              <h2 style={{ fontSize: "var(--fs-2xl)", color: "var(--text-primary)" }}>
+                {modalMode === "edit" ? "Edit Member Profile" : "Profile New Member"}
+              </h2>
+              <p className="text-secondary" style={{ fontSize: "var(--fs-sm)" }}>
+                {modalMode === "edit" ? "Update member directory records and ministry placement." : "Register a new member in the central directory with details."}
+              </p>
             </div>
 
             {modalError && (
@@ -375,7 +473,7 @@ export default function MembershipPage() {
               </div>
             )}
 
-            <form onSubmit={handleCreateMember} style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
               
               {/* Form Section 1: Basic Identity */}
               <div className="form-section">
@@ -588,6 +686,52 @@ export default function MembershipPage() {
                     />
                   </div>
                 </div>
+
+                <div className="form-grid-3" style={{ marginTop: "var(--space-3)" }}>
+                  <div className="input-group">
+                    <label className="input-label" htmlFor="member-church">Local Church Center</label>
+                    <select
+                      id="member-church"
+                      className="input-field"
+                      value={localChurchId}
+                      onChange={(e) => setLocalChurchId(e.target.value)}
+                    >
+                      <option value="">None / Not Assigned</option>
+                      {churches.map((c) => (
+                        <option key={c.ID} value={c.ID}>{c.Name} {c.Center ? `(${c.Center})` : ""}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="input-group">
+                    <label className="input-label" htmlFor="member-sector">Assigned Sector</label>
+                    <select
+                      id="member-sector"
+                      className="input-field"
+                      value={sectorId}
+                      onChange={(e) => setSectorId(e.target.value)}
+                    >
+                      <option value="">None / Not Assigned</option>
+                      {sectors.map((s) => (
+                        <option key={s.ID} value={s.ID}>{s.Name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="input-group">
+                    <label className="input-label" htmlFor="member-team">Assigned Team</label>
+                    <select
+                      id="member-team"
+                      className="input-field"
+                      value={teamId}
+                      onChange={(e) => setTeamId(e.target.value)}
+                    >
+                      <option value="">None / Not Assigned</option>
+                      {teams.map((t) => (
+                        <option key={t.ID} value={t.ID}>{t.Name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
                 <div className="checkbox-group" style={{ marginTop: "var(--space-3)", display: "flex", gap: "var(--space-2)", alignItems: "center" }}>
                   <input
                     id="member-is-placeholder"
@@ -640,7 +784,7 @@ export default function MembershipPage() {
                   className="btn btn-primary"
                   disabled={isSubmitting}
                 >
-                  {isSubmitting ? "Profiling..." : "Profile Member"}
+                  {isSubmitting ? "Saving..." : modalMode === "edit" ? "Save Changes" : "Profile Member"}
                 </button>
               </div>
             </form>

@@ -84,6 +84,15 @@ func (Member) Fields() []ent.Field {
 		field.UUID("created_by", uuid.UUID{}).
 			Optional().
 			Nillable(),
+		field.UUID("local_church_id", uuid.UUID{}).
+			Optional().
+			Nillable(),
+		field.UUID("sector_id", uuid.UUID{}).
+			Optional().
+			Nillable(),
+		field.UUID("team_id", uuid.UUID{}).
+			Optional().
+			Nillable(),
 		field.Time("created_at").
 			Default(time.Now).
 			Annotations(entsql.Default("CURRENT_TIMESTAMP")),
@@ -114,6 +123,18 @@ func (Member) Edges() []ent.Edge {
 		edge.To("guardian_relationships_as_child", GuardianRelationship.Type),
 		edge.To("guardian_relationships_as_guardian", GuardianRelationship.Type),
 		edge.To("kids_ministry_profile", KidsMinistryProfile.Type).Unique(),
+		edge.From("local_church", LocalChurch.Type).
+			Ref("members").
+			Unique().
+			Field("local_church_id"),
+		edge.From("sector", Sector.Type).
+			Ref("members").
+			Unique().
+			Field("sector_id"),
+		edge.From("team", Team.Type).
+			Ref("members").
+			Unique().
+			Field("team_id"),
 	}
 }
 

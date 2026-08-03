@@ -22,6 +22,12 @@ export interface Member {
   isPlaceholder: boolean;
   sourceTeam: string | null;
   createdBy: string | null;
+  localChurchId?: string | null;
+  localChurchName?: string | null;
+  sectorId?: string | null;
+  sectorName?: string | null;
+  teamId?: string | null;
+  teamName?: string | null;
   currentStage: string;
   createdAt: string;
   updatedAt: string;
@@ -49,6 +55,9 @@ export interface CreateMemberPayload {
   isPlaceholder?: boolean;
   sourceTeam?: string;
   currentStage?: string;
+  localChurchId?: string;
+  sectorId?: string;
+  teamId?: string;
 }
 
 export function listMembers() {
@@ -58,6 +67,16 @@ export function listMembers() {
 export function createMember(payload: CreateMemberPayload) {
   return apiFetch<Member>("/members", {
     method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateMember(id: string, payload: CreateMemberPayload) {
+  return apiFetch<Member>(`/members/${id}`, {
+    method: "PUT",
     headers: {
       "Content-Type": "application/json",
     },

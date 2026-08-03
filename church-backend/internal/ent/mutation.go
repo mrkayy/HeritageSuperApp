@@ -4006,6 +4006,9 @@ type LocalChurchMutation struct {
 	slug                 *string
 	created_at           *time.Time
 	clearedFields        map[string]struct{}
+	members              map[uuid.UUID]struct{}
+	removedmembers       map[uuid.UUID]struct{}
+	clearedmembers       bool
 	sectors              map[uuid.UUID]struct{}
 	removedsectors       map[uuid.UUID]struct{}
 	clearedsectors       bool
@@ -4324,6 +4327,60 @@ func (m *LocalChurchMutation) OldCreatedAt(ctx context.Context) (v time.Time, er
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *LocalChurchMutation) ResetCreatedAt() {
 	m.created_at = nil
+}
+
+// AddMemberIDs adds the "members" edge to the Member entity by ids.
+func (m *LocalChurchMutation) AddMemberIDs(ids ...uuid.UUID) {
+	if m.members == nil {
+		m.members = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.members[ids[i]] = struct{}{}
+	}
+}
+
+// ClearMembers clears the "members" edge to the Member entity.
+func (m *LocalChurchMutation) ClearMembers() {
+	m.clearedmembers = true
+}
+
+// MembersCleared reports if the "members" edge to the Member entity was cleared.
+func (m *LocalChurchMutation) MembersCleared() bool {
+	return m.clearedmembers
+}
+
+// RemoveMemberIDs removes the "members" edge to the Member entity by IDs.
+func (m *LocalChurchMutation) RemoveMemberIDs(ids ...uuid.UUID) {
+	if m.removedmembers == nil {
+		m.removedmembers = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.members, ids[i])
+		m.removedmembers[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedMembers returns the removed IDs of the "members" edge to the Member entity.
+func (m *LocalChurchMutation) RemovedMembersIDs() (ids []uuid.UUID) {
+	for id := range m.removedmembers {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// MembersIDs returns the "members" edge IDs in the mutation.
+func (m *LocalChurchMutation) MembersIDs() (ids []uuid.UUID) {
+	for id := range m.members {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetMembers resets all changes to the "members" edge.
+func (m *LocalChurchMutation) ResetMembers() {
+	m.members = nil
+	m.clearedmembers = false
+	m.removedmembers = nil
 }
 
 // AddSectorIDs adds the "sectors" edge to the Sector entity by ids.
@@ -4860,7 +4917,10 @@ func (m *LocalChurchMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *LocalChurchMutation) AddedEdges() []string {
-	edges := make([]string, 0, 6)
+	edges := make([]string, 0, 7)
+	if m.members != nil {
+		edges = append(edges, localchurch.EdgeMembers)
+	}
 	if m.sectors != nil {
 		edges = append(edges, localchurch.EdgeSectors)
 	}
@@ -4886,6 +4946,12 @@ func (m *LocalChurchMutation) AddedEdges() []string {
 // name in this mutation.
 func (m *LocalChurchMutation) AddedIDs(name string) []ent.Value {
 	switch name {
+	case localchurch.EdgeMembers:
+		ids := make([]ent.Value, 0, len(m.members))
+		for id := range m.members {
+			ids = append(ids, id)
+		}
+		return ids
 	case localchurch.EdgeSectors:
 		ids := make([]ent.Value, 0, len(m.sectors))
 		for id := range m.sectors {
@@ -4928,7 +4994,10 @@ func (m *LocalChurchMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *LocalChurchMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 6)
+	edges := make([]string, 0, 7)
+	if m.removedmembers != nil {
+		edges = append(edges, localchurch.EdgeMembers)
+	}
 	if m.removedsectors != nil {
 		edges = append(edges, localchurch.EdgeSectors)
 	}
@@ -4954,6 +5023,12 @@ func (m *LocalChurchMutation) RemovedEdges() []string {
 // the given name in this mutation.
 func (m *LocalChurchMutation) RemovedIDs(name string) []ent.Value {
 	switch name {
+	case localchurch.EdgeMembers:
+		ids := make([]ent.Value, 0, len(m.removedmembers))
+		for id := range m.removedmembers {
+			ids = append(ids, id)
+		}
+		return ids
 	case localchurch.EdgeSectors:
 		ids := make([]ent.Value, 0, len(m.removedsectors))
 		for id := range m.removedsectors {
@@ -4996,7 +5071,10 @@ func (m *LocalChurchMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *LocalChurchMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 6)
+	edges := make([]string, 0, 7)
+	if m.clearedmembers {
+		edges = append(edges, localchurch.EdgeMembers)
+	}
 	if m.clearedsectors {
 		edges = append(edges, localchurch.EdgeSectors)
 	}
@@ -5022,6 +5100,8 @@ func (m *LocalChurchMutation) ClearedEdges() []string {
 // was cleared in this mutation.
 func (m *LocalChurchMutation) EdgeCleared(name string) bool {
 	switch name {
+	case localchurch.EdgeMembers:
+		return m.clearedmembers
 	case localchurch.EdgeSectors:
 		return m.clearedsectors
 	case localchurch.EdgeTeams:
@@ -5050,6 +5130,9 @@ func (m *LocalChurchMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *LocalChurchMutation) ResetEdge(name string) error {
 	switch name {
+	case localchurch.EdgeMembers:
+		m.ResetMembers()
+		return nil
 	case localchurch.EdgeSectors:
 		m.ResetSectors()
 		return nil
@@ -5120,6 +5203,12 @@ type MemberMutation struct {
 	clearedguardian_relationships_as_guardian bool
 	kids_ministry_profile                     *uuid.UUID
 	clearedkids_ministry_profile              bool
+	local_church                              *uuid.UUID
+	clearedlocal_church                       bool
+	sector                                    *uuid.UUID
+	clearedsector                             bool
+	team                                      *uuid.UUID
+	clearedteam                               bool
 	done                                      bool
 	oldValue                                  func(context.Context) (*Member, error)
 	predicates                                []predicate.Member
@@ -6280,6 +6369,153 @@ func (m *MemberMutation) ResetCreatedBy() {
 	delete(m.clearedFields, member.FieldCreatedBy)
 }
 
+// SetLocalChurchID sets the "local_church_id" field.
+func (m *MemberMutation) SetLocalChurchID(u uuid.UUID) {
+	m.local_church = &u
+}
+
+// LocalChurchID returns the value of the "local_church_id" field in the mutation.
+func (m *MemberMutation) LocalChurchID() (r uuid.UUID, exists bool) {
+	v := m.local_church
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLocalChurchID returns the old "local_church_id" field's value of the Member entity.
+// If the Member object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MemberMutation) OldLocalChurchID(ctx context.Context) (v *uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLocalChurchID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLocalChurchID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLocalChurchID: %w", err)
+	}
+	return oldValue.LocalChurchID, nil
+}
+
+// ClearLocalChurchID clears the value of the "local_church_id" field.
+func (m *MemberMutation) ClearLocalChurchID() {
+	m.local_church = nil
+	m.clearedFields[member.FieldLocalChurchID] = struct{}{}
+}
+
+// LocalChurchIDCleared returns if the "local_church_id" field was cleared in this mutation.
+func (m *MemberMutation) LocalChurchIDCleared() bool {
+	_, ok := m.clearedFields[member.FieldLocalChurchID]
+	return ok
+}
+
+// ResetLocalChurchID resets all changes to the "local_church_id" field.
+func (m *MemberMutation) ResetLocalChurchID() {
+	m.local_church = nil
+	delete(m.clearedFields, member.FieldLocalChurchID)
+}
+
+// SetSectorID sets the "sector_id" field.
+func (m *MemberMutation) SetSectorID(u uuid.UUID) {
+	m.sector = &u
+}
+
+// SectorID returns the value of the "sector_id" field in the mutation.
+func (m *MemberMutation) SectorID() (r uuid.UUID, exists bool) {
+	v := m.sector
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSectorID returns the old "sector_id" field's value of the Member entity.
+// If the Member object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MemberMutation) OldSectorID(ctx context.Context) (v *uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSectorID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSectorID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSectorID: %w", err)
+	}
+	return oldValue.SectorID, nil
+}
+
+// ClearSectorID clears the value of the "sector_id" field.
+func (m *MemberMutation) ClearSectorID() {
+	m.sector = nil
+	m.clearedFields[member.FieldSectorID] = struct{}{}
+}
+
+// SectorIDCleared returns if the "sector_id" field was cleared in this mutation.
+func (m *MemberMutation) SectorIDCleared() bool {
+	_, ok := m.clearedFields[member.FieldSectorID]
+	return ok
+}
+
+// ResetSectorID resets all changes to the "sector_id" field.
+func (m *MemberMutation) ResetSectorID() {
+	m.sector = nil
+	delete(m.clearedFields, member.FieldSectorID)
+}
+
+// SetTeamID sets the "team_id" field.
+func (m *MemberMutation) SetTeamID(u uuid.UUID) {
+	m.team = &u
+}
+
+// TeamID returns the value of the "team_id" field in the mutation.
+func (m *MemberMutation) TeamID() (r uuid.UUID, exists bool) {
+	v := m.team
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTeamID returns the old "team_id" field's value of the Member entity.
+// If the Member object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MemberMutation) OldTeamID(ctx context.Context) (v *uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTeamID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTeamID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTeamID: %w", err)
+	}
+	return oldValue.TeamID, nil
+}
+
+// ClearTeamID clears the value of the "team_id" field.
+func (m *MemberMutation) ClearTeamID() {
+	m.team = nil
+	m.clearedFields[member.FieldTeamID] = struct{}{}
+}
+
+// TeamIDCleared returns if the "team_id" field was cleared in this mutation.
+func (m *MemberMutation) TeamIDCleared() bool {
+	_, ok := m.clearedFields[member.FieldTeamID]
+	return ok
+}
+
+// ResetTeamID resets all changes to the "team_id" field.
+func (m *MemberMutation) ResetTeamID() {
+	m.team = nil
+	delete(m.clearedFields, member.FieldTeamID)
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (m *MemberMutation) SetCreatedAt(t time.Time) {
 	m.created_at = &t
@@ -6643,6 +6879,87 @@ func (m *MemberMutation) ResetKidsMinistryProfile() {
 	m.clearedkids_ministry_profile = false
 }
 
+// ClearLocalChurch clears the "local_church" edge to the LocalChurch entity.
+func (m *MemberMutation) ClearLocalChurch() {
+	m.clearedlocal_church = true
+	m.clearedFields[member.FieldLocalChurchID] = struct{}{}
+}
+
+// LocalChurchCleared reports if the "local_church" edge to the LocalChurch entity was cleared.
+func (m *MemberMutation) LocalChurchCleared() bool {
+	return m.LocalChurchIDCleared() || m.clearedlocal_church
+}
+
+// LocalChurchIDs returns the "local_church" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// LocalChurchID instead. It exists only for internal usage by the builders.
+func (m *MemberMutation) LocalChurchIDs() (ids []uuid.UUID) {
+	if id := m.local_church; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetLocalChurch resets all changes to the "local_church" edge.
+func (m *MemberMutation) ResetLocalChurch() {
+	m.local_church = nil
+	m.clearedlocal_church = false
+}
+
+// ClearSector clears the "sector" edge to the Sector entity.
+func (m *MemberMutation) ClearSector() {
+	m.clearedsector = true
+	m.clearedFields[member.FieldSectorID] = struct{}{}
+}
+
+// SectorCleared reports if the "sector" edge to the Sector entity was cleared.
+func (m *MemberMutation) SectorCleared() bool {
+	return m.SectorIDCleared() || m.clearedsector
+}
+
+// SectorIDs returns the "sector" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// SectorID instead. It exists only for internal usage by the builders.
+func (m *MemberMutation) SectorIDs() (ids []uuid.UUID) {
+	if id := m.sector; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetSector resets all changes to the "sector" edge.
+func (m *MemberMutation) ResetSector() {
+	m.sector = nil
+	m.clearedsector = false
+}
+
+// ClearTeam clears the "team" edge to the Team entity.
+func (m *MemberMutation) ClearTeam() {
+	m.clearedteam = true
+	m.clearedFields[member.FieldTeamID] = struct{}{}
+}
+
+// TeamCleared reports if the "team" edge to the Team entity was cleared.
+func (m *MemberMutation) TeamCleared() bool {
+	return m.TeamIDCleared() || m.clearedteam
+}
+
+// TeamIDs returns the "team" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// TeamID instead. It exists only for internal usage by the builders.
+func (m *MemberMutation) TeamIDs() (ids []uuid.UUID) {
+	if id := m.team; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetTeam resets all changes to the "team" edge.
+func (m *MemberMutation) ResetTeam() {
+	m.team = nil
+	m.clearedteam = false
+}
+
 // Where appends a list predicates to the MemberMutation builder.
 func (m *MemberMutation) Where(ps ...predicate.Member) {
 	m.predicates = append(m.predicates, ps...)
@@ -6677,7 +6994,7 @@ func (m *MemberMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *MemberMutation) Fields() []string {
-	fields := make([]string, 0, 23)
+	fields := make([]string, 0, 26)
 	if m.first_name != nil {
 		fields = append(fields, member.FieldFirstName)
 	}
@@ -6738,6 +7055,15 @@ func (m *MemberMutation) Fields() []string {
 	if m.created_by != nil {
 		fields = append(fields, member.FieldCreatedBy)
 	}
+	if m.local_church != nil {
+		fields = append(fields, member.FieldLocalChurchID)
+	}
+	if m.sector != nil {
+		fields = append(fields, member.FieldSectorID)
+	}
+	if m.team != nil {
+		fields = append(fields, member.FieldTeamID)
+	}
 	if m.created_at != nil {
 		fields = append(fields, member.FieldCreatedAt)
 	}
@@ -6795,6 +7121,12 @@ func (m *MemberMutation) Field(name string) (ent.Value, bool) {
 		return m.SourceTeam()
 	case member.FieldCreatedBy:
 		return m.CreatedBy()
+	case member.FieldLocalChurchID:
+		return m.LocalChurchID()
+	case member.FieldSectorID:
+		return m.SectorID()
+	case member.FieldTeamID:
+		return m.TeamID()
 	case member.FieldCreatedAt:
 		return m.CreatedAt()
 	case member.FieldUpdatedAt:
@@ -6850,6 +7182,12 @@ func (m *MemberMutation) OldField(ctx context.Context, name string) (ent.Value, 
 		return m.OldSourceTeam(ctx)
 	case member.FieldCreatedBy:
 		return m.OldCreatedBy(ctx)
+	case member.FieldLocalChurchID:
+		return m.OldLocalChurchID(ctx)
+	case member.FieldSectorID:
+		return m.OldSectorID(ctx)
+	case member.FieldTeamID:
+		return m.OldTeamID(ctx)
 	case member.FieldCreatedAt:
 		return m.OldCreatedAt(ctx)
 	case member.FieldUpdatedAt:
@@ -7004,6 +7342,27 @@ func (m *MemberMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetCreatedBy(v)
+		return nil
+	case member.FieldLocalChurchID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLocalChurchID(v)
+		return nil
+	case member.FieldSectorID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSectorID(v)
+		return nil
+	case member.FieldTeamID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTeamID(v)
 		return nil
 	case member.FieldCreatedAt:
 		v, ok := value.(time.Time)
@@ -7164,6 +7523,15 @@ func (m *MemberMutation) ClearedFields() []string {
 	if m.FieldCleared(member.FieldCreatedBy) {
 		fields = append(fields, member.FieldCreatedBy)
 	}
+	if m.FieldCleared(member.FieldLocalChurchID) {
+		fields = append(fields, member.FieldLocalChurchID)
+	}
+	if m.FieldCleared(member.FieldSectorID) {
+		fields = append(fields, member.FieldSectorID)
+	}
+	if m.FieldCleared(member.FieldTeamID) {
+		fields = append(fields, member.FieldTeamID)
+	}
 	return fields
 }
 
@@ -7235,6 +7603,15 @@ func (m *MemberMutation) ClearField(name string) error {
 	case member.FieldCreatedBy:
 		m.ClearCreatedBy()
 		return nil
+	case member.FieldLocalChurchID:
+		m.ClearLocalChurchID()
+		return nil
+	case member.FieldSectorID:
+		m.ClearSectorID()
+		return nil
+	case member.FieldTeamID:
+		m.ClearTeamID()
+		return nil
 	}
 	return fmt.Errorf("unknown Member nullable field %s", name)
 }
@@ -7303,6 +7680,15 @@ func (m *MemberMutation) ResetField(name string) error {
 	case member.FieldCreatedBy:
 		m.ResetCreatedBy()
 		return nil
+	case member.FieldLocalChurchID:
+		m.ResetLocalChurchID()
+		return nil
+	case member.FieldSectorID:
+		m.ResetSectorID()
+		return nil
+	case member.FieldTeamID:
+		m.ResetTeamID()
+		return nil
 	case member.FieldCreatedAt:
 		m.ResetCreatedAt()
 		return nil
@@ -7318,7 +7704,7 @@ func (m *MemberMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *MemberMutation) AddedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 8)
 	if m.stage_histories != nil {
 		edges = append(edges, member.EdgeStageHistories)
 	}
@@ -7333,6 +7719,15 @@ func (m *MemberMutation) AddedEdges() []string {
 	}
 	if m.kids_ministry_profile != nil {
 		edges = append(edges, member.EdgeKidsMinistryProfile)
+	}
+	if m.local_church != nil {
+		edges = append(edges, member.EdgeLocalChurch)
+	}
+	if m.sector != nil {
+		edges = append(edges, member.EdgeSector)
+	}
+	if m.team != nil {
+		edges = append(edges, member.EdgeTeam)
 	}
 	return edges
 }
@@ -7369,13 +7764,25 @@ func (m *MemberMutation) AddedIDs(name string) []ent.Value {
 		if id := m.kids_ministry_profile; id != nil {
 			return []ent.Value{*id}
 		}
+	case member.EdgeLocalChurch:
+		if id := m.local_church; id != nil {
+			return []ent.Value{*id}
+		}
+	case member.EdgeSector:
+		if id := m.sector; id != nil {
+			return []ent.Value{*id}
+		}
+	case member.EdgeTeam:
+		if id := m.team; id != nil {
+			return []ent.Value{*id}
+		}
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *MemberMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 8)
 	if m.removedstage_histories != nil {
 		edges = append(edges, member.EdgeStageHistories)
 	}
@@ -7425,7 +7832,7 @@ func (m *MemberMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *MemberMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 8)
 	if m.clearedstage_histories {
 		edges = append(edges, member.EdgeStageHistories)
 	}
@@ -7440,6 +7847,15 @@ func (m *MemberMutation) ClearedEdges() []string {
 	}
 	if m.clearedkids_ministry_profile {
 		edges = append(edges, member.EdgeKidsMinistryProfile)
+	}
+	if m.clearedlocal_church {
+		edges = append(edges, member.EdgeLocalChurch)
+	}
+	if m.clearedsector {
+		edges = append(edges, member.EdgeSector)
+	}
+	if m.clearedteam {
+		edges = append(edges, member.EdgeTeam)
 	}
 	return edges
 }
@@ -7458,6 +7874,12 @@ func (m *MemberMutation) EdgeCleared(name string) bool {
 		return m.clearedguardian_relationships_as_guardian
 	case member.EdgeKidsMinistryProfile:
 		return m.clearedkids_ministry_profile
+	case member.EdgeLocalChurch:
+		return m.clearedlocal_church
+	case member.EdgeSector:
+		return m.clearedsector
+	case member.EdgeTeam:
+		return m.clearedteam
 	}
 	return false
 }
@@ -7468,6 +7890,15 @@ func (m *MemberMutation) ClearEdge(name string) error {
 	switch name {
 	case member.EdgeKidsMinistryProfile:
 		m.ClearKidsMinistryProfile()
+		return nil
+	case member.EdgeLocalChurch:
+		m.ClearLocalChurch()
+		return nil
+	case member.EdgeSector:
+		m.ClearSector()
+		return nil
+	case member.EdgeTeam:
+		m.ClearTeam()
 		return nil
 	}
 	return fmt.Errorf("unknown Member unique edge %s", name)
@@ -7491,6 +7922,15 @@ func (m *MemberMutation) ResetEdge(name string) error {
 		return nil
 	case member.EdgeKidsMinistryProfile:
 		m.ResetKidsMinistryProfile()
+		return nil
+	case member.EdgeLocalChurch:
+		m.ResetLocalChurch()
+		return nil
+	case member.EdgeSector:
+		m.ResetSector()
+		return nil
+	case member.EdgeTeam:
+		m.ResetTeam()
 		return nil
 	}
 	return fmt.Errorf("unknown Member edge %s", name)
@@ -11462,6 +11902,9 @@ type SectorMutation struct {
 	description             *string
 	created_at              *time.Time
 	clearedFields           map[string]struct{}
+	members                 map[uuid.UUID]struct{}
+	removedmembers          map[uuid.UUID]struct{}
+	clearedmembers          bool
 	church                  *uuid.UUID
 	clearedchurch           bool
 	users                   map[uuid.UUID]struct{}
@@ -11759,6 +12202,60 @@ func (m *SectorMutation) OldCreatedAt(ctx context.Context) (v time.Time, err err
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *SectorMutation) ResetCreatedAt() {
 	m.created_at = nil
+}
+
+// AddMemberIDs adds the "members" edge to the Member entity by ids.
+func (m *SectorMutation) AddMemberIDs(ids ...uuid.UUID) {
+	if m.members == nil {
+		m.members = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.members[ids[i]] = struct{}{}
+	}
+}
+
+// ClearMembers clears the "members" edge to the Member entity.
+func (m *SectorMutation) ClearMembers() {
+	m.clearedmembers = true
+}
+
+// MembersCleared reports if the "members" edge to the Member entity was cleared.
+func (m *SectorMutation) MembersCleared() bool {
+	return m.clearedmembers
+}
+
+// RemoveMemberIDs removes the "members" edge to the Member entity by IDs.
+func (m *SectorMutation) RemoveMemberIDs(ids ...uuid.UUID) {
+	if m.removedmembers == nil {
+		m.removedmembers = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.members, ids[i])
+		m.removedmembers[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedMembers returns the removed IDs of the "members" edge to the Member entity.
+func (m *SectorMutation) RemovedMembersIDs() (ids []uuid.UUID) {
+	for id := range m.removedmembers {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// MembersIDs returns the "members" edge IDs in the mutation.
+func (m *SectorMutation) MembersIDs() (ids []uuid.UUID) {
+	for id := range m.members {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetMembers resets all changes to the "members" edge.
+func (m *SectorMutation) ResetMembers() {
+	m.members = nil
+	m.clearedmembers = false
+	m.removedmembers = nil
 }
 
 // ClearChurch clears the "church" edge to the LocalChurch entity.
@@ -12311,7 +12808,10 @@ func (m *SectorMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *SectorMutation) AddedEdges() []string {
-	edges := make([]string, 0, 7)
+	edges := make([]string, 0, 8)
+	if m.members != nil {
+		edges = append(edges, sector.EdgeMembers)
+	}
 	if m.church != nil {
 		edges = append(edges, sector.EdgeChurch)
 	}
@@ -12340,6 +12840,12 @@ func (m *SectorMutation) AddedEdges() []string {
 // name in this mutation.
 func (m *SectorMutation) AddedIDs(name string) []ent.Value {
 	switch name {
+	case sector.EdgeMembers:
+		ids := make([]ent.Value, 0, len(m.members))
+		for id := range m.members {
+			ids = append(ids, id)
+		}
+		return ids
 	case sector.EdgeChurch:
 		if id := m.church; id != nil {
 			return []ent.Value{*id}
@@ -12386,7 +12892,10 @@ func (m *SectorMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *SectorMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 7)
+	edges := make([]string, 0, 8)
+	if m.removedmembers != nil {
+		edges = append(edges, sector.EdgeMembers)
+	}
 	if m.removedusers != nil {
 		edges = append(edges, sector.EdgeUsers)
 	}
@@ -12412,6 +12921,12 @@ func (m *SectorMutation) RemovedEdges() []string {
 // the given name in this mutation.
 func (m *SectorMutation) RemovedIDs(name string) []ent.Value {
 	switch name {
+	case sector.EdgeMembers:
+		ids := make([]ent.Value, 0, len(m.removedmembers))
+		for id := range m.removedmembers {
+			ids = append(ids, id)
+		}
+		return ids
 	case sector.EdgeUsers:
 		ids := make([]ent.Value, 0, len(m.removedusers))
 		for id := range m.removedusers {
@@ -12454,7 +12969,10 @@ func (m *SectorMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *SectorMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 7)
+	edges := make([]string, 0, 8)
+	if m.clearedmembers {
+		edges = append(edges, sector.EdgeMembers)
+	}
 	if m.clearedchurch {
 		edges = append(edges, sector.EdgeChurch)
 	}
@@ -12483,6 +13001,8 @@ func (m *SectorMutation) ClearedEdges() []string {
 // was cleared in this mutation.
 func (m *SectorMutation) EdgeCleared(name string) bool {
 	switch name {
+	case sector.EdgeMembers:
+		return m.clearedmembers
 	case sector.EdgeChurch:
 		return m.clearedchurch
 	case sector.EdgeUsers:
@@ -12516,6 +13036,9 @@ func (m *SectorMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *SectorMutation) ResetEdge(name string) error {
 	switch name {
+	case sector.EdgeMembers:
+		m.ResetMembers()
+		return nil
 	case sector.EdgeChurch:
 		m.ResetChurch()
 		return nil
@@ -15038,6 +15561,9 @@ type TeamMutation struct {
 	created_at                *time.Time
 	updated_at                *time.Time
 	clearedFields             map[string]struct{}
+	members                   map[uuid.UUID]struct{}
+	removedmembers            map[uuid.UUID]struct{}
+	clearedmembers            bool
 	church                    *uuid.UUID
 	clearedchurch             bool
 	sector                    *uuid.UUID
@@ -15428,6 +15954,60 @@ func (m *TeamMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error
 // ResetUpdatedAt resets all changes to the "updated_at" field.
 func (m *TeamMutation) ResetUpdatedAt() {
 	m.updated_at = nil
+}
+
+// AddMemberIDs adds the "members" edge to the Member entity by ids.
+func (m *TeamMutation) AddMemberIDs(ids ...uuid.UUID) {
+	if m.members == nil {
+		m.members = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.members[ids[i]] = struct{}{}
+	}
+}
+
+// ClearMembers clears the "members" edge to the Member entity.
+func (m *TeamMutation) ClearMembers() {
+	m.clearedmembers = true
+}
+
+// MembersCleared reports if the "members" edge to the Member entity was cleared.
+func (m *TeamMutation) MembersCleared() bool {
+	return m.clearedmembers
+}
+
+// RemoveMemberIDs removes the "members" edge to the Member entity by IDs.
+func (m *TeamMutation) RemoveMemberIDs(ids ...uuid.UUID) {
+	if m.removedmembers == nil {
+		m.removedmembers = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.members, ids[i])
+		m.removedmembers[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedMembers returns the removed IDs of the "members" edge to the Member entity.
+func (m *TeamMutation) RemovedMembersIDs() (ids []uuid.UUID) {
+	for id := range m.removedmembers {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// MembersIDs returns the "members" edge IDs in the mutation.
+func (m *TeamMutation) MembersIDs() (ids []uuid.UUID) {
+	for id := range m.members {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetMembers resets all changes to the "members" edge.
+func (m *TeamMutation) ResetMembers() {
+	m.members = nil
+	m.clearedmembers = false
+	m.removedmembers = nil
 }
 
 // ClearChurch clears the "church" edge to the LocalChurch entity.
@@ -16155,7 +16735,10 @@ func (m *TeamMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *TeamMutation) AddedEdges() []string {
-	edges := make([]string, 0, 10)
+	edges := make([]string, 0, 11)
+	if m.members != nil {
+		edges = append(edges, team.EdgeMembers)
+	}
 	if m.church != nil {
 		edges = append(edges, team.EdgeChurch)
 	}
@@ -16193,6 +16776,12 @@ func (m *TeamMutation) AddedEdges() []string {
 // name in this mutation.
 func (m *TeamMutation) AddedIDs(name string) []ent.Value {
 	switch name {
+	case team.EdgeMembers:
+		ids := make([]ent.Value, 0, len(m.members))
+		for id := range m.members {
+			ids = append(ids, id)
+		}
+		return ids
 	case team.EdgeChurch:
 		if id := m.church; id != nil {
 			return []ent.Value{*id}
@@ -16255,7 +16844,10 @@ func (m *TeamMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *TeamMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 10)
+	edges := make([]string, 0, 11)
+	if m.removedmembers != nil {
+		edges = append(edges, team.EdgeMembers)
+	}
 	if m.removedvolunteers != nil {
 		edges = append(edges, team.EdgeVolunteers)
 	}
@@ -16287,6 +16879,12 @@ func (m *TeamMutation) RemovedEdges() []string {
 // the given name in this mutation.
 func (m *TeamMutation) RemovedIDs(name string) []ent.Value {
 	switch name {
+	case team.EdgeMembers:
+		ids := make([]ent.Value, 0, len(m.removedmembers))
+		for id := range m.removedmembers {
+			ids = append(ids, id)
+		}
+		return ids
 	case team.EdgeVolunteers:
 		ids := make([]ent.Value, 0, len(m.removedvolunteers))
 		for id := range m.removedvolunteers {
@@ -16341,7 +16939,10 @@ func (m *TeamMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *TeamMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 10)
+	edges := make([]string, 0, 11)
+	if m.clearedmembers {
+		edges = append(edges, team.EdgeMembers)
+	}
 	if m.clearedchurch {
 		edges = append(edges, team.EdgeChurch)
 	}
@@ -16379,6 +16980,8 @@ func (m *TeamMutation) ClearedEdges() []string {
 // was cleared in this mutation.
 func (m *TeamMutation) EdgeCleared(name string) bool {
 	switch name {
+	case team.EdgeMembers:
+		return m.clearedmembers
 	case team.EdgeChurch:
 		return m.clearedchurch
 	case team.EdgeSector:
@@ -16421,6 +17024,9 @@ func (m *TeamMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *TeamMutation) ResetEdge(name string) error {
 	switch name {
+	case team.EdgeMembers:
+		m.ResetMembers()
+		return nil
 	case team.EdgeChurch:
 		m.ResetChurch()
 		return nil

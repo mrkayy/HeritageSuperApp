@@ -11,7 +11,10 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
 	"github.com/hofchurchng/church-backend/internal/ent/kidsministryprofile"
+	"github.com/hofchurchng/church-backend/internal/ent/localchurch"
 	"github.com/hofchurchng/church-backend/internal/ent/member"
+	"github.com/hofchurchng/church-backend/internal/ent/sector"
+	"github.com/hofchurchng/church-backend/internal/ent/team"
 )
 
 // Member is the model entity for the Member schema.
@@ -59,6 +62,12 @@ type Member struct {
 	SourceTeam *string `json:"source_team,omitempty"`
 	// CreatedBy holds the value of the "created_by" field.
 	CreatedBy *uuid.UUID `json:"created_by,omitempty"`
+	// LocalChurchID holds the value of the "local_church_id" field.
+	LocalChurchID *uuid.UUID `json:"local_church_id,omitempty"`
+	// SectorID holds the value of the "sector_id" field.
+	SectorID *uuid.UUID `json:"sector_id,omitempty"`
+	// TeamID holds the value of the "team_id" field.
+	TeamID *uuid.UUID `json:"team_id,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
@@ -83,9 +92,15 @@ type MemberEdges struct {
 	GuardianRelationshipsAsGuardian []*GuardianRelationship `json:"guardian_relationships_as_guardian,omitempty"`
 	// KidsMinistryProfile holds the value of the kids_ministry_profile edge.
 	KidsMinistryProfile *KidsMinistryProfile `json:"kids_ministry_profile,omitempty"`
+	// LocalChurch holds the value of the local_church edge.
+	LocalChurch *LocalChurch `json:"local_church,omitempty"`
+	// Sector holds the value of the sector edge.
+	Sector *Sector `json:"sector,omitempty"`
+	// Team holds the value of the team edge.
+	Team *Team `json:"team,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [5]bool
+	loadedTypes [8]bool
 }
 
 // StageHistoriesOrErr returns the StageHistories value or an error if the edge
@@ -135,12 +150,45 @@ func (e MemberEdges) KidsMinistryProfileOrErr() (*KidsMinistryProfile, error) {
 	return nil, &NotLoadedError{edge: "kids_ministry_profile"}
 }
 
+// LocalChurchOrErr returns the LocalChurch value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e MemberEdges) LocalChurchOrErr() (*LocalChurch, error) {
+	if e.LocalChurch != nil {
+		return e.LocalChurch, nil
+	} else if e.loadedTypes[5] {
+		return nil, &NotFoundError{label: localchurch.Label}
+	}
+	return nil, &NotLoadedError{edge: "local_church"}
+}
+
+// SectorOrErr returns the Sector value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e MemberEdges) SectorOrErr() (*Sector, error) {
+	if e.Sector != nil {
+		return e.Sector, nil
+	} else if e.loadedTypes[6] {
+		return nil, &NotFoundError{label: sector.Label}
+	}
+	return nil, &NotLoadedError{edge: "sector"}
+}
+
+// TeamOrErr returns the Team value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e MemberEdges) TeamOrErr() (*Team, error) {
+	if e.Team != nil {
+		return e.Team, nil
+	} else if e.loadedTypes[7] {
+		return nil, &NotFoundError{label: team.Label}
+	}
+	return nil, &NotLoadedError{edge: "team"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*Member) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case member.FieldCreatedBy:
+		case member.FieldCreatedBy, member.FieldLocalChurchID, member.FieldSectorID, member.FieldTeamID:
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		case member.FieldIsPlaceholder:
 			values[i] = new(sql.NullBool)
@@ -310,6 +358,27 @@ func (_m *Member) assignValues(columns []string, values []any) error {
 				_m.CreatedBy = new(uuid.UUID)
 				*_m.CreatedBy = *value.S.(*uuid.UUID)
 			}
+		case member.FieldLocalChurchID:
+			if value, ok := values[i].(*sql.NullScanner); !ok {
+				return fmt.Errorf("unexpected type %T for field local_church_id", values[i])
+			} else if value.Valid {
+				_m.LocalChurchID = new(uuid.UUID)
+				*_m.LocalChurchID = *value.S.(*uuid.UUID)
+			}
+		case member.FieldSectorID:
+			if value, ok := values[i].(*sql.NullScanner); !ok {
+				return fmt.Errorf("unexpected type %T for field sector_id", values[i])
+			} else if value.Valid {
+				_m.SectorID = new(uuid.UUID)
+				*_m.SectorID = *value.S.(*uuid.UUID)
+			}
+		case member.FieldTeamID:
+			if value, ok := values[i].(*sql.NullScanner); !ok {
+				return fmt.Errorf("unexpected type %T for field team_id", values[i])
+			} else if value.Valid {
+				_m.TeamID = new(uuid.UUID)
+				*_m.TeamID = *value.S.(*uuid.UUID)
+			}
 		case member.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
@@ -364,6 +433,21 @@ func (_m *Member) QueryGuardianRelationshipsAsGuardian() *GuardianRelationshipQu
 // QueryKidsMinistryProfile queries the "kids_ministry_profile" edge of the Member entity.
 func (_m *Member) QueryKidsMinistryProfile() *KidsMinistryProfileQuery {
 	return NewMemberClient(_m.config).QueryKidsMinistryProfile(_m)
+}
+
+// QueryLocalChurch queries the "local_church" edge of the Member entity.
+func (_m *Member) QueryLocalChurch() *LocalChurchQuery {
+	return NewMemberClient(_m.config).QueryLocalChurch(_m)
+}
+
+// QuerySector queries the "sector" edge of the Member entity.
+func (_m *Member) QuerySector() *SectorQuery {
+	return NewMemberClient(_m.config).QuerySector(_m)
+}
+
+// QueryTeam queries the "team" edge of the Member entity.
+func (_m *Member) QueryTeam() *TeamQuery {
+	return NewMemberClient(_m.config).QueryTeam(_m)
 }
 
 // Update returns a builder for updating this Member.
@@ -480,6 +564,21 @@ func (_m *Member) String() string {
 	builder.WriteString(", ")
 	if v := _m.CreatedBy; v != nil {
 		builder.WriteString("created_by=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.LocalChurchID; v != nil {
+		builder.WriteString("local_church_id=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.SectorID; v != nil {
+		builder.WriteString("sector_id=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.TeamID; v != nil {
+		builder.WriteString("team_id=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
 	builder.WriteString(", ")

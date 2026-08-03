@@ -37,6 +37,13 @@ func (s *Service) DeleteMember(ctx context.Context, id string) error {
 	return s.repo.Delete(ctx, id)
 }
 
+func (s *Service) UpdateMember(ctx context.Context, id string, in AddMemberInput) (contracts.Member, error) {
+	if in.FirstName == "" || in.Surname == "" {
+		return contracts.Member{}, fmt.Errorf("first name and surname are required")
+	}
+	return s.repo.Update(ctx, id, in)
+}
+
 type ProfileMemberInput struct {
 	Name     string
 	Email    string
