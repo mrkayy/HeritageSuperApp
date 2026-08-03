@@ -76,7 +76,8 @@ func (Member) Fields() []ent.Field {
 			Optional().
 			Nillable(),
 		field.Bool("is_placeholder").
-			Default(false),
+			Default(false).
+			Annotations(entsql.Default("false")),
 		field.Text("source_team").
 			Optional().
 			Nillable(),
@@ -84,10 +85,12 @@ func (Member) Fields() []ent.Field {
 			Optional().
 			Nillable(),
 		field.Time("created_at").
-			Default(time.Now),
+			Default(time.Now).
+			Annotations(entsql.Default("CURRENT_TIMESTAMP")),
 		field.Time("updated_at").
 			Default(time.Now).
-			UpdateDefault(time.Now),
+			UpdateDefault(time.Now).
+			Annotations(entsql.Default("CURRENT_TIMESTAMP")),
 		field.Enum("current_stage").
 			Values(
 				"first_time_guest",
@@ -98,7 +101,8 @@ func (Member) Fields() []ent.Field {
 				"membership_class",
 				"stewardship",
 			).
-			Default("first_time_guest"),
+			Default("first_time_guest").
+			Annotations(entsql.Default("'first_time_guest'")),
 	}
 }
 

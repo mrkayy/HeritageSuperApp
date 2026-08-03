@@ -206,12 +206,12 @@ var (
 		{Name: "emergency_contact_phone", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "allergies", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "medical_notes", Type: field.TypeString, Nullable: true, Size: 2147483647},
-		{Name: "is_placeholder", Type: field.TypeBool, Default: false},
+		{Name: "is_placeholder", Type: field.TypeBool, Default: "false"},
 		{Name: "source_team", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "created_by", Type: field.TypeUUID, Nullable: true},
-		{Name: "created_at", Type: field.TypeTime},
-		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "current_stage", Type: field.TypeEnum, Enums: []string{"first_time_guest", "foundation_class", "sunday_school_module_1", "sunday_school_module_2", "sunday_school_module_3", "membership_class", "stewardship"}, Default: "first_time_guest"},
+		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
+		{Name: "updated_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
+		{Name: "current_stage", Type: field.TypeEnum, Enums: []string{"first_time_guest", "foundation_class", "sunday_school_module_1", "sunday_school_module_2", "sunday_school_module_3", "membership_class", "stewardship"}, Default: "'first_time_guest'"},
 	}
 	// MembersTable holds the schema information for the "members" table.
 	MembersTable = &schema.Table{
