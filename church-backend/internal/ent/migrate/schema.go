@@ -189,8 +189,8 @@ var (
 	// MembersColumns holds the columns for the "members" table.
 	MembersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
-		{Name: "first_name", Type: field.TypeString, Size: 2147483647},
-		{Name: "surname", Type: field.TypeString, Size: 2147483647},
+		{Name: "first_name", Type: field.TypeString, Nullable: true, Size: 2147483647, Default: ""},
+		{Name: "surname", Type: field.TypeString, Nullable: true, Size: 2147483647, Default: ""},
 		{Name: "email", Type: field.TypeString, Unique: true, Nullable: true, Size: 2147483647},
 		{Name: "phone_number", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "home_address", Type: field.TypeString, Nullable: true, Size: 2147483647},

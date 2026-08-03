@@ -31,9 +31,25 @@ func (_c *MemberCreate) SetFirstName(v string) *MemberCreate {
 	return _c
 }
 
+// SetNillableFirstName sets the "first_name" field if the given value is not nil.
+func (_c *MemberCreate) SetNillableFirstName(v *string) *MemberCreate {
+	if v != nil {
+		_c.SetFirstName(*v)
+	}
+	return _c
+}
+
 // SetSurname sets the "surname" field.
 func (_c *MemberCreate) SetSurname(v string) *MemberCreate {
 	_c.mutation.SetSurname(v)
+	return _c
+}
+
+// SetNillableSurname sets the "surname" field if the given value is not nil.
+func (_c *MemberCreate) SetNillableSurname(v *string) *MemberCreate {
+	if v != nil {
+		_c.SetSurname(*v)
+	}
 	return _c
 }
 
@@ -459,6 +475,14 @@ func (_c *MemberCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (_c *MemberCreate) defaults() {
+	if _, ok := _c.mutation.FirstName(); !ok {
+		v := member.DefaultFirstName
+		_c.mutation.SetFirstName(v)
+	}
+	if _, ok := _c.mutation.Surname(); !ok {
+		v := member.DefaultSurname
+		_c.mutation.SetSurname(v)
+	}
 	if _, ok := _c.mutation.IsPlaceholder(); !ok {
 		v := member.DefaultIsPlaceholder
 		_c.mutation.SetIsPlaceholder(v)
@@ -483,12 +507,6 @@ func (_c *MemberCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (_c *MemberCreate) check() error {
-	if _, ok := _c.mutation.FirstName(); !ok {
-		return &ValidationError{Name: "first_name", err: errors.New(`ent: missing required field "Member.first_name"`)}
-	}
-	if _, ok := _c.mutation.Surname(); !ok {
-		return &ValidationError{Name: "surname", err: errors.New(`ent: missing required field "Member.surname"`)}
-	}
 	if v, ok := _c.mutation.Gender(); ok {
 		if err := member.GenderValidator(v); err != nil {
 			return &ValidationError{Name: "gender", err: fmt.Errorf(`ent: validator failed for field "Member.gender": %w`, err)}

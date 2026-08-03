@@ -21,8 +21,12 @@ func (Member) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("id", uuid.UUID{}).
 			Default(uuid.New),
-		field.Text("first_name"),
-		field.Text("surname"),
+		field.Text("first_name").
+			Optional().
+			Default(""),
+		field.Text("surname").
+			Optional().
+			Default(""),
 		field.Text("email").
 			Optional().
 			Nillable().

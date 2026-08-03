@@ -56,8 +56,8 @@ export default function MembershipPage() {
 
   async function handleCreateMember(e: React.FormEvent) {
     e.preventDefault();
-    if (!firstName.trim() || !surname.trim()) {
-      setModalError("First name and surname are required.");
+    if (!email.trim()) {
+      setModalError("Email is required for profiling.");
       return;
     }
 
@@ -229,10 +229,10 @@ export default function MembershipPage() {
                     >
                       <td className="member-name-cell">
                         <div className="member-avatar">
-                          {m.name.charAt(0).toUpperCase()}
+                          {(m.name.trim() || m.email || "U").charAt(0).toUpperCase()}
                         </div>
                         <div style={{ display: "flex", flexDirection: "column" }}>
-                          <span style={{ fontWeight: 600 }}>{m.name}</span>
+                          <span style={{ fontWeight: 600 }}>{m.name.trim() || m.email || "(Unnamed Member)"}</span>
                           {m.isPlaceholder && <span className="placeholder-tag">Placeholder Stub</span>}
                         </div>
                       </td>
@@ -272,9 +272,9 @@ export default function MembershipPage() {
 
                 <div className="panel-avatar-section">
                   <div className="large-avatar">
-                    {selectedMember.name.charAt(0).toUpperCase()}
+                    {(selectedMember.name.trim() || selectedMember.email || "U").charAt(0).toUpperCase()}
                   </div>
-                  <h3>{selectedMember.name}</h3>
+                  <h3>{selectedMember.name.trim() || selectedMember.email || "(Unnamed Member)"}</h3>
                   <span className={`badge badge-stage stage-${selectedMember.currentStage}`}>
                     {getStageLabel(selectedMember.currentStage)}
                   </span>
@@ -387,11 +387,9 @@ export default function MembershipPage() {
                       id="member-first-name"
                       type="text"
                       className="input-field"
-                      placeholder="e.g. Olukayode"
+                      placeholder="e.g. Olukayode (optional)"
                       value={firstName}
                       onChange={(e) => setFirstName(e.target.value)}
-                      required
-                      autoFocus
                     />
                   </div>
                   <div className="input-group">
@@ -400,10 +398,9 @@ export default function MembershipPage() {
                       id="member-surname"
                       type="text"
                       className="input-field"
-                      placeholder="e.g. George"
+                      placeholder="e.g. George (optional)"
                       value={surname}
                       onChange={(e) => setSurname(e.target.value)}
-                      required
                     />
                   </div>
                 </div>
@@ -422,6 +419,8 @@ export default function MembershipPage() {
                       placeholder="e.g. member@hofchurch.org"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
+                      required
+                      autoFocus
                     />
                   </div>
                   <div className="input-group">

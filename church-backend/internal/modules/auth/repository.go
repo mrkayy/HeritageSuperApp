@@ -68,6 +68,7 @@ func (r *Repository) FindOrCreateByEmail(ctx context.Context, email string) (use
 	// Insert new user if they are profiled in members. Default role is 'member'.
 	firstName := m.FirstName
 	lastName := m.Surname
+	isComplete := firstName != "" && lastName != ""
 
 	newEu, err := r.db.User.Create().
 		SetEmail(email).
@@ -76,7 +77,7 @@ func (r *Repository) FindOrCreateByEmail(ctx context.Context, email string) (use
 		SetLastName(lastName).
 		SetRole(entuser.RoleMember).
 		SetAccountStatus(entuser.AccountStatusActive).
-		SetIsProfileComplete(true).
+		SetIsProfileComplete(isComplete).
 		Save(ctx)
 	if err != nil {
 		return user{}, err

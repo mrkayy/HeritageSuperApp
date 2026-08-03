@@ -47,6 +47,12 @@ func (_u *MemberUpdate) SetNillableFirstName(v *string) *MemberUpdate {
 	return _u
 }
 
+// ClearFirstName clears the value of the "first_name" field.
+func (_u *MemberUpdate) ClearFirstName() *MemberUpdate {
+	_u.mutation.ClearFirstName()
+	return _u
+}
+
 // SetSurname sets the "surname" field.
 func (_u *MemberUpdate) SetSurname(v string) *MemberUpdate {
 	_u.mutation.SetSurname(v)
@@ -58,6 +64,12 @@ func (_u *MemberUpdate) SetNillableSurname(v *string) *MemberUpdate {
 	if v != nil {
 		_u.SetSurname(*v)
 	}
+	return _u
+}
+
+// ClearSurname clears the value of the "surname" field.
+func (_u *MemberUpdate) ClearSurname() *MemberUpdate {
+	_u.mutation.ClearSurname()
 	return _u
 }
 
@@ -722,8 +734,14 @@ func (_u *MemberUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.FirstName(); ok {
 		_spec.SetField(member.FieldFirstName, field.TypeString, value)
 	}
+	if _u.mutation.FirstNameCleared() {
+		_spec.ClearField(member.FieldFirstName, field.TypeString)
+	}
 	if value, ok := _u.mutation.Surname(); ok {
 		_spec.SetField(member.FieldSurname, field.TypeString, value)
+	}
+	if _u.mutation.SurnameCleared() {
+		_spec.ClearField(member.FieldSurname, field.TypeString)
 	}
 	if value, ok := _u.mutation.Email(); ok {
 		_spec.SetField(member.FieldEmail, field.TypeString, value)
@@ -1094,6 +1112,12 @@ func (_u *MemberUpdateOne) SetNillableFirstName(v *string) *MemberUpdateOne {
 	return _u
 }
 
+// ClearFirstName clears the value of the "first_name" field.
+func (_u *MemberUpdateOne) ClearFirstName() *MemberUpdateOne {
+	_u.mutation.ClearFirstName()
+	return _u
+}
+
 // SetSurname sets the "surname" field.
 func (_u *MemberUpdateOne) SetSurname(v string) *MemberUpdateOne {
 	_u.mutation.SetSurname(v)
@@ -1105,6 +1129,12 @@ func (_u *MemberUpdateOne) SetNillableSurname(v *string) *MemberUpdateOne {
 	if v != nil {
 		_u.SetSurname(*v)
 	}
+	return _u
+}
+
+// ClearSurname clears the value of the "surname" field.
+func (_u *MemberUpdateOne) ClearSurname() *MemberUpdateOne {
+	_u.mutation.ClearSurname()
 	return _u
 }
 
@@ -1799,8 +1829,14 @@ func (_u *MemberUpdateOne) sqlSave(ctx context.Context) (_node *Member, err erro
 	if value, ok := _u.mutation.FirstName(); ok {
 		_spec.SetField(member.FieldFirstName, field.TypeString, value)
 	}
+	if _u.mutation.FirstNameCleared() {
+		_spec.ClearField(member.FieldFirstName, field.TypeString)
+	}
 	if value, ok := _u.mutation.Surname(); ok {
 		_spec.SetField(member.FieldSurname, field.TypeString, value)
+	}
+	if _u.mutation.SurnameCleared() {
+		_spec.ClearField(member.FieldSurname, field.TypeString)
 	}
 	if value, ok := _u.mutation.Email(); ok {
 		_spec.SetField(member.FieldEmail, field.TypeString, value)

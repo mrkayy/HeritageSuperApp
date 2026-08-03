@@ -150,6 +150,10 @@ func ValidColumn(column string) bool {
 }
 
 var (
+	// DefaultFirstName holds the default value on creation for the "first_name" field.
+	DefaultFirstName string
+	// DefaultSurname holds the default value on creation for the "surname" field.
+	DefaultSurname string
 	// DefaultIsPlaceholder holds the default value on creation for the "is_placeholder" field.
 	DefaultIsPlaceholder bool
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.

@@ -115,6 +115,14 @@ func init() {
 	localchurch.DefaultID = localchurchDescID.Default.(func() uuid.UUID)
 	memberFields := schema.Member{}.Fields()
 	_ = memberFields
+	// memberDescFirstName is the schema descriptor for first_name field.
+	memberDescFirstName := memberFields[1].Descriptor()
+	// member.DefaultFirstName holds the default value on creation for the first_name field.
+	member.DefaultFirstName = memberDescFirstName.Default.(string)
+	// memberDescSurname is the schema descriptor for surname field.
+	memberDescSurname := memberFields[2].Descriptor()
+	// member.DefaultSurname holds the default value on creation for the surname field.
+	member.DefaultSurname = memberDescSurname.Default.(string)
 	// memberDescIsPlaceholder is the schema descriptor for is_placeholder field.
 	memberDescIsPlaceholder := memberFields[18].Descriptor()
 	// member.DefaultIsPlaceholder holds the default value on creation for the is_placeholder field.

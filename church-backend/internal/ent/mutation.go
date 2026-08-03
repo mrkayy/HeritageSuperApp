@@ -5260,9 +5260,22 @@ func (m *MemberMutation) OldFirstName(ctx context.Context) (v string, err error)
 	return oldValue.FirstName, nil
 }
 
+// ClearFirstName clears the value of the "first_name" field.
+func (m *MemberMutation) ClearFirstName() {
+	m.first_name = nil
+	m.clearedFields[member.FieldFirstName] = struct{}{}
+}
+
+// FirstNameCleared returns if the "first_name" field was cleared in this mutation.
+func (m *MemberMutation) FirstNameCleared() bool {
+	_, ok := m.clearedFields[member.FieldFirstName]
+	return ok
+}
+
 // ResetFirstName resets all changes to the "first_name" field.
 func (m *MemberMutation) ResetFirstName() {
 	m.first_name = nil
+	delete(m.clearedFields, member.FieldFirstName)
 }
 
 // SetSurname sets the "surname" field.
@@ -5296,9 +5309,22 @@ func (m *MemberMutation) OldSurname(ctx context.Context) (v string, err error) {
 	return oldValue.Surname, nil
 }
 
+// ClearSurname clears the value of the "surname" field.
+func (m *MemberMutation) ClearSurname() {
+	m.surname = nil
+	m.clearedFields[member.FieldSurname] = struct{}{}
+}
+
+// SurnameCleared returns if the "surname" field was cleared in this mutation.
+func (m *MemberMutation) SurnameCleared() bool {
+	_, ok := m.clearedFields[member.FieldSurname]
+	return ok
+}
+
 // ResetSurname resets all changes to the "surname" field.
 func (m *MemberMutation) ResetSurname() {
 	m.surname = nil
+	delete(m.clearedFields, member.FieldSurname)
 }
 
 // SetEmail sets the "email" field.
@@ -7081,6 +7107,12 @@ func (m *MemberMutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *MemberMutation) ClearedFields() []string {
 	var fields []string
+	if m.FieldCleared(member.FieldFirstName) {
+		fields = append(fields, member.FieldFirstName)
+	}
+	if m.FieldCleared(member.FieldSurname) {
+		fields = append(fields, member.FieldSurname)
+	}
 	if m.FieldCleared(member.FieldEmail) {
 		fields = append(fields, member.FieldEmail)
 	}
@@ -7146,6 +7178,12 @@ func (m *MemberMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *MemberMutation) ClearField(name string) error {
 	switch name {
+	case member.FieldFirstName:
+		m.ClearFirstName()
+		return nil
+	case member.FieldSurname:
+		m.ClearSurname()
+		return nil
 	case member.FieldEmail:
 		m.ClearEmail()
 		return nil

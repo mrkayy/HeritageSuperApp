@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/hofchurchng/church-backend/internal/ent"
+	"github.com/hofchurchng/church-backend/internal/ent/member"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -113,6 +114,17 @@ func (r *Repository) Upsert(ctx context.Context, p profileRow) error {
 		SetNillableSectorID(sectorUUID).
 		SetIsProfileComplete(true).
 		Exec(ctx)
+
+	if err == nil {
+		// Sync details back to corresponding Member directory record if email matches
+		_ = r.db.Member.Update().
+			Where(member.Email(p.Email)).
+			SetFirstName(p.FirstName).
+			SetSurname(p.LastName).
+			SetHomeAddress(p.Address).
+			SetPhoneNumber(p.PhoneNumber).
+			Exec(ctx)
+	}
 
 	return err
 }

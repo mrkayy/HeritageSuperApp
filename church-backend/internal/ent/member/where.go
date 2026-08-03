@@ -211,6 +211,16 @@ func FirstNameHasSuffix(v string) predicate.Member {
 	return predicate.Member(sql.FieldHasSuffix(FieldFirstName, v))
 }
 
+// FirstNameIsNil applies the IsNil predicate on the "first_name" field.
+func FirstNameIsNil() predicate.Member {
+	return predicate.Member(sql.FieldIsNull(FieldFirstName))
+}
+
+// FirstNameNotNil applies the NotNil predicate on the "first_name" field.
+func FirstNameNotNil() predicate.Member {
+	return predicate.Member(sql.FieldNotNull(FieldFirstName))
+}
+
 // FirstNameEqualFold applies the EqualFold predicate on the "first_name" field.
 func FirstNameEqualFold(v string) predicate.Member {
 	return predicate.Member(sql.FieldEqualFold(FieldFirstName, v))
@@ -274,6 +284,16 @@ func SurnameHasPrefix(v string) predicate.Member {
 // SurnameHasSuffix applies the HasSuffix predicate on the "surname" field.
 func SurnameHasSuffix(v string) predicate.Member {
 	return predicate.Member(sql.FieldHasSuffix(FieldSurname, v))
+}
+
+// SurnameIsNil applies the IsNil predicate on the "surname" field.
+func SurnameIsNil() predicate.Member {
+	return predicate.Member(sql.FieldIsNull(FieldSurname))
+}
+
+// SurnameNotNil applies the NotNil predicate on the "surname" field.
+func SurnameNotNil() predicate.Member {
+	return predicate.Member(sql.FieldNotNull(FieldSurname))
 }
 
 // SurnameEqualFold applies the EqualFold predicate on the "surname" field.
