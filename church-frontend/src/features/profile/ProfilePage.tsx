@@ -28,6 +28,7 @@ export default function ProfilePage() {
   const [emergencyContactPhone, setEmergencyContactPhone] = useState("");
   const [profileError, setProfileError] = useState<string | null>(null);
   const [profileSuccess, setProfileSuccess] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"personal" | "health" | "family">("personal");
 
   // Kid Modal State
   const [showKidModal, setShowKidModal] = useState(false);
@@ -275,7 +276,7 @@ export default function ProfilePage() {
       <header className="profile-header glass-panel">
         <div className="header-brand">
           <Link to="/" className="back-link">← Dashboard</Link>
-          <h2>My Profile & Family</h2>
+          <h2>My Profile & Family Hub</h2>
         </div>
       </header>
 
@@ -283,323 +284,407 @@ export default function ProfilePage() {
         {error && <div className="alert alert-error animate-fade-in">{error}</div>}
         {profileSuccess && <div className="alert alert-success animate-fade-in">{profileSuccess}</div>}
 
-        <div className="profile-grid">
-          {/* Section 1: My Profile Details */}
-          <section className="profile-section-card card">
-            <div className="section-card-header">
-              <h3>Personal Profile Details</h3>
-              {!isEditingProfile && (
-                <button className="btn btn-secondary btn-sm" onClick={() => setIsEditingProfile(true)}>
-                  Edit Profile
-                </button>
-              )}
+        <div className="profile-dashboard-layout">
+          {/* Left Column: Summary Card */}
+          <div className="profile-summary-sidebar card animate-fade-in-up">
+            <div className="profile-avatar-container">
+              <div className="profile-avatar">
+                {profile?.firstName ? `${profile.firstName.charAt(0)}${profile.lastName.charAt(0)}` : "M"}
+              </div>
+              <div className="avatar-camera-overlay">
+                <span>📸</span>
+              </div>
             </div>
+            
+            <h3 className="profile-sidebar-name">{profile?.firstName} {profile?.lastName}</h3>
+            <p className="profile-sidebar-email">{profile?.email}</p>
+            <span className="profile-sidebar-badge">Verified Member</span>
 
-            {isEditingProfile ? (
-              <form onSubmit={handleUpdateProfile} className="profile-edit-form">
-                {profileError && <div className="alert alert-error">{profileError}</div>}
-                <div className="form-grid-2">
-                  <div className="input-group">
-                    <label className="input-label">First Name *</label>
-                    <input
-                      type="text"
-                      className="input-field"
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="input-group">
-                    <label className="input-label">Last Name *</label>
-                    <input
-                      type="text"
-                      className="input-field"
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="form-grid-2" style={{ marginTop: "var(--space-3)" }}>
-                  <div className="input-group">
-                    <label className="input-label">Phone Number</label>
-                    <input
-                      type="text"
-                      className="input-field"
-                      placeholder="e.g. +234..."
-                      value={phoneNumber}
-                      onChange={(e) => setPhoneNumber(e.target.value)}
-                    />
-                  </div>
-                  <div className="input-group">
-                    <label className="input-label">Date of Birth</label>
-                    <input
-                      type="date"
-                      className="input-field"
-                      value={dob}
-                      onChange={(e) => setDob(e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <div className="input-group" style={{ marginTop: "var(--space-3)" }}>
-                  <label className="input-label">Home Address</label>
-                  <input
-                    type="text"
-                    className="input-field"
-                    placeholder="Residential address"
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                  />
-                </div>
-
-                <div className="form-grid-3" style={{ marginTop: "var(--space-3)" }}>
-                  <div className="input-group">
-                    <label className="input-label">Marital Status</label>
-                    <select
-                      className="input-field"
-                      value={maritalStatus}
-                      onChange={(e) => setMaritalStatus(e.target.value)}
-                    >
-                      <option value="">Select status</option>
-                      <option value="single">Single</option>
-                      <option value="married">Married</option>
-                      <option value="widowed">Widowed</option>
-                      <option value="divorced">Divorced</option>
-                      <option value="separated">Separated</option>
-                    </select>
-                  </div>
-                  {maritalStatus === "married" && (
-                    <>
-                      <div className="input-group">
-                        <label className="input-label">Anniversary Day</label>
-                        <input
-                          type="number"
-                          min="1"
-                          max="31"
-                          className="input-field"
-                          placeholder="Day (1-31)"
-                          value={anniversaryDay}
-                          onChange={(e) => setAnniversaryDay(e.target.value === "" ? "" : Number(e.target.value))}
-                        />
-                      </div>
-                      <div className="input-group">
-                        <label className="input-label">Anniversary Month</label>
-                        <input
-                          type="number"
-                          min="1"
-                          max="12"
-                          className="input-field"
-                          placeholder="Month (1-12)"
-                          value={anniversaryMonth}
-                          onChange={(e) => setAnniversaryMonth(e.target.value === "" ? "" : Number(e.target.value))}
-                        />
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                <div className="form-grid-2" style={{ marginTop: "var(--space-3)" }}>
-                  <div className="input-group">
-                    <label className="input-label">Job / Occupation</label>
-                    <input
-                      type="text"
-                      className="input-field"
-                      placeholder="e.g. Accountant, Doctor"
-                      value={jobOccupation}
-                      onChange={(e) => setJobOccupation(e.target.value)}
-                    />
-                  </div>
-                  <div className="input-group">
-                    <label className="input-label">Allergies (if any)</label>
-                    <input
-                      type="text"
-                      className="input-field"
-                      placeholder="e.g. Shellfish, Penicillin"
-                      value={allergies}
-                      onChange={(e) => setAllergies(e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <div className="input-group" style={{ marginTop: "var(--space-3)" }}>
-                  <label className="input-label">Medical Notes</label>
-                  <textarea
-                    className="input-field"
-                    placeholder="Provide any critical medical conditions or details"
-                    value={medicalNotes}
-                    onChange={(e) => setMedicalNotes(e.target.value)}
-                    style={{ minHeight: "60px", resize: "vertical" }}
-                  />
-                </div>
-
-                <div className="form-grid-2" style={{ marginTop: "var(--space-3)" }}>
-                  <div className="input-group">
-                    <label className="input-label">Emergency Contact Name</label>
-                    <input
-                      type="text"
-                      className="input-field"
-                      placeholder="Full Name"
-                      value={emergencyContactName}
-                      onChange={(e) => setEmergencyContactName(e.target.value)}
-                    />
-                  </div>
-                  <div className="input-group">
-                    <label className="input-label">Emergency Contact Phone</label>
-                    <input
-                      type="text"
-                      className="input-field"
-                      placeholder="Phone number"
-                      value={emergencyContactPhone}
-                      onChange={(e) => setEmergencyContactPhone(e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <div className="form-actions" style={{ display: "flex", gap: "var(--space-3)", marginTop: "var(--space-5)" }}>
-                  <button type="button" className="btn btn-secondary" onClick={() => setIsEditingProfile(false)}>
-                    Cancel
-                  </button>
-                  <button type="submit" className="btn btn-primary">
-                    Save Changes
-                  </button>
-                </div>
-              </form>
-            ) : (
-              <div className="profile-display-details">
-                <div className="detail-row">
-                  <span className="detail-label">Full Name</span>
-                  <span className="detail-value">{profile?.firstName} {profile?.lastName}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="detail-label">Email Address</span>
-                  <span className="detail-value">{profile?.email}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="detail-label">Phone Number</span>
-                  <span className="detail-value">{profile?.phoneNumber || "—"}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="detail-label">Date of Birth</span>
-                  <span className="detail-value">
-                    {profile?.dateOfBirth ? new Date(profile.dateOfBirth).toLocaleDateString() : "—"}
-                  </span>
-                </div>
-                <div className="detail-row">
-                  <span className="detail-label">Home Address</span>
-                  <span className="detail-value">{profile?.address || "—"}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="detail-label">Marital Status</span>
-                  <span className="detail-value">
-                    {profile?.maritalStatus ? profile.maritalStatus.charAt(0).toUpperCase() + profile.maritalStatus.slice(1) : "—"}
-                    {profile?.maritalStatus === "married" && profile.weddingAnniversaryDay && profile.weddingAnniversaryMonth
-                      ? ` (Anniversary: ${profile.weddingAnniversaryDay}/${profile.weddingAnniversaryMonth})`
-                      : ""}
-                  </span>
-                </div>
-                <div className="detail-row">
-                  <span className="detail-label">Job / Occupation</span>
-                  <span className="detail-value">{profile?.jobOccupation || "—"}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="detail-label">Allergies</span>
-                  <span className={`detail-value ${profile?.allergies ? "text-warning" : ""}`}>{profile?.allergies || "None"}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="detail-label">Medical Notes</span>
-                  <span className="detail-value">{profile?.medicalNotes || "None"}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="detail-label">Emergency Contact</span>
-                  <span className="detail-value">
-                    {profile?.emergencyContactName || profile?.emergencyContactPhone
-                      ? `${profile.emergencyContactName || "—"} (${profile.emergencyContactPhone || "—"})`
-                      : "—"}
-                  </span>
-                </div>
-                <div className="detail-row">
-                  <span className="detail-label">Placement Info</span>
-                  <span className="detail-value">
-                    {profile?.teamName ? `Primary Team: ${profile.teamName}` : ""}
-                    {profile?.sectorName ? ` | Sector: ${profile.sectorName}` : ""}
-                    {!profile?.teamName && !profile?.sectorName ? "No active placement assigned." : ""}
-                  </span>
+            <div className="profile-sidebar-placements">
+              <div className="placement-item">
+                <span className="placement-icon">👥</span>
+                <div className="placement-text">
+                  <span className="placement-label">Primary Team</span>
+                  <strong className="placement-value">{profile?.teamName || "No Team Placement"}</strong>
                 </div>
               </div>
-            )}
-          </section>
+              <div className="placement-item">
+                <span className="placement-icon">🌐</span>
+                <div className="placement-text">
+                  <span className="placement-label">Assigned Sector</span>
+                  <strong className="placement-value">{profile?.sectorName || "No Sector Placement"}</strong>
+                </div>
+              </div>
+            </div>
 
-          {/* Section 2: Kids & Teenagers */}
-          <section className="profile-section-card card">
-            <div className="section-card-header">
-              <h3>Children & Teenagers</h3>
-              <button className="btn btn-primary btn-sm" onClick={() => { setKidModalMode("create"); setShowKidModal(true); }}>
-                + Add Child / Teen
+            <div className="profile-sidebar-actions">
+              {!isEditingProfile ? (
+                <button className="btn btn-primary w-full" onClick={() => setIsEditingProfile(true)}>
+                  Edit Profile Settings
+                </button>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", width: "100%" }}>
+                  <button type="submit" form="profile-form" className="btn btn-primary w-full">
+                    Save Changes
+                  </button>
+                  <button type="button" className="btn btn-secondary w-full" onClick={() => setIsEditingProfile(false)}>
+                    Cancel
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Right Column: Workspace Card */}
+          <div className="profile-dashboard-workspace card animate-fade-in-up" style={{ animationDelay: "100ms" }}>
+            {/* Tabs Navigation */}
+            <div className="workspace-tabs-header">
+              <button
+                type="button"
+                className={`workspace-tab-btn ${activeTab === "personal" ? "active" : ""}`}
+                onClick={() => setActiveTab("personal")}
+              >
+                👤 Personal Details
+              </button>
+              <button
+                type="button"
+                className={`workspace-tab-btn ${activeTab === "health" ? "active" : ""}`}
+                onClick={() => setActiveTab("health")}
+              >
+                🩺 Care & Emergency
+              </button>
+              <button
+                type="button"
+                className={`workspace-tab-btn ${activeTab === "family" ? "active" : ""}`}
+                onClick={() => setActiveTab("family")}
+              >
+                👨‍👩‍👧‍👦 Family Hub ({kids.length})
               </button>
             </div>
 
-            <div className="kids-list-container" style={{ marginTop: "var(--space-4)" }}>
-              {kids.length === 0 ? (
-                <div className="kids-empty-state">
-                  <span style={{ fontSize: "var(--fs-display)" }}>👶</span>
-                  <h4>No children registered yet</h4>
-                  <p className="text-secondary">Register your teenagers or children to link their records with your account.</p>
-                </div>
-              ) : (
-                <div className="kids-grid">
-                  {kids.map((k) => (
-                    <div key={k.id} className="kid-card card">
-                      <div className="kid-card-header">
-                        <div className="kid-avatar">🧒</div>
-                        <div className="kid-title-block">
-                          <h4>{k.name}</h4>
-                          <span className="kid-age-tag">
-                            {k.dateOfBirthDay && k.dateOfBirthMonth ? `Birthday: ${k.dateOfBirthDay}/${k.dateOfBirthMonth}` : "Age not specified"}
+            <div className="workspace-tab-content">
+              {/* Profile Details/Edit Form */}
+              <form id="profile-form" onSubmit={handleUpdateProfile} style={{ display: activeTab !== "family" ? "block" : "none" }}>
+                {profileError && <div className="alert alert-error" style={{ marginBottom: "var(--space-4)" }}>{profileError}</div>}
+
+                {activeTab === "personal" && (
+                  <div className="tab-pane animate-fade-in" style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+                    <div>
+                      <h4 className="pane-title">Personal Details</h4>
+                      <p className="pane-subtitle">Manage your contact information and identity records.</p>
+                    </div>
+                    
+                    {isEditingProfile ? (
+                      <div className="form-layout" style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+                        <div className="form-grid-2">
+                          <div className="input-group">
+                            <label className="input-label">First Name *</label>
+                            <input
+                              type="text"
+                              className="input-field"
+                              value={firstName}
+                              onChange={(e) => setFirstName(e.target.value)}
+                              required
+                            />
+                          </div>
+                          <div className="input-group">
+                            <label className="input-label">Last Name *</label>
+                            <input
+                              type="text"
+                              className="input-field"
+                              value={lastName}
+                              onChange={(e) => setLastName(e.target.value)}
+                              required
+                            />
+                          </div>
+                        </div>
+
+                        <div className="form-grid-2">
+                          <div className="input-group">
+                            <label className="input-label">Phone Number</label>
+                            <input
+                              type="text"
+                              className="input-field"
+                              placeholder="e.g. +234..."
+                              value={phoneNumber}
+                              onChange={(e) => setPhoneNumber(e.target.value)}
+                            />
+                          </div>
+                          <div className="input-group">
+                            <label className="input-label">Date of Birth</label>
+                            <input
+                              type="date"
+                              className="input-field"
+                              value={dob}
+                              onChange={(e) => setDob(e.target.value)}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="input-group">
+                          <label className="input-label">Home Address</label>
+                          <input
+                            type="text"
+                            className="input-field"
+                            placeholder="Residential address"
+                            value={address}
+                            onChange={(e) => setAddress(e.target.value)}
+                          />
+                        </div>
+
+                        <div className="form-grid-3">
+                          <div className="input-group">
+                            <label className="input-label">Marital Status</label>
+                            <select
+                              className="input-field"
+                              value={maritalStatus}
+                              onChange={(e) => setMaritalStatus(e.target.value)}
+                            >
+                              <option value="">Select status</option>
+                              <option value="single">Single</option>
+                              <option value="married">Married</option>
+                              <option value="widowed">Widowed</option>
+                              <option value="divorced">Divorced</option>
+                              <option value="separated">Separated</option>
+                            </select>
+                          </div>
+                          {maritalStatus === "married" && (
+                            <>
+                              <div className="input-group">
+                                <label className="input-label">Anniversary Day</label>
+                                <input
+                                  type="number"
+                                  min="1"
+                                  max="31"
+                                  className="input-field"
+                                  placeholder="Day (1-31)"
+                                  value={anniversaryDay}
+                                  onChange={(e) => setAnniversaryDay(e.target.value === "" ? "" : Number(e.target.value))}
+                                />
+                              </div>
+                              <div className="input-group">
+                                <label className="input-label">Anniversary Month</label>
+                                <input
+                                  type="number"
+                                  min="1"
+                                  max="12"
+                                  className="input-field"
+                                  placeholder="Month (1-12)"
+                                  value={anniversaryMonth}
+                                  onChange={(e) => setAnniversaryMonth(e.target.value === "" ? "" : Number(e.target.value))}
+                                />
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="profile-display-details">
+                        <div className="detail-row">
+                          <span className="detail-label">Full Name</span>
+                          <span className="detail-value">{profile?.firstName} {profile?.lastName}</span>
+                        </div>
+                        <div className="detail-row">
+                          <span className="detail-label">Email Address</span>
+                          <span className="detail-value">{profile?.email}</span>
+                        </div>
+                        <div className="detail-row">
+                          <span className="detail-label">Phone Number</span>
+                          <span className="detail-value">{profile?.phoneNumber || "—"}</span>
+                        </div>
+                        <div className="detail-row">
+                          <span className="detail-label">Date of Birth</span>
+                          <span className="detail-value">
+                            {profile?.dateOfBirth ? new Date(profile.dateOfBirth).toLocaleDateString() : "—"}
+                          </span>
+                        </div>
+                        <div className="detail-row">
+                          <span className="detail-label">Home Address</span>
+                          <span className="detail-value">{profile?.address || "—"}</span>
+                        </div>
+                        <div className="detail-row">
+                          <span className="detail-label">Marital Status</span>
+                          <span className="detail-value">
+                            {profile?.maritalStatus ? profile.maritalStatus.charAt(0).toUpperCase() + profile.maritalStatus.slice(1) : "—"}
+                            {profile?.maritalStatus === "married" && profile.weddingAnniversaryDay && profile.weddingAnniversaryMonth
+                              ? ` (Anniversary: ${profile.weddingAnniversaryDay}/${profile.weddingAnniversaryMonth})`
+                              : ""}
                           </span>
                         </div>
                       </div>
-                      <div className="kid-card-body">
-                        {k.email && (
-                          <div className="kid-info-row">
-                            <span className="info-icon">✉️</span>
-                            <span>{k.email}</span>
+                    )}
+                  </div>
+                )}
+
+                {activeTab === "health" && (
+                  <div className="tab-pane animate-fade-in" style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+                    <div>
+                      <h4 className="pane-title">Care & Emergency Details</h4>
+                      <p className="pane-subtitle">Register allergy alerts, emergency contacts and medical exceptions.</p>
+                    </div>
+
+                    {isEditingProfile ? (
+                      <div className="form-layout" style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+                        <div className="form-grid-2">
+                          <div className="input-group">
+                            <label className="input-label">Job / Occupation</label>
+                            <input
+                              type="text"
+                              className="input-field"
+                              placeholder="e.g. Accountant, Doctor"
+                              value={jobOccupation}
+                              onChange={(e) => setJobOccupation(e.target.value)}
+                            />
                           </div>
-                        )}
-                        {k.phoneNumber && (
-                          <div className="kid-info-row">
-                            <span className="info-icon">📞</span>
-                            <span>{k.phoneNumber}</span>
+                          <div className="input-group">
+                            <label className="input-label">Allergies (if any)</label>
+                            <input
+                              type="text"
+                              className="input-field"
+                              placeholder="e.g. Shellfish, Penicillin"
+                              value={allergies}
+                              onChange={(e) => setAllergies(e.target.value)}
+                            />
                           </div>
-                        )}
-                        {k.allergies && (
-                          <div className="kid-info-row text-warning">
-                            <span className="info-icon">⚠️</span>
-                            <strong>Allergies: {k.allergies}</strong>
+                        </div>
+
+                        <div className="input-group">
+                          <label className="input-label">Medical Notes</label>
+                          <textarea
+                            className="input-field"
+                            placeholder="Provide any critical medical conditions or details"
+                            value={medicalNotes}
+                            onChange={(e) => setMedicalNotes(e.target.value)}
+                            style={{ minHeight: "80px", resize: "vertical" }}
+                          />
+                        </div>
+
+                        <div className="form-grid-2">
+                          <div className="input-group">
+                            <label className="input-label">Emergency Contact Name</label>
+                            <input
+                              type="text"
+                              className="input-field"
+                              placeholder="Full Name"
+                              value={emergencyContactName}
+                              onChange={(e) => setEmergencyContactName(e.target.value)}
+                            />
                           </div>
-                        )}
-                        {k.medicalNotes && (
-                          <div className="kid-info-row">
-                            <span className="info-icon">📝</span>
-                            <span style={{ fontSize: "var(--fs-xs)" }}>{k.medicalNotes}</span>
+                          <div className="input-group">
+                            <label className="input-label">Emergency Contact Phone</label>
+                            <input
+                              type="text"
+                              className="input-field"
+                              placeholder="Phone number"
+                              value={emergencyContactPhone}
+                              onChange={(e) => setEmergencyContactPhone(e.target.value)}
+                            />
                           </div>
-                        )}
-                        <div className="kid-card-actions" style={{ display: "flex", gap: "var(--space-2)", marginTop: "var(--space-4)" }}>
-                          <button className="btn btn-secondary btn-sm" style={{ flex: 1 }} onClick={() => openEditKidModal(k)}>
-                            Edit
-                          </button>
-                          <button className="btn btn-secondary btn-sm btn-danger-action" onClick={() => handleDeleteKid(k.id, k.name)}>
-                            Remove
-                          </button>
                         </div>
                       </div>
+                    ) : (
+                      <div className="profile-display-details">
+                        <div className="detail-row">
+                          <span className="detail-label">Job / Occupation</span>
+                          <span className="detail-value">{profile?.jobOccupation || "—"}</span>
+                        </div>
+                        <div className="detail-row">
+                          <span className="detail-label">Allergies</span>
+                          <span className={`detail-value ${profile?.allergies ? "text-warning" : ""}`}>{profile?.allergies || "None"}</span>
+                        </div>
+                        <div className="detail-row">
+                          <span className="detail-label">Medical Notes</span>
+                          <span className="detail-value">{profile?.medicalNotes || "None"}</span>
+                        </div>
+                        <div className="detail-row">
+                          <span className="detail-label">Emergency Contact</span>
+                          <span className="detail-value">
+                            {profile?.emergencyContactName || profile?.emergencyContactPhone
+                              ? `${profile.emergencyContactName || "—"} (${profile.emergencyContactPhone || "—"})`
+                              : "—"}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </form>
+
+              {activeTab === "family" && (
+                <div className="tab-pane animate-fade-in" style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+                  <div className="pane-header-actions" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "var(--space-2)" }}>
+                    <div>
+                      <h4 className="pane-title">Children & Teenagers</h4>
+                      <p className="pane-subtitle">Manage registration records for your teenagers or children.</p>
                     </div>
-                  ))}
+                    <button className="btn btn-primary btn-sm" onClick={() => { setKidModalMode("create"); setShowKidModal(true); }}>
+                      + Add Child / Teen
+                    </button>
+                  </div>
+
+                  <div className="kids-list-container" style={{ marginTop: "var(--space-2)" }}>
+                    {kids.length === 0 ? (
+                      <div className="kids-empty-state">
+                        <span style={{ fontSize: "var(--fs-display)" }}>👶</span>
+                        <h4>No children registered yet</h4>
+                        <p className="text-secondary">Register your teenagers or children to link their records with your guardian profile.</p>
+                      </div>
+                    ) : (
+                      <div className="kids-grid">
+                        {kids.map((k) => (
+                          <div key={k.id} className="kid-card card">
+                            <div className="kid-card-header">
+                              <div className="kid-avatar">🧒</div>
+                              <div className="kid-title-block">
+                                <h4>{k.name}</h4>
+                                <span className="kid-age-tag">
+                                  {k.dateOfBirthDay && k.dateOfBirthMonth ? `Birthday: ${k.dateOfBirthDay}/${k.dateOfBirthMonth}` : "Age not specified"}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="kid-card-body">
+                              {k.email && (
+                                <div className="kid-info-row">
+                                  <span className="info-icon">✉️</span>
+                                  <span>{k.email}</span>
+                                </div>
+                              )}
+                              {k.phoneNumber && (
+                                <div className="kid-info-row">
+                                  <span className="info-icon">📞</span>
+                                  <span>{k.phoneNumber}</span>
+                                </div>
+                              )}
+                              {k.allergies && (
+                                <div className="kid-info-row text-warning">
+                                  <span className="info-icon">⚠️</span>
+                                  <strong>Allergies: {k.allergies}</strong>
+                                </div>
+                              )}
+                              {k.medicalNotes && (
+                                <div className="kid-info-row">
+                                  <span className="info-icon">📝</span>
+                                  <span style={{ fontSize: "var(--fs-xs)" }}>{k.medicalNotes}</span>
+                                </div>
+                              )}
+                              <div className="kid-card-actions" style={{ display: "flex", gap: "var(--space-2)", marginTop: "var(--space-4)" }}>
+                                <button className="btn btn-secondary btn-sm" style={{ flex: 1 }} onClick={() => openEditKidModal(k)}>
+                                  Edit
+                                </button>
+                                <button className="btn btn-secondary btn-sm btn-danger-action" onClick={() => handleDeleteKid(k.id, k.name)}>
+                                  Remove
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
-          </section>
+          </div>
         </div>
       </main>
 

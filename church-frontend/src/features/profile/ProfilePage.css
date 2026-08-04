@@ -29,21 +29,144 @@
   color: var(--primary);
 }
 
-.profile-grid {
+/* Dashboard Grid Layout */
+.profile-dashboard-layout {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-8);
+  grid-template-columns: 320px 1fr;
+  gap: var(--space-6);
   align-items: start;
 }
 
 @media (max-width: 992px) {
-  .profile-grid {
+  .profile-dashboard-layout {
     grid-template-columns: 1fr;
   }
 }
 
-.profile-section-card {
-  padding: var(--space-8);
+/* Profile Summary Sidebar */
+.profile-summary-sidebar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: var(--space-6);
+  background: var(--bg-base);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-md);
+  position: sticky;
+  top: 40px;
+}
+
+.profile-avatar-container {
+  position: relative;
+  margin-bottom: var(--space-4);
+  cursor: pointer;
+}
+
+.profile-avatar {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--fs-3xl);
+  font-weight: 800;
+  box-shadow: var(--shadow-sm);
+  border: 3px solid var(--border-subtle);
+  transition: all var(--duration-normal) var(--ease-out);
+}
+
+.avatar-camera-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-out);
+  color: white;
+  font-size: var(--fs-lg);
+}
+
+.profile-avatar-container:hover .avatar-camera-overlay {
+  opacity: 1;
+}
+
+.profile-sidebar-name {
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: var(--space-1);
+}
+
+.profile-sidebar-email {
+  font-size: var(--fs-sm);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-3);
+}
+
+.profile-sidebar-badge {
+  display: inline-block;
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--primary);
+  background: rgba(14, 165, 233, 0.08);
+  border-radius: var(--radius-full);
+  margin-bottom: var(--space-5);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.profile-sidebar-placements {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+  padding: var(--space-4) 0;
+  border-top: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.placement-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  text-align: left;
+}
+
+.placement-icon {
+  font-size: var(--fs-xl);
+}
+
+.placement-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.placement-label {
+  font-size: 10px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-weight: 700;
+}
+
+.placement-value {
+  font-size: var(--fs-sm);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.profile-sidebar-actions {
+  width: 100%;
 }
 
 .section-card-header {
@@ -238,4 +361,73 @@
 
 .category-select-card.selected {
   box-shadow: var(--shadow-md);
+}
+
+/* Workspace Dashboard Card & Tabs */
+.profile-dashboard-workspace {
+  background: var(--bg-base);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-md);
+  padding: 0;
+  overflow: hidden;
+}
+
+.workspace-tabs-header {
+  display: flex;
+  background: var(--bg-hover);
+  border-bottom: 1px solid var(--border-subtle);
+  overflow-x: auto;
+}
+
+.workspace-tab-btn {
+  flex: 1;
+  min-width: 140px;
+  padding: var(--space-4) var(--space-3);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  transition: all var(--duration-fast) var(--ease-out);
+  border-bottom: 2px solid transparent;
+}
+
+.workspace-tab-btn:hover {
+  color: var(--text-primary);
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.workspace-tab-btn.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+  background: var(--bg-base);
+}
+
+.workspace-tab-content {
+  padding: var(--space-6);
+}
+
+.pane-title {
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: var(--space-1);
+}
+
+.pane-subtitle {
+  font-size: var(--fs-sm);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-5);
+}
+
+.tab-pane {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
 }
