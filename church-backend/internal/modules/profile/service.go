@@ -38,6 +38,8 @@ type UpdateProfileInput struct {
 	MedicalNotes            *string
 	EmergencyContactName    *string
 	EmergencyContactPhone   *string
+	DateOfBirthDay          *int16
+	DateOfBirthMonth        *int16
 }
 
 type OwnProfileView struct {
@@ -61,6 +63,8 @@ type OwnProfileView struct {
 	MedicalNotes            *string
 	EmergencyContactName    *string
 	EmergencyContactPhone   *string
+	DateOfBirthDay          *int16
+	DateOfBirthMonth        *int16
 }
 
 var (
@@ -105,6 +109,8 @@ func (s *Service) UpdateProfile(ctx context.Context, userID string, in UpdatePro
 		MedicalNotes:            in.MedicalNotes,
 		EmergencyContactName:    in.EmergencyContactName,
 		EmergencyContactPhone:   in.EmergencyContactPhone,
+		DateOfBirthDay:          in.DateOfBirthDay,
+		DateOfBirthMonth:        in.DateOfBirthMonth,
 	})
 }
 
@@ -136,6 +142,8 @@ func (s *Service) GetOwnProfile(ctx context.Context, userID string) (OwnProfileV
 		MedicalNotes:            row.MedicalNotes,
 		EmergencyContactName:    row.EmergencyContactName,
 		EmergencyContactPhone:   row.EmergencyContactPhone,
+		DateOfBirthDay:          row.DateOfBirthDay,
+		DateOfBirthMonth:        row.DateOfBirthMonth,
 	}
 	if row.TeamID != nil {
 		if team, err := s.teams.GetTeam(ctx, *row.TeamID); err == nil {

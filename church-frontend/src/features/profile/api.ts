@@ -8,6 +8,8 @@ export interface UserProfile {
   phoneNumber?: string;
   address?: string;
   dateOfBirth?: string;
+  dateOfBirthDay?: number;
+  dateOfBirthMonth?: number;
   teamId?: string;
   teamName?: string;
   sectorId?: string;

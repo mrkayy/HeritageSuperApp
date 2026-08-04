@@ -17,7 +17,8 @@ export default function ProfilePage() {
   const [lastName, setLastName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [address, setAddress] = useState("");
-  const [dob, setDob] = useState("");
+  const [dobDay, setDobDay] = useState<number | "">("");
+  const [dobMonth, setDobMonth] = useState<number | "">("");
   const [maritalStatus, setMaritalStatus] = useState<string>("");
   const [anniversaryDay, setAnniversaryDay] = useState<number | "">("");
   const [anniversaryMonth, setAnniversaryMonth] = useState<number | "">("");
@@ -77,7 +78,8 @@ export default function ProfilePage() {
       setLastName(profData.lastName || "");
       setPhoneNumber(profData.phoneNumber || "");
       setAddress(profData.address || "");
-      setDob(profData.dateOfBirth ? profData.dateOfBirth.split("T")[0] : "");
+      setDobDay(profData.dateOfBirthDay ?? "");
+      setDobMonth(profData.dateOfBirthMonth ?? "");
       setMaritalStatus(profData.maritalStatus || "");
       setAnniversaryDay(profData.weddingAnniversaryDay ?? "");
       setAnniversaryMonth(profData.weddingAnniversaryMonth ?? "");
@@ -115,7 +117,8 @@ export default function ProfilePage() {
         lastName: lastName.trim(),
         phoneNumber: phoneNumber.trim(),
         address: address.trim(),
-        dateOfBirth: dob ? dob : undefined,
+        dateOfBirthDay: dobDay !== "" ? Number(dobDay) : undefined,
+        dateOfBirthMonth: dobMonth !== "" ? Number(dobMonth) : undefined,
         teamId: profile?.teamId,
         sectorId: profile?.sectorId,
         maritalStatus: maritalStatus || undefined,
@@ -135,7 +138,8 @@ export default function ProfilePage() {
               lastName: lastName.trim(),
               phoneNumber: phoneNumber.trim(),
               address: address.trim(),
-              dateOfBirth: dob ? dob : undefined,
+              dateOfBirthDay: dobDay !== "" ? Number(dobDay) : undefined,
+              dateOfBirthMonth: dobMonth !== "" ? Number(dobMonth) : undefined,
               maritalStatus: maritalStatus || undefined,
               weddingAnniversaryDay: anniversaryDay !== "" ? Number(anniversaryDay) : undefined,
               weddingAnniversaryMonth: anniversaryMonth !== "" ? Number(anniversaryMonth) : undefined,
@@ -412,12 +416,26 @@ export default function ProfilePage() {
                           </div>
                           <div className="input-group">
                             <label className="input-label">Date of Birth</label>
-                            <input
-                              type="date"
-                              className="input-field"
-                              value={dob}
-                              onChange={(e) => setDob(e.target.value)}
-                            />
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-2)" }}>
+                              <input
+                                type="number"
+                                min="1"
+                                max="31"
+                                className="input-field"
+                                placeholder="Day (1-31)"
+                                value={dobDay}
+                                onChange={(e) => setDobDay(e.target.value === "" ? "" : Number(e.target.value))}
+                              />
+                              <input
+                                type="number"
+                                min="1"
+                                max="12"
+                                className="input-field"
+                                placeholder="Month (1-12)"
+                                value={dobMonth}
+                                onChange={(e) => setDobMonth(e.target.value === "" ? "" : Number(e.target.value))}
+                              />
+                            </div>
                           </div>
                         </div>
 
@@ -495,7 +513,9 @@ export default function ProfilePage() {
                         <div className="detail-row">
                           <span className="detail-label">Date of Birth</span>
                           <span className="detail-value">
-                            {profile?.dateOfBirth ? new Date(profile.dateOfBirth).toLocaleDateString() : "—"}
+                            {profile?.dateOfBirthDay && profile?.dateOfBirthMonth
+                              ? `${profile.dateOfBirthDay}/${profile.dateOfBirthMonth}`
+                              : "—"}
                           </span>
                         </div>
                         <div className="detail-row">

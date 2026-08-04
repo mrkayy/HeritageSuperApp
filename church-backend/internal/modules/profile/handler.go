@@ -58,6 +58,8 @@ type profileDTO struct {
 	MedicalNotes            *string `json:"medicalNotes,omitempty"`
 	EmergencyContactName    *string `json:"emergencyContactName,omitempty"`
 	EmergencyContactPhone   *string `json:"emergencyContactPhone,omitempty"`
+	DateOfBirthDay          *int16  `json:"dateOfBirthDay,omitempty"`
+	DateOfBirthMonth        *int16  `json:"dateOfBirthMonth,omitempty"`
 }
 
 func toOwnDTO(v OwnProfileView) profileDTO {
@@ -80,6 +82,8 @@ func toOwnDTO(v OwnProfileView) profileDTO {
 		MedicalNotes:            v.MedicalNotes,
 		EmergencyContactName:    v.EmergencyContactName,
 		EmergencyContactPhone:   v.EmergencyContactPhone,
+		DateOfBirthDay:          v.DateOfBirthDay,
+		DateOfBirthMonth:        v.DateOfBirthMonth,
 	}
 	if v.DateOfBirth != nil {
 		s := v.DateOfBirth.Format(dateLayout)
@@ -153,6 +157,8 @@ func (h *Handler) updateOwn(c echo.Context) error {
 		MedicalNotes:            dto.MedicalNotes,
 		EmergencyContactName:    dto.EmergencyContactName,
 		EmergencyContactPhone:   dto.EmergencyContactPhone,
+		DateOfBirthDay:          dto.DateOfBirthDay,
+		DateOfBirthMonth:        dto.DateOfBirthMonth,
 	})
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())

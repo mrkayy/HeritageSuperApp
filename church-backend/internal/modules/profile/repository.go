@@ -32,6 +32,8 @@ type profileRow struct {
 	MedicalNotes            *string
 	EmergencyContactName    *string
 	EmergencyContactPhone   *string
+	DateOfBirthDay          *int16
+	DateOfBirthMonth        *int16
 }
 
 type Repository struct {
@@ -83,6 +85,8 @@ func (r *Repository) GetByUserID(ctx context.Context, userID string) (profileRow
 	var medicalNotes *string
 	var emergencyContactName *string
 	var emergencyContactPhone *string
+	var dateOfBirthDay *int16
+	var dateOfBirthMonth *int16
 
 	if m, err := r.db.Member.Query().Where(member.Email(u.Email)).Only(ctx); err == nil && m != nil {
 		if m.MaritalStatus != nil {
@@ -96,6 +100,8 @@ func (r *Repository) GetByUserID(ctx context.Context, userID string) (profileRow
 		medicalNotes = m.MedicalNotes
 		emergencyContactName = m.EmergencyContactName
 		emergencyContactPhone = m.EmergencyContactPhone
+		dateOfBirthDay = m.DateOfBirthDay
+		dateOfBirthMonth = m.DateOfBirthMonth
 	}
 
 	return profileRow{
@@ -117,6 +123,8 @@ func (r *Repository) GetByUserID(ctx context.Context, userID string) (profileRow
 		MedicalNotes:            medicalNotes,
 		EmergencyContactName:    emergencyContactName,
 		EmergencyContactPhone:   emergencyContactPhone,
+		DateOfBirthDay:          dateOfBirthDay,
+		DateOfBirthMonth:        dateOfBirthMonth,
 	}, nil
 }
 
@@ -212,6 +220,18 @@ func (r *Repository) Upsert(ctx context.Context, p profileRow) error {
 			uBuilder.SetEmergencyContactPhone(*p.EmergencyContactPhone)
 		} else {
 			uBuilder.ClearEmergencyContactPhone()
+		}
+
+		if p.DateOfBirthDay != nil {
+			uBuilder.SetDateOfBirthDay(*p.DateOfBirthDay)
+		} else {
+			uBuilder.ClearDateOfBirthDay()
+		}
+
+		if p.DateOfBirthMonth != nil {
+			uBuilder.SetDateOfBirthMonth(*p.DateOfBirthMonth)
+		} else {
+			uBuilder.ClearDateOfBirthMonth()
 		}
 
 		_ = uBuilder.Exec(ctx)
