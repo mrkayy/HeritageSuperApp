@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { fetchProfile, updateProfile, fetchKids, createKid, updateKid, deleteKid, UserProfile } from "./api";
-import { listChurches, getChurch, listSectors, getSector, listTeams, getTeam } from "../organization/api";
+import { getChurch, getSector, getTeam } from "../organization/api";
 import { Member, CreateMemberPayload } from "../membership/api";
 import { formatDayAndMonth } from "../../shared/utils/dateUtils";
 import "./ProfilePage.css";
@@ -44,11 +44,6 @@ export default function ProfilePage() {
   const [kidModalStep, setKidModalStep] = useState(1);
   const [kidCategory, setKidCategory] = useState<"child" | "teen">("child");
 
-  // Lookup data for kids assignments
-  const [churches, setChurches] = useState<any[]>([]);
-  const [sectors, setSectors] = useState<any[]>([]);
-  const [teams, setTeams] = useState<any[]>([]);
-
   // Kid Form Fields
   const [kidFirstName, setKidFirstName] = useState("");
   const [kidSurname, setKidSurname] = useState("");
@@ -66,7 +61,6 @@ export default function ProfilePage() {
 
   useEffect(() => {
     loadData();
-    loadLookups();
   }, []);
 
   async function loadData() {
@@ -119,17 +113,6 @@ export default function ProfilePage() {
       setError("Failed to load profile and family records.");
     } finally {
       setIsLoading(false);
-    }
-  }
-
-  async function loadLookups() {
-    try {
-      const [cData, sData, tData] = await Promise.all([listChurches(), listSectors(), listTeams()]);
-      setChurches(cData);
-      setSectors(sData);
-      setTeams(tData);
-    } catch (err) {
-      console.error("Failed to load list lookups:", err);
     }
   }
 
@@ -484,49 +467,34 @@ export default function ProfilePage() {
 
                         <div className="form-grid-3">
                           <div className="input-group">
-                            <label className="input-label">Local Church Center</label>
-                            <select
+                            <label className="input-label">Local Church Center ID</label>
+                            <input
+                              type="text"
                               className="input-field"
+                              placeholder="Church Center ID"
                               value={selectedChurchId}
                               onChange={(e) => setSelectedChurchId(e.target.value)}
-                            >
-                              <option value="">Select Local Church</option>
-                              {churches.map((c) => (
-                                <option key={c.ID} value={c.ID}>
-                                  {c.Name} {c.Center ? `(${c.Center})` : ""}
-                                </option>
-                              ))}
-                            </select>
+                            />
                           </div>
                           <div className="input-group">
-                            <label className="input-label">Assigned Sector</label>
-                            <select
+                            <label className="input-label">Assigned Sector ID</label>
+                            <input
+                              type="text"
                               className="input-field"
+                              placeholder="Sector ID"
                               value={selectedSectorId}
                               onChange={(e) => setSelectedSectorId(e.target.value)}
-                            >
-                              <option value="">Select Sector</option>
-                              {sectors.map((s) => (
-                                <option key={s.ID} value={s.ID}>
-                                  {s.Name}
-                                </option>
-                              ))}
-                            </select>
+                            />
                           </div>
                           <div className="input-group">
-                            <label className="input-label">Primary Team</label>
-                            <select
+                            <label className="input-label">Primary Team ID</label>
+                            <input
+                              type="text"
                               className="input-field"
+                              placeholder="Team ID"
                               value={selectedTeamId}
                               onChange={(e) => setSelectedTeamId(e.target.value)}
-                            >
-                              <option value="">Select Team</option>
-                              {teams.map((t) => (
-                                <option key={t.ID} value={t.ID}>
-                                  {t.Name}
-                                </option>
-                              ))}
-                            </select>
+                            />
                           </div>
                         </div>
 
@@ -920,43 +888,34 @@ export default function ProfilePage() {
 
                   <div className="form-grid-3">
                     <div className="input-group">
-                      <label className="input-label">Local Church Center</label>
-                      <select
+                      <label className="input-label">Local Church Center ID</label>
+                      <input
+                        type="text"
                         className="input-field"
+                        placeholder="Church Center ID"
                         value={kidChurchId}
                         onChange={(e) => setKidChurchId(e.target.value)}
-                      >
-                        <option value="">None / Not Assigned</option>
-                        {churches.map((c) => (
-                          <option key={c.ID} value={c.ID}>{c.Name} {c.Center ? `(${c.Center})` : ""}</option>
-                        ))}
-                      </select>
+                      />
                     </div>
                     <div className="input-group">
-                      <label className="input-label">Assigned Sector</label>
-                      <select
+                      <label className="input-label">Assigned Sector ID</label>
+                      <input
+                        type="text"
                         className="input-field"
+                        placeholder="Sector ID"
                         value={kidSectorId}
                         onChange={(e) => setKidSectorId(e.target.value)}
-                      >
-                        <option value="">None / Not Assigned</option>
-                        {sectors.map((s) => (
-                          <option key={s.ID} value={s.ID}>{s.Name}</option>
-                        ))}
-                      </select>
+                      />
                     </div>
                     <div className="input-group">
-                      <label className="input-label">Primary Team</label>
-                      <select
+                      <label className="input-label">Primary Team ID</label>
+                      <input
+                        type="text"
                         className="input-field"
+                        placeholder="Team ID"
                         value={kidTeamId}
                         onChange={(e) => setKidTeamId(e.target.value)}
-                      >
-                        <option value="">None / Not Assigned</option>
-                        {teams.map((t) => (
-                          <option key={t.ID} value={t.ID}>{t.Name}</option>
-                        ))}
-                      </select>
+                      />
                     </div>
                   </div>
 
