@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { fetchProfile, updateProfile, fetchKids, createKid, updateKid, deleteKid, UserProfile } from "./api";
-import { listChurches, listSectors, listTeams } from "../organization/api";
+import { listChurches, getChurch, listSectors, getSector, listTeams, getTeam } from "../organization/api";
 import { Member, CreateMemberPayload } from "../membership/api";
 import { formatDayAndMonth } from "../../shared/utils/dateUtils";
 import "./ProfilePage.css";
@@ -74,7 +74,26 @@ export default function ProfilePage() {
     setError(null);
     try {
       const [profData, kidsData] = await Promise.all([fetchProfile(), fetchKids()]);
-      setProfile(profData);
+      
+      const churchId = profData.churchId || profData.localChurchId;
+      const sectorId = profData.sectorId;
+      const teamId = profData.teamId;
+
+      const [fetchedChurch, fetchedSector, fetchedTeam] = await Promise.all([
+        churchId ? getChurch(churchId).catch(() => null) : Promise.resolve(null),
+        sectorId ? getSector(sectorId).catch(() => null) : Promise.resolve(null),
+        teamId ? getTeam(teamId).catch(() => null) : Promise.resolve(null),
+      ]);
+
+      const enrichedProfile: UserProfile = {
+        ...profData,
+        churchName: fetchedChurch?.Name || profData.churchName,
+        localChurchName: fetchedChurch?.Name || profData.localChurchName,
+        sectorName: fetchedSector?.Name || profData.sectorName,
+        teamName: fetchedTeam?.Name || profData.teamName,
+      };
+
+      setProfile(enrichedProfile);
       setKids(kidsData);
 
       // Populate edit states
@@ -92,9 +111,9 @@ export default function ProfilePage() {
       setMedicalNotes(profData.medicalNotes || "");
       setEmergencyContactName(profData.emergencyContactName || "");
       setEmergencyContactPhone(profData.emergencyContactPhone || "");
-      setSelectedChurchId(profData.churchId || profData.localChurchId || "");
-      setSelectedSectorId(profData.sectorId || "");
-      setSelectedTeamId(profData.teamId || "");
+      setSelectedChurchId(churchId || "");
+      setSelectedSectorId(sectorId || "");
+      setSelectedTeamId(teamId || "");
     } catch (err) {
       console.error(err);
       setError("Failed to load profile and family records.");
@@ -139,7 +158,23 @@ export default function ProfilePage() {
         emergencyContactPhone: emergencyContactPhone.trim() || undefined,
       });
       if (updated) {
-        setProfile(updated);
+        const churchId = updated.churchId || updated.localChurchId;
+        const sectorId = updated.sectorId;
+        const teamId = updated.teamId;
+
+        const [fetchedChurch, fetchedSector, fetchedTeam] = await Promise.all([
+          churchId ? getChurch(churchId).catch(() => null) : Promise.resolve(null),
+          sectorId ? getSector(sectorId).catch(() => null) : Promise.resolve(null),
+          teamId ? getTeam(teamId).catch(() => null) : Promise.resolve(null),
+        ]);
+
+        setProfile({
+          ...updated,
+          churchName: fetchedChurch?.Name || updated.churchName,
+          localChurchName: fetchedChurch?.Name || updated.localChurchName,
+          sectorName: fetchedSector?.Name || updated.sectorName,
+          teamName: fetchedTeam?.Name || updated.teamName,
+        });
       }
       setProfileSuccess("Your profile has been updated successfully.");
       setIsEditingProfile(false);
