@@ -114,13 +114,13 @@ func main() {
 	membersGroup := api.Group("/members", requireAuth, requireAdminOrPastorOrLead)
 	membershipHandler.Register(membersGroup)
 
-	teamsGroup := api.Group("/teams", requireAuth, requireAdminOrPastorOrLead)
+	teamsGroup := api.Group("/teams", requireAuth)
 	teamsHandler.RegisterTeams(teamsGroup)
 
-	sectorsGroup := api.Group("/sectors", requireAuth, requireAdminOrPastorOrLead)
+	sectorsGroup := api.Group("/sectors", requireAuth)
 	teamsHandler.RegisterSectors(sectorsGroup)
 
-	churchesGroup := api.Group("/churches", requireAuth, requireAdminOrPastorOrLead)
+	churchesGroup := api.Group("/churches", requireAuth)
 	teamsHandler.RegisterChurches(churchesGroup)
 
 	profileGroup := api.Group("/profile", requireAuth)
