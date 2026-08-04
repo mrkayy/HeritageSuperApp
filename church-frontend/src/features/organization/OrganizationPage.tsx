@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  listChurches, createChurch, updateChurch, deleteChurch,
-  listSectors, createSector, updateSector, deleteSector,
-  listTeams, createTeam, updateTeam, deleteTeam,
+  listChurches, getChurch, createChurch, updateChurch, deleteChurch,
+  listSectors, getSector, createSector, updateSector, deleteSector,
+  listTeams, getTeam, createTeam, updateTeam, deleteTeam,
   Church, Sector, Team
 } from "./api";
 import "./OrganizationPage.css";
@@ -78,17 +78,40 @@ export default function OrganizationPage() {
     setShowModal(true);
   }
 
-  function openEditModal(item: any) {
+  async function openEditModal(item: any) {
     setModalMode("edit");
     setSelectedId(item.ID);
-    setFieldName(item.Name || item.sector_name || "");
-    setFieldCenter(item.Center || "");
-    setFieldDescription(item.Description || "");
-    setFieldSlug(item.Slug || "");
-    setFieldChurchId(item.ChurchID || "");
-    setFieldSectorId(item.SectorID || "");
     setModalError(null);
     setShowModal(true);
+
+    try {
+      if (activeTab === "churches") {
+        const c = await getChurch(item.ID);
+        setFieldName(c.Name || "");
+        setFieldCenter(c.Center || "");
+        setFieldDescription(c.Description || "");
+        setFieldSlug(c.Slug || "");
+      } else if (activeTab === "sectors") {
+        const s = await getSector(item.ID);
+        setFieldName(s.Name || "");
+        setFieldDescription(s.Description || "");
+        setFieldChurchId(s.ChurchID || "");
+      } else if (activeTab === "teams") {
+        const t = await getTeam(item.ID);
+        setFieldName(t.Name || "");
+        setFieldDescription(t.Description || "");
+        setFieldChurchId(t.ChurchID || "");
+        setFieldSectorId(t.SectorID || "");
+      }
+    } catch (err) {
+      console.error("Error fetching single item by ID:", err);
+      setFieldName(item.Name || item.sector_name || "");
+      setFieldCenter(item.Center || "");
+      setFieldDescription(item.Description || "");
+      setFieldSlug(item.Slug || "");
+      setFieldChurchId(item.ChurchID || "");
+      setFieldSectorId(item.SectorID || "");
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {

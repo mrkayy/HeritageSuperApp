@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../shared/auth/AuthContext";
 import { fetchTeams, fetchSectors, updateProfile, fetchProfile, Team, Sector } from "./api";
+import { getTeam, getSector } from "../organization/api";
 import "./OnboardingPage.css";
 
 export default function OnboardingPage() {
@@ -23,6 +24,8 @@ export default function OnboardingPage() {
   const [address, setAddress] = useState("");
   const [selectedTeam, setSelectedTeam] = useState("");
   const [selectedSector, setSelectedSector] = useState("");
+  const [selectedTeamName, setSelectedTeamName] = useState("");
+  const [selectedSectorName, setSelectedSectorName] = useState("");
 
   useEffect(() => {
     // If the user's profile is already complete, redirect to home
@@ -66,8 +69,19 @@ export default function OnboardingPage() {
         .finally(() => {
           setIsLoading(false);
         });
+    } else if (step === 3) {
+      if (selectedTeam) {
+        getTeam(selectedTeam).then((t) => setSelectedTeamName(t.Name)).catch(() => setSelectedTeamName("None"));
+      } else {
+        setSelectedTeamName("None");
+      }
+      if (selectedSector) {
+        getSector(selectedSector).then((s) => setSelectedSectorName(s.Name)).catch(() => setSelectedSectorName("None"));
+      } else {
+        setSelectedSectorName("None");
+      }
     }
-  }, [step]);
+  }, [step, selectedTeam, selectedSector]);
 
   function handleNextStep(e: React.FormEvent) {
     e.preventDefault();
@@ -295,13 +309,13 @@ export default function OnboardingPage() {
               <div className="review-row">
                 <span className="review-label">Team</span>
                 <span className="review-val">
-                  {selectedTeam ? teams.find((t) => t.ID === selectedTeam)?.Name : "None"}
+                  {selectedTeamName || "None"}
                 </span>
               </div>
               <div className="review-row">
                 <span className="review-label">Sector</span>
                 <span className="review-val">
-                  {selectedSector ? sectors.find((s) => s.ID === selectedSector)?.Name : "None"}
+                  {selectedSectorName || "None"}
                 </span>
               </div>
             </div>

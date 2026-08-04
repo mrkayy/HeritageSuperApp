@@ -11,6 +11,7 @@ export interface Church {
 export interface Sector {
   ID: string;
   Name: string;
+  Description?: string;
   ChurchID?: string;
   ChurchName?: string;
   MemberCount?: number;
@@ -19,6 +20,9 @@ export interface Sector {
 export interface Team {
   ID: string;
   Name: string;
+  Description?: string;
+  ChurchID?: string;
+  SectorID?: string;
 }
 
 // Churches CRUD
