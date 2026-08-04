@@ -11,13 +11,14 @@ import (
 )
 
 type Service struct {
-	repo    *Repository
-	teams   contracts.TeamReader
-	sectors contracts.SectorReader
+	repo     *Repository
+	teams    contracts.TeamReader
+	sectors  contracts.SectorReader
+	churches contracts.ChurchReader
 }
 
-func NewService(repo *Repository, teams contracts.TeamReader, sectors contracts.SectorReader) *Service {
-	return &Service{repo: repo, teams: teams, sectors: sectors}
+func NewService(repo *Repository, teams contracts.TeamReader, sectors contracts.SectorReader, churches contracts.ChurchReader) *Service {
+	return &Service{repo: repo, teams: teams, sectors: sectors, churches: churches}
 }
 
 type UpdateProfileInput struct {
@@ -30,6 +31,7 @@ type UpdateProfileInput struct {
 	PhoneNumber             string
 	TeamID                  *string
 	SectorID                *string
+	ChurchID                *string
 	MaritalStatus           *string
 	WeddingAnniversaryDay   *int16
 	WeddingAnniversaryMonth *int16
@@ -55,6 +57,8 @@ type OwnProfileView struct {
 	TeamName                string
 	SectorID                *string
 	SectorName              string
+	ChurchID                *string
+	ChurchName              string
 	MaritalStatus           *string
 	WeddingAnniversaryDay   *int16
 	WeddingAnniversaryMonth *int16
@@ -101,6 +105,7 @@ func (s *Service) UpdateProfile(ctx context.Context, userID string, in UpdatePro
 		PhoneNumber:             in.PhoneNumber,
 		TeamID:                  in.TeamID,
 		SectorID:                in.SectorID,
+		ChurchID:                in.ChurchID,
 		MaritalStatus:           in.MaritalStatus,
 		WeddingAnniversaryDay:   in.WeddingAnniversaryDay,
 		WeddingAnniversaryMonth: in.WeddingAnniversaryMonth,
@@ -134,6 +139,7 @@ func (s *Service) GetOwnProfile(ctx context.Context, userID string) (OwnProfileV
 		PhoneNumber:             row.PhoneNumber,
 		TeamID:                  row.TeamID,
 		SectorID:                row.SectorID,
+		ChurchID:                row.ChurchID,
 		MaritalStatus:           row.MaritalStatus,
 		WeddingAnniversaryDay:   row.WeddingAnniversaryDay,
 		WeddingAnniversaryMonth: row.WeddingAnniversaryMonth,
@@ -145,14 +151,23 @@ func (s *Service) GetOwnProfile(ctx context.Context, userID string) (OwnProfileV
 		DateOfBirthDay:          row.DateOfBirthDay,
 		DateOfBirthMonth:        row.DateOfBirthMonth,
 	}
-	if row.TeamID != nil {
+	if row.TeamID != nil && s.teams != nil {
 		if team, err := s.teams.GetTeam(ctx, *row.TeamID); err == nil {
 			view.TeamName = team.Name
 		}
 	}
-	if row.SectorID != nil {
+	if row.SectorID != nil && s.sectors != nil {
 		if sector, err := s.sectors.GetSector(ctx, *row.SectorID); err == nil {
 			view.SectorName = sector.Name
+			if view.ChurchID == nil && sector.ChurchID != "" {
+				cID := sector.ChurchID
+				view.ChurchID = &cID
+			}
+		}
+	}
+	if view.ChurchID != nil && s.churches != nil {
+		if church, err := s.churches.GetChurch(ctx, *view.ChurchID); err == nil {
+			view.ChurchName = church.Name
 		}
 	}
 	return view, nil

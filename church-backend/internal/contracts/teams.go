@@ -36,3 +36,8 @@ type SectorReader interface {
 	GetSector(ctx context.Context, id string) (Sector, error)
 	ListSectors(ctx context.Context) ([]Sector, error)
 }
+
+type ChurchReader interface {
+	GetChurch(ctx context.Context, id string) (LocalChurch, error)
+	ListChurches(ctx context.Context) ([]LocalChurch, error)
+}

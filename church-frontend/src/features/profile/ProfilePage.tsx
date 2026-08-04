@@ -305,7 +305,14 @@ export default function ProfilePage() {
             <p className="profile-sidebar-email">{profile?.email}</p>
             <span className="profile-sidebar-badge">Verified Member</span>
 
-            <div className="profile-sidebar-placements">
+            <div className="profile-placement-list">
+              <div className="placement-item">
+                <span className="placement-icon">⛪</span>
+                <div className="placement-text">
+                  <span className="placement-label">Local Church</span>
+                  <strong className="placement-value">{profile?.churchName || profile?.localChurchName || "No Church Center"}</strong>
+                </div>
+              </div>
               <div className="placement-item">
                 <span className="placement-icon">👥</span>
                 <div className="placement-text">

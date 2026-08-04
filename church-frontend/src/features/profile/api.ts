@@ -14,6 +14,10 @@ export interface UserProfile {
   teamName?: string;
   sectorId?: string;
   sectorName?: string;
+  churchId?: string;
+  churchName?: string;
+  localChurchId?: string;
+  localChurchName?: string;
   profileImageUrl?: string;
   maritalStatus?: string;
   weddingAnniversaryDay?: number;

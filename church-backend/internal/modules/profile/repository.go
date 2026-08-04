@@ -24,6 +24,7 @@ type profileRow struct {
 	PhoneNumber             string
 	TeamID                  *string
 	SectorID                *string
+	ChurchID                *string
 	MaritalStatus           *string
 	WeddingAnniversaryDay   *int16
 	WeddingAnniversaryMonth *int16
@@ -77,6 +78,7 @@ func (r *Repository) GetByUserID(ctx context.Context, userID string) (profileRow
 		sectorID = &s
 	}
 
+	var churchID *string
 	var maritalStatus *string
 	var anniversaryDay *int16
 	var anniversaryMonth *int16
@@ -89,6 +91,18 @@ func (r *Repository) GetByUserID(ctx context.Context, userID string) (profileRow
 	var dateOfBirthMonth *int16
 
 	if m, err := r.db.Member.Query().Where(member.Email(u.Email)).Only(ctx); err == nil && m != nil {
+		if m.LocalChurchID != nil {
+			c := m.LocalChurchID.String()
+			churchID = &c
+		}
+		if m.SectorID != nil {
+			s := m.SectorID.String()
+			sectorID = &s
+		}
+		if m.TeamID != nil {
+			t := m.TeamID.String()
+			teamID = &t
+		}
 		if m.MaritalStatus != nil {
 			ms := string(*m.MaritalStatus)
 			maritalStatus = &ms
@@ -115,6 +129,7 @@ func (r *Repository) GetByUserID(ctx context.Context, userID string) (profileRow
 		PhoneNumber:             getString(u.PhoneNumber),
 		TeamID:                  teamID,
 		SectorID:                sectorID,
+		ChurchID:                churchID,
 		MaritalStatus:           maritalStatus,
 		WeddingAnniversaryDay:   anniversaryDay,
 		WeddingAnniversaryMonth: anniversaryMonth,

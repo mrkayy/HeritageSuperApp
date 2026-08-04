@@ -60,7 +60,7 @@ func main() {
 
 	// Profile module handles user profile management and tracks team/sector associations
 	profileRepo := profile.NewRepository(client)
-	profileSvc := profile.NewService(profileRepo, teamsSvc, teamsSvc)
+	profileSvc := profile.NewService(profileRepo, teamsSvc, teamsSvc, teamsSvc)
 	profileHandler := profile.NewHandler(profileSvc)
 
 	// Membership module tracks church membership, registration steps, and onboarding status
@@ -73,6 +73,7 @@ func main() {
 	var _ contracts.ProfileReader = profileSvc
 	var _ contracts.TeamReader = teamsSvc
 	var _ contracts.SectorReader = teamsSvc
+	var _ contracts.ChurchReader = teamsSvc
 
 	// --- Echo router ---
 	e := echo.New()

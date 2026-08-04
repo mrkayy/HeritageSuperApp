@@ -50,6 +50,10 @@ type profileDTO struct {
 	TeamName                string  `json:"teamName,omitempty"`
 	SectorID                *string `json:"sectorId,omitempty"`
 	SectorName              string  `json:"sectorName,omitempty"`
+	ChurchID                *string `json:"churchId,omitempty"`
+	ChurchName              string  `json:"churchName,omitempty"`
+	LocalChurchID           *string `json:"localChurchId,omitempty"`
+	LocalChurchName         string  `json:"localChurchName,omitempty"`
 	MaritalStatus           *string `json:"maritalStatus,omitempty"`
 	WeddingAnniversaryDay   *int16  `json:"weddingAnniversaryDay,omitempty"`
 	WeddingAnniversaryMonth *int16  `json:"weddingAnniversaryMonth,omitempty"`
@@ -74,6 +78,10 @@ func toOwnDTO(v OwnProfileView) profileDTO {
 		TeamName:                v.TeamName,
 		SectorID:                v.SectorID,
 		SectorName:              v.SectorName,
+		ChurchID:                v.ChurchID,
+		ChurchName:              v.ChurchName,
+		LocalChurchID:           v.ChurchID,
+		LocalChurchName:         v.ChurchName,
 		MaritalStatus:           v.MaritalStatus,
 		WeddingAnniversaryDay:   v.WeddingAnniversaryDay,
 		WeddingAnniversaryMonth: v.WeddingAnniversaryMonth,
