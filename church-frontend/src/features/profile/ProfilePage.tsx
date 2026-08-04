@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { fetchProfile, updateProfile, fetchKids, createKid, updateKid, deleteKid, UserProfile } from "./api";
 import { listChurches, listSectors, listTeams } from "../organization/api";
 import { Member, CreateMemberPayload } from "../membership/api";
+import { formatDayAndMonth } from "../../shared/utils/dateUtils";
 import "./ProfilePage.css";
 
 export default function ProfilePage() {
@@ -513,9 +514,7 @@ export default function ProfilePage() {
                         <div className="detail-row">
                           <span className="detail-label">Date of Birth</span>
                           <span className="detail-value">
-                            {profile?.dateOfBirthDay && profile?.dateOfBirthMonth
-                              ? `${profile.dateOfBirthDay}/${profile.dateOfBirthMonth}`
-                              : "—"}
+                            {formatDayAndMonth(profile?.dateOfBirthDay, profile?.dateOfBirthMonth)}
                           </span>
                         </div>
                         <div className="detail-row">
@@ -527,7 +526,7 @@ export default function ProfilePage() {
                           <span className="detail-value">
                             {profile?.maritalStatus ? profile.maritalStatus.charAt(0).toUpperCase() + profile.maritalStatus.slice(1) : "—"}
                             {profile?.maritalStatus === "married" && profile.weddingAnniversaryDay && profile.weddingAnniversaryMonth
-                              ? ` (Anniversary: ${profile.weddingAnniversaryDay}/${profile.weddingAnniversaryMonth})`
+                              ? ` (Anniversary: ${formatDayAndMonth(profile.weddingAnniversaryDay, profile.weddingAnniversaryMonth, false)})`
                               : ""}
                           </span>
                         </div>
@@ -658,7 +657,7 @@ export default function ProfilePage() {
                               <div className="kid-title-block">
                                 <h4>{k.name}</h4>
                                 <span className="kid-age-tag">
-                                  {k.dateOfBirthDay && k.dateOfBirthMonth ? `Birthday: ${k.dateOfBirthDay}/${k.dateOfBirthMonth}` : "Age not specified"}
+                                  {k.dateOfBirthDay && k.dateOfBirthMonth ? `Birthday: ${formatDayAndMonth(k.dateOfBirthDay, k.dateOfBirthMonth)}` : "Age not specified"}
                                 </span>
                               </div>
                             </div>

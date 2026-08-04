@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { listMembers, createMember, updateMember, deleteMember, Member, CreateMemberPayload } from "./api";
 import { listChurches, listSectors, listTeams } from "../organization/api";
+import { formatDayAndMonth } from "../../shared/utils/dateUtils";
 import "./MembershipPage.css";
 
 export default function MembershipPage() {
@@ -389,17 +390,13 @@ export default function MembershipPage() {
                     <div className="info-group">
                       <span className="info-label">Birthday</span>
                       <span className="info-value">
-                        {selectedMember.dateOfBirthDay && selectedMember.dateOfBirthMonth 
-                          ? `${selectedMember.dateOfBirthDay}/${selectedMember.dateOfBirthMonth}` 
-                          : "—"}
+                        {formatDayAndMonth(selectedMember.dateOfBirthDay, selectedMember.dateOfBirthMonth)}
                       </span>
                     </div>
                     <div className="info-group">
                       <span className="info-label">Anniversary</span>
                       <span className="info-value">
-                        {selectedMember.weddingAnniversaryDay && selectedMember.weddingAnniversaryMonth 
-                          ? `${selectedMember.weddingAnniversaryDay}/${selectedMember.weddingAnniversaryMonth}` 
-                          : "—"}
+                        {formatDayAndMonth(selectedMember.weddingAnniversaryDay, selectedMember.weddingAnniversaryMonth, false)}
                       </span>
                     </div>
                   </div>
