@@ -189,6 +189,30 @@ func (r *Repository) Upsert(ctx context.Context, p profileRow) error {
 			SetHomeAddress(p.Address).
 			SetPhoneNumber(p.PhoneNumber)
 
+		if p.TeamID != nil && *p.TeamID != "" {
+			if tu, err := uuid.Parse(*p.TeamID); err == nil {
+				uBuilder.SetTeamID(tu)
+			}
+		} else {
+			uBuilder.ClearTeamID()
+		}
+
+		if p.SectorID != nil && *p.SectorID != "" {
+			if su, err := uuid.Parse(*p.SectorID); err == nil {
+				uBuilder.SetSectorID(su)
+			}
+		} else {
+			uBuilder.ClearSectorID()
+		}
+
+		if p.ChurchID != nil && *p.ChurchID != "" {
+			if cu, err := uuid.Parse(*p.ChurchID); err == nil {
+				uBuilder.SetLocalChurchID(cu)
+			}
+		} else {
+			uBuilder.ClearLocalChurchID()
+		}
+
 		if p.MaritalStatus != nil && *p.MaritalStatus != "" {
 			uBuilder.SetMaritalStatus(member.MaritalStatus(*p.MaritalStatus))
 		} else {

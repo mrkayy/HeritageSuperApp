@@ -147,6 +147,11 @@ func (h *Handler) updateOwn(c echo.Context) error {
 		dob = &parsed
 	}
 
+	churchID := dto.ChurchID
+	if churchID == nil {
+		churchID = dto.LocalChurchID
+	}
+
 	err := h.svc.UpdateProfile(c.Request().Context(), user.ID, UpdateProfileInput{
 		FirstName:               dto.FirstName,
 		LastName:                dto.LastName,
@@ -157,6 +162,7 @@ func (h *Handler) updateOwn(c echo.Context) error {
 		PhoneNumber:             dto.PhoneNumber,
 		TeamID:                  dto.TeamID,
 		SectorID:                dto.SectorID,
+		ChurchID:                churchID,
 		MaritalStatus:           dto.MaritalStatus,
 		WeddingAnniversaryDay:   dto.WeddingAnniversaryDay,
 		WeddingAnniversaryMonth: dto.WeddingAnniversaryMonth,
@@ -172,7 +178,11 @@ func (h *Handler) updateOwn(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	return c.NoContent(http.StatusNoContent)
+	view, err := h.svc.GetOwnProfile(c.Request().Context(), user.ID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	return c.JSON(http.StatusOK, toOwnDTO(view))
 }
 
 func (h *Handler) getOther(c echo.Context) error {

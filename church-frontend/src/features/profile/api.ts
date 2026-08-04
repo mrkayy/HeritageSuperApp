@@ -34,7 +34,7 @@ export function fetchProfile() {
 }
 
 export function updateProfile(data: any) {
-  return apiFetch<void>("/profile/me", {
+  return apiFetch<UserProfile>("/profile/me", {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",

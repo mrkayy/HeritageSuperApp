@@ -28,6 +28,9 @@ export default function ProfilePage() {
   const [medicalNotes, setMedicalNotes] = useState("");
   const [emergencyContactName, setEmergencyContactName] = useState("");
   const [emergencyContactPhone, setEmergencyContactPhone] = useState("");
+  const [selectedChurchId, setSelectedChurchId] = useState("");
+  const [selectedSectorId, setSelectedSectorId] = useState("");
+  const [selectedTeamId, setSelectedTeamId] = useState("");
   const [profileError, setProfileError] = useState<string | null>(null);
   const [profileSuccess, setProfileSuccess] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"personal" | "health" | "family">("personal");
@@ -89,6 +92,9 @@ export default function ProfilePage() {
       setMedicalNotes(profData.medicalNotes || "");
       setEmergencyContactName(profData.emergencyContactName || "");
       setEmergencyContactPhone(profData.emergencyContactPhone || "");
+      setSelectedChurchId(profData.churchId || profData.localChurchId || "");
+      setSelectedSectorId(profData.sectorId || "");
+      setSelectedTeamId(profData.teamId || "");
     } catch (err) {
       console.error(err);
       setError("Failed to load profile and family records.");
@@ -113,15 +119,16 @@ export default function ProfilePage() {
     setProfileError(null);
     setProfileSuccess(null);
     try {
-      await updateProfile({
+      const updated = await updateProfile({
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         phoneNumber: phoneNumber.trim(),
         address: address.trim(),
         dateOfBirthDay: dobDay !== "" ? Number(dobDay) : undefined,
         dateOfBirthMonth: dobMonth !== "" ? Number(dobMonth) : undefined,
-        teamId: profile?.teamId,
-        sectorId: profile?.sectorId,
+        churchId: selectedChurchId || undefined,
+        sectorId: selectedSectorId || undefined,
+        teamId: selectedTeamId || undefined,
         maritalStatus: maritalStatus || undefined,
         weddingAnniversaryDay: anniversaryDay !== "" ? Number(anniversaryDay) : undefined,
         weddingAnniversaryMonth: anniversaryMonth !== "" ? Number(anniversaryMonth) : undefined,
@@ -131,27 +138,9 @@ export default function ProfilePage() {
         emergencyContactName: emergencyContactName.trim() || undefined,
         emergencyContactPhone: emergencyContactPhone.trim() || undefined,
       });
-      setProfile((prev) =>
-        prev
-          ? {
-              ...prev,
-              firstName: firstName.trim(),
-              lastName: lastName.trim(),
-              phoneNumber: phoneNumber.trim(),
-              address: address.trim(),
-              dateOfBirthDay: dobDay !== "" ? Number(dobDay) : undefined,
-              dateOfBirthMonth: dobMonth !== "" ? Number(dobMonth) : undefined,
-              maritalStatus: maritalStatus || undefined,
-              weddingAnniversaryDay: anniversaryDay !== "" ? Number(anniversaryDay) : undefined,
-              weddingAnniversaryMonth: anniversaryMonth !== "" ? Number(anniversaryMonth) : undefined,
-              jobOccupation: jobOccupation.trim() || undefined,
-              allergies: allergies.trim() || undefined,
-              medicalNotes: medicalNotes.trim() || undefined,
-              emergencyContactName: emergencyContactName.trim() || undefined,
-              emergencyContactPhone: emergencyContactPhone.trim() || undefined,
-            }
-          : null
-      );
+      if (updated) {
+        setProfile(updated);
+      }
       setProfileSuccess("Your profile has been updated successfully.");
       setIsEditingProfile(false);
     } catch (err) {
@@ -456,6 +445,54 @@ export default function ProfilePage() {
                             value={address}
                             onChange={(e) => setAddress(e.target.value)}
                           />
+                        </div>
+
+                        <div className="form-grid-3">
+                          <div className="input-group">
+                            <label className="input-label">Local Church Center</label>
+                            <select
+                              className="input-field"
+                              value={selectedChurchId}
+                              onChange={(e) => setSelectedChurchId(e.target.value)}
+                            >
+                              <option value="">Select Local Church</option>
+                              {churches.map((c) => (
+                                <option key={c.ID} value={c.ID}>
+                                  {c.Name} {c.Center ? `(${c.Center})` : ""}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="input-group">
+                            <label className="input-label">Assigned Sector</label>
+                            <select
+                              className="input-field"
+                              value={selectedSectorId}
+                              onChange={(e) => setSelectedSectorId(e.target.value)}
+                            >
+                              <option value="">Select Sector</option>
+                              {sectors.map((s) => (
+                                <option key={s.ID} value={s.ID}>
+                                  {s.Name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="input-group">
+                            <label className="input-label">Primary Team</label>
+                            <select
+                              className="input-field"
+                              value={selectedTeamId}
+                              onChange={(e) => setSelectedTeamId(e.target.value)}
+                            >
+                              <option value="">Select Team</option>
+                              {teams.map((t) => (
+                                <option key={t.ID} value={t.ID}>
+                                  {t.Name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
                         </div>
 
                         <div className="form-grid-3">
