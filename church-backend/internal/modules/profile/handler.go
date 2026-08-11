@@ -288,8 +288,30 @@ type sectorSubDTO struct {
 	SectorName string `json:"sector_name"`
 }
 
+type updateRolePayload struct {
+	Role string `json:"role"`
+}
+
 func (h *Handler) RegisterUsers(g *echo.Group) {
 	g.GET("", h.listUsers)
+	g.PUT("/:userID/role", h.updateUserRole)
+	g.PATCH("/:userID/role", h.updateUserRole)
+}
+
+func (h *Handler) updateUserRole(c echo.Context) error {
+	userID := c.Param("userID")
+	var p updateRolePayload
+	if err := c.Bind(&p); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+	if !contracts.IsValidRole(p.Role) {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid role: "+p.Role)
+	}
+
+	if err := h.svc.UpdateUserRole(c.Request().Context(), userID, p.Role); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	return c.JSON(http.StatusOK, map[string]string{"message": "user role updated successfully"})
 }
 
 func (h *Handler) listUsers(c echo.Context) error {

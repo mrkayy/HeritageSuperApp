@@ -237,12 +237,29 @@ func (r *Repository) Profile(ctx context.Context, name string, email string, rol
 	}
 
 	// 4. Create Member
-	m, err := tx.Member.Create().
+	mBuilder := tx.Member.Create().
 		SetFirstName(firstName).
 		SetSurname(lastName).
 		SetEmail(email).
-		SetCurrentStage(member.CurrentStageFirstTimeGuest).
-		Save(ctx)
+		SetCurrentStage(member.CurrentStageFirstTimeGuest)
+
+	if churchID != nil && *churchID != "" {
+		if cu, err := uuid.Parse(*churchID); err == nil {
+			mBuilder.SetLocalChurchID(cu)
+		}
+	}
+	if sectorID != nil && *sectorID != "" {
+		if su, err := uuid.Parse(*sectorID); err == nil {
+			mBuilder.SetSectorID(su)
+		}
+	}
+	if teamID != nil && *teamID != "" {
+		if tu, err := uuid.Parse(*teamID); err == nil {
+			mBuilder.SetTeamID(tu)
+		}
+	}
+
+	m, err := mBuilder.Save(ctx)
 	if err != nil {
 		tx.Rollback()
 		return contracts.Member{}, err
@@ -268,20 +285,24 @@ func (r *Repository) Profile(ctx context.Context, name string, email string, rol
 		SetAccountStatus(entuser.AccountStatusActive).
 		SetIsProfileComplete(false)
 
+	var teamUUID *uuid.UUID
 	if teamID != nil && *teamID != "" {
 		tu, err := uuid.Parse(*teamID)
 		if err != nil {
 			tx.Rollback()
 			return contracts.Member{}, fmt.Errorf("invalid team ID: %w", err)
 		}
+		teamUUID = &tu
 		uBuilder.SetTeamID(tu)
 	}
+	var sectorUUID *uuid.UUID
 	if sectorID != nil && *sectorID != "" {
 		su, err := uuid.Parse(*sectorID)
 		if err != nil {
 			tx.Rollback()
 			return contracts.Member{}, fmt.Errorf("invalid sector ID: %w", err)
 		}
+		sectorUUID = &su
 		uBuilder.SetSectorID(su)
 	}
 	if churchID != nil && *churchID != "" {
@@ -293,17 +314,39 @@ func (r *Repository) Profile(ctx context.Context, name string, email string, rol
 		uBuilder.SetChurchID(cu)
 	}
 
-	_, err = uBuilder.Save(ctx)
+	u, err := uBuilder.Save(ctx)
 	if err != nil {
 		tx.Rollback()
 		return contracts.Member{}, err
+	}
+
+	// Link into UserTeam and UserSector junction tables
+	if teamUUID != nil {
+		_, err = tx.UserTeam.Create().
+			SetUserID(u.ID).
+			SetTeamID(*teamUUID).
+			Save(ctx)
+		if err != nil {
+			tx.Rollback()
+			return contracts.Member{}, err
+		}
+	}
+	if sectorUUID != nil {
+		_, err = tx.UserSector.Create().
+			SetUserID(u.ID).
+			SetSectorID(*sectorUUID).
+			Save(ctx)
+		if err != nil {
+			tx.Rollback()
+			return contracts.Member{}, err
+		}
 	}
 
 	if err := tx.Commit(); err != nil {
 		return contracts.Member{}, err
 	}
 
-	return mapEntMemberToContract(m), nil
+	return r.Get(ctx, m.ID.String())
 }
 
 func mapEntMemberToContract(m *ent.Member) contracts.Member {

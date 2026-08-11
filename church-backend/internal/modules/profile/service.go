@@ -246,3 +246,10 @@ func (s *Service) DeleteKid(ctx context.Context, email string, kidID string) err
 func (s *Service) ListUsers(ctx context.Context) ([]*ent.User, error) {
 	return s.repo.ListUsers(ctx)
 }
+
+func (s *Service) UpdateUserRole(ctx context.Context, userID string, role string) error {
+	if !contracts.IsValidRole(role) {
+		return errors.New("invalid role: " + role)
+	}
+	return s.repo.UpdateUserRole(ctx, userID, role)
+}

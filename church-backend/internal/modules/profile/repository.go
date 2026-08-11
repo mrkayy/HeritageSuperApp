@@ -10,6 +10,7 @@ import (
 	"github.com/hofchurchng/church-backend/internal/ent"
 	"github.com/hofchurchng/church-backend/internal/ent/guardianrelationship"
 	"github.com/hofchurchng/church-backend/internal/ent/member"
+	entuser "github.com/hofchurchng/church-backend/internal/ent/user"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -737,4 +738,14 @@ func (r *Repository) ListUsers(ctx context.Context) ([]*ent.User, error) {
 		WithTeam().
 		WithSector().
 		All(ctx)
+}
+
+func (r *Repository) UpdateUserRole(ctx context.Context, userID string, role string) error {
+	uid, err := uuid.Parse(userID)
+	if err != nil {
+		return err
+	}
+	return r.db.User.UpdateOneID(uid).
+		SetRole(entuser.Role(role)).
+		Exec(ctx)
 }
