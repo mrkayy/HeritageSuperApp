@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/hofchurchng/church-backend/internal/contracts"
 )
 
@@ -41,20 +42,29 @@ func (s *Service) UpdateMember(ctx context.Context, id string, in AddMemberInput
 	if in.FirstName == "" || in.Surname == "" {
 		return contracts.Member{}, fmt.Errorf("first name and surname are required")
 	}
+	// Validate role
+	if !contracts.IsValidRole(in.Role) {
+		return contracts.Member{}, fmt.Errorf("invalid role: %s", in.Role)
+	}
+	
 	return s.repo.Update(ctx, id, in)
 }
 
 type ProfileMemberInput struct {
-	Name     string
-	Email    string
-	Role     string
-	TeamID   *string
-	SectorID *string
-	ChurchID *string
+	FirstName    string
+	Surname      string
+	Name         string
+	Email        string
+	Role         string
+	CurrentStage *string
+	TeamID       *string
+	SectorID     *string
+	ChurchID     *string
+	CreatedBy    *uuid.UUID
 }
 
 func (s *Service) ProfileMember(ctx context.Context, in ProfileMemberInput) (contracts.Member, error) {
-	if in.Name == "" || in.Email == "" {
+	if (in.FirstName == "" && in.Name == "") || in.Email == "" {
 		return contracts.Member{}, fmt.Errorf("name and email are required")
 	}
 
@@ -63,5 +73,5 @@ func (s *Service) ProfileMember(ctx context.Context, in ProfileMemberInput) (con
 		return contracts.Member{}, fmt.Errorf("invalid role: %s", in.Role)
 	}
 
-	return s.repo.Profile(ctx, in.Name, in.Email, in.Role, in.TeamID, in.SectorID, in.ChurchID)
+	return s.repo.ProfileNewMember(ctx, in)
 }

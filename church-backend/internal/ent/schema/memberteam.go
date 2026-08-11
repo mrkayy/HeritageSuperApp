@@ -38,7 +38,8 @@ func (MemberTeam) Edges() []ent.Edge {
 			Ref("teams").
 			Unique().
 			Field("member_id").
-			Required(),
+			Required().
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.From("team", Team.Type).
 			Ref("member_teams").
 			Unique().

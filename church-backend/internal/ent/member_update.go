@@ -518,6 +518,20 @@ func (_u *MemberUpdate) ClearTeamID() *MemberUpdate {
 	return _u
 }
 
+// SetJoinedAt sets the "joined_at" field.
+func (_u *MemberUpdate) SetJoinedAt(v time.Time) *MemberUpdate {
+	_u.mutation.SetJoinedAt(v)
+	return _u
+}
+
+// SetNillableJoinedAt sets the "joined_at" field if the given value is not nil.
+func (_u *MemberUpdate) SetNillableJoinedAt(v *time.Time) *MemberUpdate {
+	if v != nil {
+		_u.SetJoinedAt(*v)
+	}
+	return _u
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (_u *MemberUpdate) SetCreatedAt(v time.Time) *MemberUpdate {
 	_u.mutation.SetCreatedAt(v)
@@ -955,6 +969,9 @@ func (_u *MemberUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.CreatedByCleared() {
 		_spec.ClearField(member.FieldCreatedBy, field.TypeUUID)
+	}
+	if value, ok := _u.mutation.JoinedAt(); ok {
+		_spec.SetField(member.FieldJoinedAt, field.TypeTime, value)
 	}
 	if value, ok := _u.mutation.CreatedAt(); ok {
 		_spec.SetField(member.FieldCreatedAt, field.TypeTime, value)
@@ -1763,6 +1780,20 @@ func (_u *MemberUpdateOne) ClearTeamID() *MemberUpdateOne {
 	return _u
 }
 
+// SetJoinedAt sets the "joined_at" field.
+func (_u *MemberUpdateOne) SetJoinedAt(v time.Time) *MemberUpdateOne {
+	_u.mutation.SetJoinedAt(v)
+	return _u
+}
+
+// SetNillableJoinedAt sets the "joined_at" field if the given value is not nil.
+func (_u *MemberUpdateOne) SetNillableJoinedAt(v *time.Time) *MemberUpdateOne {
+	if v != nil {
+		_u.SetJoinedAt(*v)
+	}
+	return _u
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (_u *MemberUpdateOne) SetCreatedAt(v time.Time) *MemberUpdateOne {
 	_u.mutation.SetCreatedAt(v)
@@ -2230,6 +2261,9 @@ func (_u *MemberUpdateOne) sqlSave(ctx context.Context) (_node *Member, err erro
 	}
 	if _u.mutation.CreatedByCleared() {
 		_spec.ClearField(member.FieldCreatedBy, field.TypeUUID)
+	}
+	if value, ok := _u.mutation.JoinedAt(); ok {
+		_spec.SetField(member.FieldJoinedAt, field.TypeTime, value)
 	}
 	if value, ok := _u.mutation.CreatedAt(); ok {
 		_spec.SetField(member.FieldCreatedAt, field.TypeTime, value)

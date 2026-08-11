@@ -209,9 +209,10 @@ var (
 		{Name: "is_placeholder", Type: field.TypeBool, Default: "false"},
 		{Name: "source_team", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "created_by", Type: field.TypeUUID, Nullable: true},
+		{Name: "joined_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
 		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
 		{Name: "updated_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
-		{Name: "current_stage", Type: field.TypeEnum, Enums: []string{"first_time_guest", "foundation_class", "sunday_school_module_1", "sunday_school_module_2", "sunday_school_module_3", "membership_class", "stewardship"}, Default: "'first_time_guest'"},
+		{Name: "current_stage", Type: field.TypeEnum, Enums: []string{"first_time_guest", "foundation_class", "sunday_school_module_1", "sunday_school_module_2", "sunday_school_module_3", "membership_class", "stewardship", "mit", "resident_pastor"}, Default: "'first_time_guest'"},
 		{Name: "local_church_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "sector_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "team_id", Type: field.TypeUUID, Nullable: true},
@@ -224,19 +225,19 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "members_local_church_members",
-				Columns:    []*schema.Column{MembersColumns[24]},
+				Columns:    []*schema.Column{MembersColumns[25]},
 				RefColumns: []*schema.Column{LocalChurchColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "members_sector_members",
-				Columns:    []*schema.Column{MembersColumns[25]},
+				Columns:    []*schema.Column{MembersColumns[26]},
 				RefColumns: []*schema.Column{SectorColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "members_team_members",
-				Columns:    []*schema.Column{MembersColumns[26]},
+				Columns:    []*schema.Column{MembersColumns[27]},
 				RefColumns: []*schema.Column{TeamColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -280,7 +281,7 @@ var (
 	// MembershipStageHistoryColumns holds the columns for the "membership_stage_history" table.
 	MembershipStageHistoryColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
-		{Name: "stage", Type: field.TypeEnum, Enums: []string{"first_time_guest", "foundation_class", "sunday_school_module_1", "sunday_school_module_2", "sunday_school_module_3", "membership_class", "stewardship"}},
+		{Name: "stage", Type: field.TypeEnum, Enums: []string{"first_time_guest", "foundation_class", "sunday_school_module_1", "sunday_school_module_2", "sunday_school_module_3", "membership_class", "stewardship", "mit", "resident_pastor"}},
 		{Name: "entered_at", Type: field.TypeTime},
 		{Name: "recorded_by", Type: field.TypeUUID, Nullable: true},
 		{Name: "notes", Type: field.TypeString, Nullable: true, Size: 2147483647},

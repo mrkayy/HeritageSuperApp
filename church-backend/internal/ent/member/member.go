@@ -62,6 +62,8 @@ const (
 	FieldSectorID = "sector_id"
 	// FieldTeamID holds the string denoting the team_id field in the database.
 	FieldTeamID = "team_id"
+	// FieldJoinedAt holds the string denoting the joined_at field in the database.
+	FieldJoinedAt = "joined_at"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
@@ -176,6 +178,7 @@ var Columns = []string{
 	FieldLocalChurchID,
 	FieldSectorID,
 	FieldTeamID,
+	FieldJoinedAt,
 	FieldCreatedAt,
 	FieldUpdatedAt,
 	FieldCurrentStage,
@@ -198,6 +201,8 @@ var (
 	DefaultSurname string
 	// DefaultIsPlaceholder holds the default value on creation for the "is_placeholder" field.
 	DefaultIsPlaceholder bool
+	// DefaultJoinedAt holds the default value on creation for the "joined_at" field.
+	DefaultJoinedAt func() time.Time
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
 	// DefaultUpdatedAt holds the default value on creation for the "updated_at" field.
@@ -272,6 +277,8 @@ const (
 	CurrentStageSundaySchoolModule3 CurrentStage = "sunday_school_module_3"
 	CurrentStageMembershipClass     CurrentStage = "membership_class"
 	CurrentStageStewardship         CurrentStage = "stewardship"
+	CurrentStageMit                 CurrentStage = "mit"
+	CurrentStageResidentPastor      CurrentStage = "resident_pastor"
 )
 
 func (cs CurrentStage) String() string {
@@ -281,7 +288,7 @@ func (cs CurrentStage) String() string {
 // CurrentStageValidator is a validator for the "current_stage" field enum values. It is called by the builders before save.
 func CurrentStageValidator(cs CurrentStage) error {
 	switch cs {
-	case CurrentStageFirstTimeGuest, CurrentStageFoundationClass, CurrentStageSundaySchoolModule1, CurrentStageSundaySchoolModule2, CurrentStageSundaySchoolModule3, CurrentStageMembershipClass, CurrentStageStewardship:
+	case CurrentStageFirstTimeGuest, CurrentStageFoundationClass, CurrentStageSundaySchoolModule1, CurrentStageSundaySchoolModule2, CurrentStageSundaySchoolModule3, CurrentStageMembershipClass, CurrentStageStewardship, CurrentStageMit, CurrentStageResidentPastor:
 		return nil
 	default:
 		return fmt.Errorf("member: invalid enum value for current_stage field: %q", cs)
@@ -409,6 +416,11 @@ func BySectorID(opts ...sql.OrderTermOption) OrderOption {
 // ByTeamID orders the results by the team_id field.
 func ByTeamID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldTeamID, opts...).ToFunc()
+}
+
+// ByJoinedAt orders the results by the joined_at field.
+func ByJoinedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldJoinedAt, opts...).ToFunc()
 }
 
 // ByCreatedAt orders the results by the created_at field.

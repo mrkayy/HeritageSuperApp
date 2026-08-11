@@ -78,6 +78,8 @@ const (
 	StageSundaySchoolModule3 Stage = "sunday_school_module_3"
 	StageMembershipClass     Stage = "membership_class"
 	StageStewardship         Stage = "stewardship"
+	StageMit                 Stage = "mit"
+	StageResidentPastor      Stage = "resident_pastor"
 )
 
 func (s Stage) String() string {
@@ -87,7 +89,7 @@ func (s Stage) String() string {
 // StageValidator is a validator for the "stage" field enum values. It is called by the builders before save.
 func StageValidator(s Stage) error {
 	switch s {
-	case StageFirstTimeGuest, StageFoundationClass, StageSundaySchoolModule1, StageSundaySchoolModule2, StageSundaySchoolModule3, StageMembershipClass, StageStewardship:
+	case StageFirstTimeGuest, StageFoundationClass, StageSundaySchoolModule1, StageSundaySchoolModule2, StageSundaySchoolModule3, StageMembershipClass, StageStewardship, StageMit, StageResidentPastor:
 		return nil
 	default:
 		return fmt.Errorf("membershipstagehistory: invalid enum value for stage field: %q", s)

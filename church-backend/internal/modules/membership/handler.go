@@ -2,6 +2,7 @@ package membership
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/hofchurchng/church-backend/internal/contracts"
@@ -160,12 +161,15 @@ func (h *Handler) delete(c echo.Context) error {
 }
 
 type profilePayload struct {
-	Name     string  `json:"name"`
-	Email    string  `json:"email"`
-	Role     string  `json:"role"`
-	TeamID   *string `json:"team_id"`
-	SectorID *string `json:"sector_id"`
-	ChurchID *string `json:"church_id"`
+	Name         string  `json:"name"`
+	FirstName    string  `json:"first_name"`
+	Surname      string  `json:"surname"`
+	Email        string  `json:"email"`
+	Role         string  `json:"role"`
+	CurrentStage *string `json:"current_stage"`
+	TeamID       *string `json:"team_id"`
+	SectorID     *string `json:"sector_id"`
+	ChurchID     *string `json:"church_id"`
 }
 
 func (h *Handler) profile(c echo.Context) error {
@@ -173,14 +177,32 @@ func (h *Handler) profile(c echo.Context) error {
 	if err := c.Bind(&p); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
-	if p.Name == "" || p.Email == "" {
+
+	firstName := strings.TrimSpace(p.FirstName)
+	surname := strings.TrimSpace(p.Surname)
+	name := strings.TrimSpace(p.Name)
+	if firstName == "" && surname == "" && name != "" {
+		parts := strings.SplitN(name, " ", 2)
+		firstName = parts[0]
+		if len(parts) > 1 {
+			surname = parts[1]
+		}
+	} else if name == "" && (firstName != "" || surname != "") {
+		name = strings.TrimSpace(firstName + " " + surname)
+	}
+
+	if (name == "" && firstName == "") || p.Email == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "name and email are required")
 	}
 
 	churchID := p.ChurchID
+	var creatorID *uuid.UUID
 	// If church_id not provided in payload, default to creator's church_id from context
-	if (churchID == nil || *churchID == "") {
-		if creatorUser, ok := contracts.UserFromContext(c.Request().Context()); ok && creatorUser.ID != "" {
+	if creatorUser, ok := contracts.UserFromContext(c.Request().Context()); ok && creatorUser.ID != "" {
+		if cid, err := uuid.Parse(creatorUser.ID); err == nil {
+			creatorID = &cid
+		}
+		if churchID == nil || *churchID == "" {
 			// Find creator's user record to get church_id
 			if u, err := h.svc.repo.db.User.Get(c.Request().Context(), uuid.MustParse(creatorUser.ID)); err == nil && u.ChurchID != nil {
 				cid := u.ChurchID.String()
@@ -190,12 +212,16 @@ func (h *Handler) profile(c echo.Context) error {
 	}
 
 	member, err := h.svc.ProfileMember(c.Request().Context(), ProfileMemberInput{
-		Name:     p.Name,
-		Email:    p.Email,
-		Role:     p.Role,
-		TeamID:   p.TeamID,
-		SectorID: p.SectorID,
-		ChurchID: churchID,
+		FirstName:    firstName,
+		Surname:      surname,
+		Name:         name,
+		Email:        p.Email,
+		Role:         p.Role,
+		CurrentStage: p.CurrentStage,
+		TeamID:       p.TeamID,
+		SectorID:     p.SectorID,
+		ChurchID:     churchID,
+		CreatedBy:    creatorID,
 	})
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())

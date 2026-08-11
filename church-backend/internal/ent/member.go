@@ -68,6 +68,8 @@ type Member struct {
 	SectorID *uuid.UUID `json:"sector_id,omitempty"`
 	// TeamID holds the value of the "team_id" field.
 	TeamID *uuid.UUID `json:"team_id,omitempty"`
+	// JoinedAt holds the value of the "joined_at" field.
+	JoinedAt time.Time `json:"joined_at,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
@@ -196,7 +198,7 @@ func (*Member) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullInt64)
 		case member.FieldFirstName, member.FieldSurname, member.FieldEmail, member.FieldPhoneNumber, member.FieldHomeAddress, member.FieldGender, member.FieldMaritalStatus, member.FieldJobOccupation, member.FieldPhotoURL, member.FieldEmergencyContactName, member.FieldEmergencyContactPhone, member.FieldAllergies, member.FieldMedicalNotes, member.FieldSourceTeam, member.FieldCurrentStage:
 			values[i] = new(sql.NullString)
-		case member.FieldCreatedAt, member.FieldUpdatedAt:
+		case member.FieldJoinedAt, member.FieldCreatedAt, member.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
 		case member.FieldID:
 			values[i] = new(uuid.UUID)
@@ -378,6 +380,12 @@ func (_m *Member) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.TeamID = new(uuid.UUID)
 				*_m.TeamID = *value.S.(*uuid.UUID)
+			}
+		case member.FieldJoinedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field joined_at", values[i])
+			} else if value.Valid {
+				_m.JoinedAt = value.Time
 			}
 		case member.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -581,6 +589,9 @@ func (_m *Member) String() string {
 		builder.WriteString("team_id=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
+	builder.WriteString(", ")
+	builder.WriteString("joined_at=")
+	builder.WriteString(_m.JoinedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
 	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))

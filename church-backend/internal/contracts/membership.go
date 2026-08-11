@@ -32,6 +32,7 @@ type Member struct {
 	TeamID                  *string `json:"teamId"`
 	TeamName                *string `json:"teamName"`
 	CurrentStage            string  `json:"currentStage"`
+	JoinedAt                string  `json:"joinedAt,omitempty"`
 	CreatedAt               string  `json:"createdAt"`
 	UpdatedAt               string  `json:"updatedAt"`
 	Name                    string  `json:"name"` // Computed first_name + surname for compatibility

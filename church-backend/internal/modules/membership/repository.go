@@ -9,9 +9,15 @@ import (
 	"github.com/google/uuid"
 	"github.com/hofchurchng/church-backend/internal/contracts"
 	"github.com/hofchurchng/church-backend/internal/ent"
+	"github.com/hofchurchng/church-backend/internal/ent/guardianrelationship"
+	"github.com/hofchurchng/church-backend/internal/ent/kidsministryprofile"
 	"github.com/hofchurchng/church-backend/internal/ent/member"
 	"github.com/hofchurchng/church-backend/internal/ent/membershipstagehistory"
+	"github.com/hofchurchng/church-backend/internal/ent/memberteam"
+	"github.com/hofchurchng/church-backend/internal/ent/user"
 	entuser "github.com/hofchurchng/church-backend/internal/ent/user"
+	"github.com/hofchurchng/church-backend/internal/ent/usersector"
+	"github.com/hofchurchng/church-backend/internal/ent/userteam"
 )
 
 type Repository struct {
@@ -62,6 +68,7 @@ func (r *Repository) List(ctx context.Context) ([]contracts.Member, error) {
 type AddMemberInput struct {
 	FirstName               string
 	Surname                 string
+	Role                    string
 	Email                   *string
 	PhoneNumber             *string
 	HomeAddress             *string
@@ -84,6 +91,66 @@ type AddMemberInput struct {
 	LocalChurchID           *string
 	SectorID                *string
 	TeamID                  *string
+}
+
+var StageProgression = []membershipstagehistory.Stage{
+	membershipstagehistory.StageFirstTimeGuest,
+	membershipstagehistory.StageFoundationClass,
+	membershipstagehistory.StageSundaySchoolModule1,
+	membershipstagehistory.StageSundaySchoolModule2,
+	membershipstagehistory.StageSundaySchoolModule3,
+	membershipstagehistory.StageMembershipClass,
+	membershipstagehistory.StageStewardship,
+	membershipstagehistory.StageMit,
+	membershipstagehistory.StageResidentPastor,
+}
+
+// GetStagesUpTo returns all stages in order up to and including targetStage.
+func GetStagesUpTo(targetStage string) []membershipstagehistory.Stage {
+	target := membershipstagehistory.Stage(targetStage)
+	targetIdx := -1
+	for i, s := range StageProgression {
+		if s == target {
+			targetIdx = i
+			break
+		}
+	}
+	if targetIdx == -1 {
+		return []membershipstagehistory.Stage{membershipstagehistory.StageFirstTimeGuest}
+	}
+	return StageProgression[:targetIdx+1]
+}
+
+func (r *Repository) recordStageHistoriesUpTo(ctx context.Context, tx *ent.Tx, memberID uuid.UUID, targetStage string, recordedBy *uuid.UUID) error {
+	existingHistories, err := tx.MembershipStageHistory.Query().
+		Where(membershipstagehistory.MemberIDEQ(memberID)).
+		All(ctx)
+	if err != nil {
+		return err
+	}
+
+	existingMap := make(map[membershipstagehistory.Stage]bool)
+	for _, h := range existingHistories {
+		existingMap[h.Stage] = true
+	}
+
+	stages := GetStagesUpTo(targetStage)
+	now := time.Now()
+	for i, stg := range stages {
+		if !existingMap[stg] {
+			shBuilder := tx.MembershipStageHistory.Create().
+				SetMemberID(memberID).
+				SetStage(stg).
+				SetEnteredAt(now.Add(time.Duration(i) * time.Second))
+			if recordedBy != nil {
+				shBuilder.SetRecordedBy(*recordedBy)
+			}
+			if _, err := shBuilder.Save(ctx); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func (r *Repository) Add(ctx context.Context, in AddMemberInput) (contracts.Member, error) {
@@ -150,7 +217,7 @@ func (r *Repository) Add(ctx context.Context, in AddMemberInput) (contracts.Memb
 		builder.SetCreatedBy(*in.CreatedBy)
 	}
 
-	stage := "first_time_guest"
+	stage := string(membershipstagehistory.StageFirstTimeGuest)
 	if in.CurrentStage != nil && *in.CurrentStage != "" {
 		stage = *in.CurrentStage
 	}
@@ -181,17 +248,21 @@ func (r *Repository) Add(ctx context.Context, in AddMemberInput) (contracts.Memb
 		return contracts.Member{}, err
 	}
 
-	// 2. Create initial stage history
-	shBuilder := tx.MembershipStageHistory.Create().
-		SetMemberID(m.ID).
-		SetStage(membershipstagehistory.Stage(stage))
-	if in.CreatedBy != nil {
-		shBuilder.SetRecordedBy(*in.CreatedBy)
-	}
-	_, err = shBuilder.Save(ctx)
-	if err != nil {
-		tx.Rollback()
-		return contracts.Member{}, err
+	// 2. Create stage history progression up to current stage
+	stages := GetStagesUpTo(stage)
+	now := time.Now()
+	for i, stg := range stages {
+		shBuilder := tx.MembershipStageHistory.Create().
+			SetMemberID(m.ID).
+			SetStage(stg).
+			SetEnteredAt(now.Add(time.Duration(i) * time.Second))
+		if in.CreatedBy != nil {
+			shBuilder.SetRecordedBy(*in.CreatedBy)
+		}
+		if _, err := shBuilder.Save(ctx); err != nil {
+			tx.Rollback()
+			return contracts.Member{}, err
+		}
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -207,10 +278,98 @@ func (r *Repository) Delete(ctx context.Context, id string) error {
 		return err
 	}
 
-	return r.db.Member.DeleteOneID(uid).Exec(ctx)
+	tx, err := r.db.Tx(ctx)
+	if err != nil {
+		return err
+	}
+
+	// 1. Get member to retrieve email for cleaning up linked user account
+	m, err := tx.Member.Get(ctx, uid)
+	if err != nil {
+		_ = tx.Rollback()
+		if ent.IsNotFound(err) {
+			return fmt.Errorf("member not found")
+		}
+		return err
+	}
+
+	// 2. Delete membership stage histories
+	_, err = tx.MembershipStageHistory.Delete().
+		Where(membershipstagehistory.MemberIDEQ(uid)).
+		Exec(ctx)
+	if err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+
+	// 3. Delete member teams
+	_, err = tx.MemberTeam.Delete().
+		Where(memberteam.MemberIDEQ(uid)).
+		Exec(ctx)
+	if err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+
+	// 4. Delete kids ministry profile
+	_, err = tx.KidsMinistryProfile.Delete().
+		Where(kidsministryprofile.MemberIDEQ(uid)).
+		Exec(ctx)
+	if err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+
+	// 5. Delete guardian relationships (as child or guardian)
+	_, err = tx.GuardianRelationship.Delete().
+		Where(
+			guardianrelationship.Or(
+				guardianrelationship.ChildMemberIDEQ(uid),
+				guardianrelationship.GuardianMemberIDEQ(uid),
+			),
+		).
+		Exec(ctx)
+	if err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+
+	// 6. Delete the member
+	if err := tx.Member.DeleteOneID(uid).Exec(ctx); err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+
+	// 7. If there's an associated user account created for this member's email, delete it and its junction records
+	if m.Email != nil && *m.Email != "" {
+		if u, err := tx.User.Query().Where(entuser.EmailEQ(*m.Email)).Only(ctx); err == nil {
+			_, _ = tx.UserTeam.Delete().Where(userteam.UserIDEQ(u.ID)).Exec(ctx)
+			_, _ = tx.UserSector.Delete().Where(usersector.UserIDEQ(u.ID)).Exec(ctx)
+			_ = tx.User.DeleteOneID(u.ID).Exec(ctx)
+		}
+	}
+
+	return tx.Commit()
 }
 
-func (r *Repository) Profile(ctx context.Context, name string, email string, role string, teamID, sectorID, churchID *string) (contracts.Member, error) {
+func (r *Repository) ProfileNewMember(ctx context.Context, in ProfileMemberInput) (contracts.Member, error) {
+	firstName := strings.TrimSpace(in.FirstName)
+	surname := strings.TrimSpace(in.Surname)
+	if surname == "" && strings.Contains(firstName, " ") {
+		parts := strings.SplitN(firstName, " ", 2)
+		firstName = parts[0]
+		surname = parts[1]
+	}
+	if firstName == "" && in.Name != "" {
+		parts := strings.SplitN(strings.TrimSpace(in.Name), " ", 2)
+		firstName = parts[0]
+		if len(parts) > 1 {
+			surname = parts[1]
+		}
+	}
+	email := strings.TrimSpace(in.Email)
+	role := strings.TrimSpace(in.Role)
+
 	// 1. Check if user already exists
 	exists, err := r.db.User.Query().
 		Where(entuser.Email(email)).
@@ -228,33 +387,33 @@ func (r *Repository) Profile(ctx context.Context, name string, email string, rol
 		return contracts.Member{}, err
 	}
 
-	// 3. Parse name
-	parts := strings.SplitN(name, " ", 2)
-	firstName := parts[0]
-	lastName := ""
-	if len(parts) > 1 {
-		lastName = parts[1]
+	stage := string(membershipstagehistory.StageFirstTimeGuest)
+	if in.CurrentStage != nil && *in.CurrentStage != "" {
+		stage = *in.CurrentStage
 	}
 
-	// 4. Create Member
+	// 3. Create Member
 	mBuilder := tx.Member.Create().
 		SetFirstName(firstName).
-		SetSurname(lastName).
+		SetSurname(surname).
 		SetEmail(email).
-		SetCurrentStage(member.CurrentStageFirstTimeGuest)
+		SetCurrentStage(member.CurrentStage(stage))
 
-	if churchID != nil && *churchID != "" {
-		if cu, err := uuid.Parse(*churchID); err == nil {
+	if in.CreatedBy != nil {
+		mBuilder.SetCreatedBy(*in.CreatedBy)
+	}
+	if in.ChurchID != nil && *in.ChurchID != "" {
+		if cu, err := uuid.Parse(*in.ChurchID); err == nil {
 			mBuilder.SetLocalChurchID(cu)
 		}
 	}
-	if sectorID != nil && *sectorID != "" {
-		if su, err := uuid.Parse(*sectorID); err == nil {
+	if in.SectorID != nil && *in.SectorID != "" {
+		if su, err := uuid.Parse(*in.SectorID); err == nil {
 			mBuilder.SetSectorID(su)
 		}
 	}
-	if teamID != nil && *teamID != "" {
-		if tu, err := uuid.Parse(*teamID); err == nil {
+	if in.TeamID != nil && *in.TeamID != "" {
+		if tu, err := uuid.Parse(*in.TeamID); err == nil {
 			mBuilder.SetTeamID(tu)
 		}
 	}
@@ -265,29 +424,42 @@ func (r *Repository) Profile(ctx context.Context, name string, email string, rol
 		return contracts.Member{}, err
 	}
 
-	// 5. Create initial stage history
-	_, err = tx.MembershipStageHistory.Create().
-		SetMemberID(m.ID).
-		SetStage(membershipstagehistory.StageFirstTimeGuest).
-		Save(ctx)
-	if err != nil {
-		tx.Rollback()
-		return contracts.Member{}, err
+	// 4. Create stage history progression up to current stage
+	stages := GetStagesUpTo(stage)
+	now := time.Now()
+	for i, stg := range stages {
+		shBuilder := tx.MembershipStageHistory.Create().
+			SetMemberID(m.ID).
+			SetStage(stg).
+			SetEnteredAt(now.Add(time.Duration(i) * time.Second))
+		if in.CreatedBy != nil {
+			shBuilder.SetRecordedBy(*in.CreatedBy)
+		}
+		if _, err := shBuilder.Save(ctx); err != nil {
+			tx.Rollback()
+			return contracts.Member{}, err
+		}
 	}
 
-	// 6. Create User
+	genUsername := firstName
+	if surname != "" {
+		genUsername = fmt.Sprintf("%s. %s", strings.ToUpper(string([]rune(surname)[0])), firstName)
+	}
+
+	// 5. Create User
 	uBuilder := tx.User.Create().
 		SetEmail(email).
 		SetFirstName(firstName).
-		SetLastName(lastName).
+		SetLastName(surname).
+		SetUsername(genUsername).
 		SetPasswordHash("oauth-managed-account").
 		SetRole(entuser.Role(role)).
 		SetAccountStatus(entuser.AccountStatusActive).
 		SetIsProfileComplete(false)
 
 	var teamUUID *uuid.UUID
-	if teamID != nil && *teamID != "" {
-		tu, err := uuid.Parse(*teamID)
+	if in.TeamID != nil && *in.TeamID != "" {
+		tu, err := uuid.Parse(*in.TeamID)
 		if err != nil {
 			tx.Rollback()
 			return contracts.Member{}, fmt.Errorf("invalid team ID: %w", err)
@@ -296,8 +468,8 @@ func (r *Repository) Profile(ctx context.Context, name string, email string, rol
 		uBuilder.SetTeamID(tu)
 	}
 	var sectorUUID *uuid.UUID
-	if sectorID != nil && *sectorID != "" {
-		su, err := uuid.Parse(*sectorID)
+	if in.SectorID != nil && *in.SectorID != "" {
+		su, err := uuid.Parse(*in.SectorID)
 		if err != nil {
 			tx.Rollback()
 			return contracts.Member{}, fmt.Errorf("invalid sector ID: %w", err)
@@ -305,8 +477,8 @@ func (r *Repository) Profile(ctx context.Context, name string, email string, rol
 		sectorUUID = &su
 		uBuilder.SetSectorID(su)
 	}
-	if churchID != nil && *churchID != "" {
-		cu, err := uuid.Parse(*churchID)
+	if in.ChurchID != nil && *in.ChurchID != "" {
+		cu, err := uuid.Parse(*in.ChurchID)
 		if err != nil {
 			tx.Rollback()
 			return contracts.Member{}, fmt.Errorf("invalid church ID: %w", err)
@@ -441,6 +613,7 @@ func mapEntMemberToContract(m *ent.Member) contracts.Member {
 		TeamID:                  teamID,
 		TeamName:                teamName,
 		CurrentStage:            string(m.CurrentStage),
+		JoinedAt:                m.JoinedAt.Format(time.RFC3339),
 		CreatedAt:               m.CreatedAt.Format(time.RFC3339),
 		UpdatedAt:               m.UpdatedAt.Format(time.RFC3339),
 		Name:                    name,
@@ -453,7 +626,12 @@ func (r *Repository) Update(ctx context.Context, id string, in AddMemberInput) (
 		return contracts.Member{}, err
 	}
 
-	u := r.db.Member.UpdateOneID(uid).
+	tx, err := r.db.Tx(ctx)
+	if err != nil {
+		return contracts.Member{}, err
+	}
+
+	u := tx.Member.UpdateOneID(uid).
 		SetFirstName(in.FirstName).
 		SetSurname(in.Surname).
 		SetIsPlaceholder(in.IsPlaceholder)
@@ -568,16 +746,24 @@ func (r *Repository) Update(ctx context.Context, id string, in AddMemberInput) (
 
 	if in.CurrentStage != nil && *in.CurrentStage != "" {
 		u.SetCurrentStage(member.CurrentStage(*in.CurrentStage))
+		if err := r.recordStageHistoriesUpTo(ctx, tx, uid, *in.CurrentStage, in.CreatedBy); err != nil {
+			tx.Rollback()
+			return contracts.Member{}, err
+		}
 	}
 
 	m, err := u.Save(ctx)
 	if err != nil {
+		tx.Rollback()
 		return contracts.Member{}, err
 	}
 
 	// Sync back to User account if one exists with the same email
 	if m.Email != nil && *m.Email != "" {
-		userUpdate := r.db.User.Update().Where(entuser.EmailEQ(*m.Email))
+		userUpdate := tx.User.Update().Where(entuser.EmailEQ(*m.Email))
+		if in.Role != "" {
+			userUpdate.SetRole(user.Role(in.Role))
+		}
 		if m.TeamID != nil {
 			userUpdate.SetTeamID(*m.TeamID)
 		} else {
@@ -594,6 +780,10 @@ func (r *Repository) Update(ctx context.Context, id string, in AddMemberInput) (
 			userUpdate.ClearChurchID()
 		}
 		_ = userUpdate.Exec(ctx)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return contracts.Member{}, err
 	}
 
 	return r.Get(ctx, m.ID.String())

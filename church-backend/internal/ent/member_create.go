@@ -350,6 +350,20 @@ func (_c *MemberCreate) SetNillableTeamID(v *uuid.UUID) *MemberCreate {
 	return _c
 }
 
+// SetJoinedAt sets the "joined_at" field.
+func (_c *MemberCreate) SetJoinedAt(v time.Time) *MemberCreate {
+	_c.mutation.SetJoinedAt(v)
+	return _c
+}
+
+// SetNillableJoinedAt sets the "joined_at" field if the given value is not nil.
+func (_c *MemberCreate) SetNillableJoinedAt(v *time.Time) *MemberCreate {
+	if v != nil {
+		_c.SetJoinedAt(*v)
+	}
+	return _c
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (_c *MemberCreate) SetCreatedAt(v time.Time) *MemberCreate {
 	_c.mutation.SetCreatedAt(v)
@@ -547,6 +561,10 @@ func (_c *MemberCreate) defaults() {
 		v := member.DefaultIsPlaceholder
 		_c.mutation.SetIsPlaceholder(v)
 	}
+	if _, ok := _c.mutation.JoinedAt(); !ok {
+		v := member.DefaultJoinedAt()
+		_c.mutation.SetJoinedAt(v)
+	}
 	if _, ok := _c.mutation.CreatedAt(); !ok {
 		v := member.DefaultCreatedAt()
 		_c.mutation.SetCreatedAt(v)
@@ -579,6 +597,9 @@ func (_c *MemberCreate) check() error {
 	}
 	if _, ok := _c.mutation.IsPlaceholder(); !ok {
 		return &ValidationError{Name: "is_placeholder", err: errors.New(`ent: missing required field "Member.is_placeholder"`)}
+	}
+	if _, ok := _c.mutation.JoinedAt(); !ok {
+		return &ValidationError{Name: "joined_at", err: errors.New(`ent: missing required field "Member.joined_at"`)}
 	}
 	if _, ok := _c.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Member.created_at"`)}
@@ -708,6 +729,10 @@ func (_c *MemberCreate) createSpec() (*Member, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.CreatedBy(); ok {
 		_spec.SetField(member.FieldCreatedBy, field.TypeUUID, value)
 		_node.CreatedBy = &value
+	}
+	if value, ok := _c.mutation.JoinedAt(); ok {
+		_spec.SetField(member.FieldJoinedAt, field.TypeTime, value)
+		_node.JoinedAt = value
 	}
 	if value, ok := _c.mutation.CreatedAt(); ok {
 		_spec.SetField(member.FieldCreatedAt, field.TypeTime, value)

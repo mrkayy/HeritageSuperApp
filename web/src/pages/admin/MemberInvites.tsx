@@ -77,15 +77,17 @@ const MEMBERSHIP_STAGES = [
   { value: 'sunday_school_module_3', label: 'Sunday School Module 3' },
   { value: 'membership_class', label: 'Membership Class' },
   { value: 'stewardship', label: 'Stewardship' },
+  { value: 'mit', label: 'Minister In Training' },
+  { value: 'resident_pastor', label: 'Resident Pastor' },
 ] as const;
 
 const USER_ROLES = [
-  { value: 'super_admin', label: 'Super Admin' },
   { value: 'church_admin', label: 'Church Admin' },
   { value: 'resident_pastor', label: 'Resident Pastor' },
   { value: 'team_lead', label: 'Team Lead' },
   { value: 'steward', label: 'Steward' },
   { value: 'member', label: 'Member' },
+  { value: 'first_timer', label: 'First Timer' },
   { value: 'guest', label: 'Guest' },
 ] as const;
 
@@ -96,7 +98,7 @@ const memberProfileSchema = z.object({
     { message: "Please provide both first name and surname (e.g. John Doe)" }
   ),
   email: z.string().email("Invalid email address"),
-  role: z.enum(['super_admin', 'church_admin', 'resident_pastor', 'team_lead', 'steward', 'member', 'guest']),
+  role: z.enum(['church_admin', 'resident_pastor', 'team_lead', 'steward', 'member', 'first_timer', 'guest']),
   current_stage: z.string().min(1, "Current stage is required"),
   church_id: z.string().optional(),
   sector_id: z.string().optional(),
@@ -254,6 +256,7 @@ const MemberInvites = () => {
         const updatePayload = {
           firstName,
           surname,
+          role: data.role || 'member',
           email: data.email.trim(),
           currentStage: data.current_stage || 'first_time_guest',
           localChurchId: data.church_id || user?.church_id || undefined,
@@ -272,6 +275,7 @@ const MemberInvites = () => {
           name: data.name.trim(),
           email: data.email.trim(),
           role: data.role || 'member',
+          current_stage: data.current_stage || 'first_time_guest',
           church_id: data.church_id || user?.church_id || undefined,
           sector_id: data.sector_id || undefined,
           team_id: data.team_id || undefined,

@@ -32,3 +32,4 @@ church-backend/dist/
 church-backend/.env
 church-backend/app.log
 church-backend/server
+church-backend/tmp/
