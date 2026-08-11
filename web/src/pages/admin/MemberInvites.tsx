@@ -4,87 +4,98 @@ import { useAuthStore } from '@/store/authStore';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, UserPlus, Plus, Pencil, Trash2 } from 'lucide-react';
-import { format } from "date-fns";
+import { UserPlus, Plus, Pencil, Trash2 } from 'lucide-react';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import api from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
-import { cn, generateOTP } from "@/lib/utils";
 
-import { Invite, Sector } from '@/integrations/type_def';
+interface LocalChurch {
+  id: string;
+  name: string;
+  center?: string;
+}
 
-// Form schemas
-const inviteSchema = z.object({
+interface Sector {
+  id: string;
+  name: string;
+}
+
+interface Team {
+  id: string;
+  name: string;
+}
+
+interface MemberProfile {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  localChurchId?: string;
+  localChurchName?: string;
+  sectorId?: string;
+  sectorName?: string;
+  teamId?: string;
+  teamName?: string;
+  createdAt: string;
+}
+
+// Form schema for profiling a new member
+const memberProfileSchema = z.object({
+  name: z.string().min(1, "Full name is required"),
   email: z.string().email("Invalid email address"),
-  role: z.enum(['super_admin', 'church_admin', 'team_lead', 'member', 'guest']),
+  role: z.enum(['super_admin', 'church_admin', 'resident_pastor', 'team_lead', 'steward', 'member', 'guest']),
+  church_id: z.string().optional(),
   sector_id: z.string().optional(),
-  expires_at: z.date({
-    required_error: "Expiry date is required",
-  }),
+  team_id: z.string().optional(),
 });
 
-type InviteFormData = z.infer<typeof inviteSchema>;
-
-// interface Invite {
-//   id: string;
-//   email: string;
-//   otp_code: string;
-//   role: string;
-//   used: boolean;
-//   expires_at: string;
-//   created_at: string;
-//   sector_id?: string;
-// }
-
-// interface Sector {
-//   sector_id: string;
-//   sector_name: string;
-// }
+type MemberProfileFormData = z.infer<typeof memberProfileSchema>;
 
 const MemberInvites = () => {
   const { user } = useAuthStore();
-  const [invites, setInvites] = useState<Invite[]>([]);
+  const [members, setMembers] = useState<MemberProfile[]>([]);
+  const [churches, setChurches] = useState<LocalChurch[]>([]);
   const [sectors, setSectors] = useState<Sector[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingInvite, setEditingInvite] = useState<Invite | null>(null);
+  const [editingMember, setEditingMember] = useState<MemberProfile | null>(null);
 
-  const form = useForm<InviteFormData>({
-    resolver: zodResolver(inviteSchema),
+  const form = useForm<MemberProfileFormData>({
+    resolver: zodResolver(memberProfileSchema),
     defaultValues: {
+      name: '',
       email: '',
       role: 'member',
+      church_id: user?.church_id || '',
       sector_id: '',
-      expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+      team_id: '',
     },
   });
 
   useEffect(() => {
-    fetchInvites();
+    fetchMembers();
+    fetchChurches();
     fetchSectors();
+    fetchTeams();
   }, []);
 
-  const fetchInvites = async () => {
-    if (!user?.church_id || !user?.user_id) return;
-
+  const fetchMembers = async () => {
     try {
       setLoading(true);
-      const { data } = await api.get('/otp-invites');
-      setInvites(data || []);
+      const { data } = await api.get('/members');
+      setMembers(data || []);
     } catch (error) {
-      console.error('Error fetching invites:', error);
+      console.error('Error fetching members:', error);
       toast({
         title: "Error",
-        description: "Failed to fetch invites",
+        description: "Failed to fetch members",
         variant: "destructive"
       });
     } finally {
@@ -92,59 +103,81 @@ const MemberInvites = () => {
     }
   };
 
-  const fetchSectors = async () => {
-    if (!user?.church_id) return;
+  const fetchChurches = async () => {
+    try {
+      const { data } = await api.get('/churches');
+      const mapped = (data || []).map((item: any) => ({
+        id: item.id || item.church_id || '',
+        name: item.name || '',
+        center: item.center || '',
+      }));
+      setChurches(mapped);
+    } catch (error) {
+      console.error('Error fetching churches:', error);
+    }
+  };
 
+  const fetchSectors = async () => {
     try {
       const { data } = await api.get('/sectors');
-
-      setSectors(data || []);
+      const mapped = (data || []).map((item: any) => ({
+        id: item.id || item.sector_id || '',
+        name: item.name || item.sector_name || '',
+      }));
+      setSectors(mapped);
     } catch (error) {
       console.error('Error fetching sectors:', error);
     }
   };
 
-  const onSubmit = async (data: InviteFormData) => {
-    if (!user?.user_id) return;
+  const fetchTeams = async () => {
+    try {
+      const { data } = await api.get('/teams');
+      const mapped = (data || []).map((item: any) => ({
+        id: item.id || item.team_id || '',
+        name: item.name || item.team_name || '',
+      }));
+      setTeams(mapped);
+    } catch (error) {
+      console.error('Error fetching teams:', error);
+    }
+  };
 
+  const onSubmit = async (data: MemberProfileFormData) => {
     try {
       setLoading(true);
 
-      const inviteData = {
+      const payload = {
+        name: data.name,
         email: data.email,
-        otp_code: generateOTP(),
         role: data.role,
-        sector_id: data.sector_id || null,
-        expires_at: data.expires_at.toISOString(),
-        created_by_user_id: user.user_id,
-        used: false
+        church_id: data.church_id || user?.church_id || undefined,
+        sector_id: data.sector_id || undefined,
+        team_id: data.team_id || undefined,
       };
 
-      if (editingInvite) {
-        await api.patch(`/otp-invites/${editingInvite.id}`, inviteData);
-
+      if (editingMember) {
+        await api.put(`/members/${editingMember.id}`, payload);
         toast({
           title: "Success",
-          description: "Invite updated successfully",
+          description: "Member updated successfully",
         });
       } else {
-        await api.post('/otp-invites/invite', inviteData);
-
+        await api.post('/members/profile', payload);
         toast({
           title: "Success",
-          description: "Invite created successfully",
+          description: "Member profiled successfully",
         });
       }
 
-      form.reset();
-      setEditingInvite(null);
+      resetForm();
       setIsDialogOpen(false);
-      fetchInvites();
-    } catch (error) {
-      console.error('Error saving invite:', error);
+      fetchMembers();
+    } catch (error: any) {
+      console.error('Error profiling member:', error);
       toast({
         title: "Error",
-        description: "Failed to save invite",
+        description: error?.response?.data?.message || "Failed to profile member",
         variant: "destructive"
       });
     } finally {
@@ -152,34 +185,36 @@ const MemberInvites = () => {
     }
   };
 
-  const handleEdit = (invite: Invite) => {
-    setEditingInvite(invite);
+  const handleEdit = (member: MemberProfile) => {
+    setEditingMember(member);
     form.reset({
-      email: invite.email,
-      role: invite.role,
-      sector_id: invite.sector_id || '',
-      expires_at: new Date(invite.expires_at),
+      name: member.name || '',
+      email: member.email || '',
+      role: (member.role as any) || 'member',
+      church_id: member.localChurchId || user?.church_id || '',
+      sector_id: member.sectorId || '',
+      team_id: member.teamId || '',
     });
     setIsDialogOpen(true);
   };
 
-  const handleDelete = async (inviteId: string) => {
-    if (!confirm('Are you sure you want to delete this invite?')) return;
+  const handleDelete = async (memberId: string) => {
+    if (!confirm('Are you sure you want to delete this member profile?')) return;
 
     try {
       setLoading(true);
-      await api.delete(`/otp-invites/${inviteId}`);
+      await api.delete(`/members/${memberId}`);
 
       toast({
         title: "Success",
-        description: "Invite deleted successfully",
+        description: "Member deleted successfully",
       });
-      fetchInvites();
+      fetchMembers();
     } catch (error) {
-      console.error('Error deleting invite:', error);
+      console.error('Error deleting member:', error);
       toast({
         title: "Error",
-        description: "Failed to delete invite",
+        description: "Failed to delete member",
         variant: "destructive"
       });
     } finally {
@@ -189,12 +224,14 @@ const MemberInvites = () => {
 
   const resetForm = () => {
     form.reset({
+      name: '',
       email: '',
       role: 'member',
+      church_id: user?.church_id || '',
       sector_id: '',
-      expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      team_id: '',
     });
-    setEditingInvite(null);
+    setEditingMember(null);
   };
 
   return (
@@ -203,25 +240,39 @@ const MemberInvites = () => {
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <UserPlus className="h-6 w-6 text-primary" />
-            Member Invites
+            Member Directory & Profiling
           </h1>
-          <p className="text-muted-foreground">Invite new members to join your church</p>
+          <p className="text-muted-foreground">Pre-profile members to allow signup and assign roles, sectors, and teams</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={resetForm}>
               <Plus className="h-4 w-4 mr-2" />
-              Create Invite
+              Profile New Member
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
               <DialogTitle>
-                {editingInvite ? 'Edit Invite' : 'Create New Invite'}
+                {editingMember ? 'Edit Member Profile' : 'Profile New Member'}
               </DialogTitle>
             </DialogHeader>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Full Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter full name (e.g. John Doe)" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
                 <FormField
                   control={form.control}
                   name="email"
@@ -242,7 +293,7 @@ const MemberInvites = () => {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Role</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select role" />
@@ -251,8 +302,36 @@ const MemberInvites = () => {
                         <SelectContent>
                           <SelectItem value="member">Member</SelectItem>
                           <SelectItem value="team_lead">Team Lead</SelectItem>
+                          <SelectItem value="resident_pastor">Resident Pastor</SelectItem>
                           <SelectItem value="church_admin">Church Admin</SelectItem>
-                          <SelectItem value="guest">Guest</SelectItem>
+                          <SelectItem value="steward">Steward</SelectItem>
+                          {/* <SelectItem value="guest">Guest</SelectItem> */}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="church_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Local Church</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value || ""}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Default (Creator's Local Church)" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="">Default (Creator's Local Church)</SelectItem>
+                          {churches.map((church) => (
+                            <SelectItem key={church.id} value={church.id}>
+                              {church.name} {church.center ? `(${church.center})` : ''}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -266,7 +345,7 @@ const MemberInvites = () => {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Sector (Optional)</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value || ""}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select sector" />
@@ -275,8 +354,8 @@ const MemberInvites = () => {
                         <SelectContent>
                           <SelectItem value="">No Sector</SelectItem>
                           {sectors.map((sector) => (
-                            <SelectItem key={sector.sector_id} value={sector.sector_id}>
-                              {sector.sector_name}
+                            <SelectItem key={sector.id} value={sector.id}>
+                              {sector.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -288,41 +367,25 @@ const MemberInvites = () => {
 
                 <FormField
                   control={form.control}
-                  name="expires_at"
+                  name="team_id"
                   render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                      <FormLabel>Expiry Date</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              variant={"outline"}
-                              className={cn(
-                                "w-full pl-3 text-left font-normal",
-                                !field.value && "text-muted-foreground"
-                              )}
-                            >
-                              {field.value ? (
-                                format(field.value, "PPP")
-                              ) : (
-                                <span>Pick a date</span>
-                              )}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                            disabled={(date) =>
-                              date < new Date()
-                            }
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
+                    <FormItem>
+                      <FormLabel>Team (Optional)</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value || ""}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select team" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="">No Team</SelectItem>
+                          {teams.map((team) => (
+                            <SelectItem key={team.id} value={team.id}>
+                              {team.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -337,7 +400,7 @@ const MemberInvites = () => {
                     Cancel
                   </Button>
                   <Button type="submit" disabled={loading}>
-                    {loading ? "Saving..." : editingInvite ? "Update" : "Create"}
+                    {loading ? "Saving..." : editingMember ? "Update" : "Profile Member"}
                   </Button>
                 </div>
               </form>
@@ -346,10 +409,10 @@ const MemberInvites = () => {
         </Dialog>
       </div>
 
-      {/* Invites Table */}
+      {/* Members Directory Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Invites ({invites.length})</CardTitle>
+          <CardTitle>Profiled Members ({members.length})</CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -360,59 +423,44 @@ const MemberInvites = () => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
-                  <TableHead>OTP Code</TableHead>
                   <TableHead>Role</TableHead>
+                  <TableHead>Local Church</TableHead>
                   <TableHead>Sector</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Expires</TableHead>
+                  <TableHead>Team</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {invites.length === 0 ? (
+                {members.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                      No invites found. Create your first invite to get started.
+                      No profiled members found. Profile your first member to get started.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  invites.map((invite) => (
-                    <TableRow key={invite.id}>
-                      <TableCell className="font-medium">{invite.email}</TableCell>
-                      <TableCell className="font-mono">{invite.otp_code}</TableCell>
-                      <TableCell className="capitalize">{invite.role.replace('_', ' ')}</TableCell>
-                      <TableCell>
-                        {invite.sector_id ?
-                          sectors.find(s => s.sector_id === invite.sector_id)?.sector_name || 'Unknown' :
-                          'No Sector'
-                        }
-                      </TableCell>
-                      <TableCell>
-                        <span className={`px-2 py-1 rounded-full text-xs ${invite.used ? 'bg-green-100 text-green-800' :
-                          new Date(invite.expires_at) < new Date() ? 'bg-red-100 text-red-800' :
-                            'bg-yellow-100 text-yellow-800'
-                          }`}>
-                          {invite.used ? 'Used' :
-                            new Date(invite.expires_at) < new Date() ? 'Expired' : 'Active'}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        {new Date(invite.expires_at).toLocaleDateString()}
-                      </TableCell>
+                  members.map((member) => (
+                    <TableRow key={member.id}>
+                      <TableCell className="font-medium">{member.name || `${(member as any).firstName || ''} ${(member as any).surname || ''}`.trim()}</TableCell>
+                      <TableCell>{member.email || '-'}</TableCell>
+                      <TableCell className="capitalize">{member.role ? member.role.replace('_', ' ') : 'Member'}</TableCell>
+                      <TableCell>{member.localChurchName || 'Default Church'}</TableCell>
+                      <TableCell>{member.sectorName || 'No Sector'}</TableCell>
+                      <TableCell>{member.teamName || 'No Team'}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end space-x-2">
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleEdit(invite)}
+                            onClick={() => handleEdit(member)}
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleDelete(invite.id)}
+                            onClick={() => handleDelete(member.id)}
                             className="text-red-600 hover:text-red-800"
                           >
                             <Trash2 className="h-4 w-4" />

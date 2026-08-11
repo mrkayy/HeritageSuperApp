@@ -11,7 +11,7 @@ import { Building, Plus, Edit, Trash2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useAuthStore } from '@/store/authStore';
 import api from '@/lib/api';
-import { LocalChurch } from '@repo/dto';
+import { LocalChurch } from '@/integrations/type_def';
 
 const CreateChurch = () => {
   const { user } = useAuthStore();

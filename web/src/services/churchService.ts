@@ -1,13 +1,7 @@
 import api from "@/lib/api";
+import { LocalChurch } from "@/integrations/type_def";
 
-export interface LocalChurch {
-  church_id?: string;
-  name: string;
-  slug?: string;
-  center: string;
-  description?: string;
-  created_at?: string;
-}
+export type { LocalChurch };
 
 export const churchService = {
   // Get all churches
@@ -24,7 +18,7 @@ export const churchService = {
 
   // Create a new church
   async createChurch(
-    data: Omit<LocalChurch, "church_id" | "created_at">
+    data: Omit<LocalChurch, "id" | "church_id" | "created_at">
   ): Promise<LocalChurch> {
     const response = await api.post("/churches", data);
     return response.data;

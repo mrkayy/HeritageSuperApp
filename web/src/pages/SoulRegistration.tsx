@@ -12,11 +12,9 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 import { Heart, User, MapPin, Phone, Calendar, Search, Filter, Eye, Edit } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-// import api from '@/lib/api';
-import { Soul } from '@repo/dto';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuthStore } from '@/store/authStore';
-import { soulService } from '@/services/soulService';
+import { soulService, Soul } from '@/services/soulService';
 
 // type Soul = {
 //   soul_id: string;

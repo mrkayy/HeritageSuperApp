@@ -1,5 +1,4 @@
 import api from '@/lib/api';
-import { LocalChurch, Sector, Team } from '@repo/dto';
 import { useLoadingStore } from '@/store/loadingState';
 
 type AxiosError = {
@@ -8,13 +7,13 @@ type AxiosError = {
 };
 
 export class AdminBackOfficeServices {
-  static async fetchChurches(): Promise<LocalChurch[] | null> {
+  static async fetchChurches(): Promise<any[] | null> {
     const { setLoading } = useLoadingStore.getState();
 
     try {
       setLoading(true);
       const { data } = await api.get('/churches');
-      return data as LocalChurch[];
+      return data;
     } catch (error: unknown) {
       const e = error as AxiosError;
       throw new Error(
@@ -25,13 +24,13 @@ export class AdminBackOfficeServices {
     }
   }
 
-  static async fetchTeams(): Promise<Team[] | null> {
+  static async fetchTeams(): Promise<any[] | null> {
     const { setLoading } = useLoadingStore.getState();
 
     try {
       setLoading(true);
       const { data } = await api.get('/teams');
-      return data as Team[];
+      return data;
     } catch (error: unknown) {
       const e = error as AxiosError;
       throw new Error(
@@ -42,13 +41,13 @@ export class AdminBackOfficeServices {
     }
   }
 
-  static async fetchSectors(): Promise<Sector[] | null> {
+  static async fetchSectors(): Promise<any[] | null> {
     const { setLoading } = useLoadingStore.getState();
 
     try {
       setLoading(true);
       const { data } = await api.get('/sectors');
-      return data as Sector[];
+      return data;
     } catch (error: unknown) {
       const e = error as AxiosError;
       throw new Error(
@@ -59,21 +58,19 @@ export class AdminBackOfficeServices {
     }
   }
 
-  static async fetchChurchByUserId(
-    user_id: string,
-  ): Promise<LocalChurch[] | null> {
+  static async fetchChurchesById(id: string): Promise<any | null> {
     const { setLoading } = useLoadingStore.getState();
 
     try {
       setLoading(true);
-      const { data } = await api.get(`/users/${user_id}/churches`);
-      return data as LocalChurch[];
+      const { data } = await api.get(`/churches/${id}`);
+      return data;
     } catch (error: unknown) {
       const e = error as AxiosError;
       throw new Error(
         e.response?.data?.message ||
           e.message ||
-          'Fetching church by user_id failed',
+          'Fetching church failed',
       );
     } finally {
       setLoading(false);

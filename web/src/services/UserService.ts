@@ -1,11 +1,10 @@
 import api from '@/lib/api';
-import { User, UpdateUserDto } from '@repo/dto';
 
 export class UserService {
-  static async getUserByEmail(email: string): Promise<User | null> {
+  static async getUserByEmail(email: string): Promise<any | null> {
     try {
       const { data } = await api.get(`/users/email/${email}`);
-      return data as User;
+      return data;
     } catch (error: unknown) {
       const axiosError = error as {
         response?: { data?: { message?: string } };
@@ -21,11 +20,11 @@ export class UserService {
 
   static async updateUser(
     userId: string,
-    updates: Partial<UpdateUserDto>,
-  ): Promise<User | null> {
+    updates: Record<string, any>,
+  ): Promise<any | null> {
     try {
       const { data } = await api.patch(`/users/${userId}`, updates);
-      return data as User;
+      return data;
     } catch (error: unknown) {
       const axiosError = error as {
         response?: { data?: { message?: string } };

@@ -56,21 +56,27 @@ const menuItems = [
     url: "/follow-up",
     icon: MessageSquare,
   },
+  /* 
+  // Commented out: No dedicated backend endpoint currently supporting Map View
   {
     title: "Map View",
     url: "/map",
     icon: MapPin,
   },
+  */
   {
     title: "Transport",
     url: "/transport",
     icon: Calendar,
   },
+  /*
+  // Commented out: No backend endpoint currently supporting Leaderboard stats
   {
     title: "Leaderboard",
     url: "/leaderboard",
     icon: Trophy,
   }
+  */
 ];
 
 const adminItems = [
@@ -79,16 +85,20 @@ const adminItems = [
     url: "/admin",
     icon: Settings,
   },
+  /*
+  // Commented out: No backend endpoints currently for Management, Follow-up Management, Member Management
   {
     title: "Management",
     url: "/admin/management",
     icon: Building,
   },
+  */
   {
     title: "Member Invites",
     url: "/admin/member-invites",
     icon: Users2,
   },
+  /*
   {
     title: "Follow-up Management",
     url: "/admin/follow-up-management",
@@ -99,9 +109,12 @@ const adminItems = [
     url: "/admin/member-assignment",
     icon: FolderEdit,
   }
+  */
 ];
 
 const superAdminItems = [
+  /*
+  // Commented out: Super Admin endpoints (denominations, invites, settings) not currently implemented in backend
   {
     title: "Super Admin",
     url: "/super-admin",
@@ -122,6 +135,7 @@ const superAdminItems = [
     url: "/super-admin/settings",
     icon: LucideSettings,
   }
+  */
 ];
 
 export function AppSidebar() {
@@ -189,7 +203,7 @@ export function AppSidebar() {
           </SidebarGroup>
         )}
 
-        {user?.role === 'super_admin' && (
+        {user?.role === 'super_admin' && superAdminItems.length > 0 && (
           <SidebarGroup>
             <SidebarGroupLabel className={isCollapsed ? "sr-only" : ""}>Super Administration</SidebarGroupLabel>
             <SidebarGroupContent>

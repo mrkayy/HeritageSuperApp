@@ -7,24 +7,24 @@ import "context"
 // and later Events/Giving) can reference them without importing
 // internal/modules/teams directly.
 type Team struct {
-	ID   string
-	Name string
+	ID   string `json:"id"`
+	Name string `json:"name"`
 }
 
 type Sector struct {
-	ID          string
-	Name        string
-	ChurchID    string
-	ChurchName  string
-	MemberCount int
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	ChurchID    string `json:"church_id"`
+	ChurchName  string `json:"church_name"`
+	MemberCount int    `json:"member_count"`
 }
 
 type LocalChurch struct {
-	ID          string
-	Name        string
-	Center      string
-	Description string
-	Slug        string
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Center      string `json:"center"`
+	Description string `json:"description"`
+	Slug        string `json:"slug"`
 }
 
 type TeamReader interface {

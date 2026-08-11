@@ -3,6 +3,8 @@ package membership
 import (
 	"net/http"
 
+	"github.com/google/uuid"
+	"github.com/hofchurchng/church-backend/internal/contracts"
 	"github.com/labstack/echo/v4"
 )
 
@@ -19,6 +21,7 @@ func (h *Handler) Register(g *echo.Group) {
 	g.GET("", h.list)
 	g.GET("/:id", h.get)
 	g.POST("", h.add)
+	g.POST("/profile", h.profile)
 	g.PUT("/:id", h.update)
 	g.DELETE("/:id", h.delete)
 }
@@ -154,4 +157,48 @@ func (h *Handler) delete(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 	return c.NoContent(http.StatusNoContent)
+}
+
+type profilePayload struct {
+	Name     string  `json:"name"`
+	Email    string  `json:"email"`
+	Role     string  `json:"role"`
+	TeamID   *string `json:"team_id"`
+	SectorID *string `json:"sector_id"`
+	ChurchID *string `json:"church_id"`
+}
+
+func (h *Handler) profile(c echo.Context) error {
+	var p profilePayload
+	if err := c.Bind(&p); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+	if p.Name == "" || p.Email == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "name and email are required")
+	}
+
+	churchID := p.ChurchID
+	// If church_id not provided in payload, default to creator's church_id from context
+	if (churchID == nil || *churchID == "") {
+		if creatorUser, ok := contracts.UserFromContext(c.Request().Context()); ok && creatorUser.ID != "" {
+			// Find creator's user record to get church_id
+			if u, err := h.svc.repo.db.User.Get(c.Request().Context(), uuid.MustParse(creatorUser.ID)); err == nil && u.ChurchID != nil {
+				cid := u.ChurchID.String()
+				churchID = &cid
+			}
+		}
+	}
+
+	member, err := h.svc.ProfileMember(c.Request().Context(), ProfileMemberInput{
+		Name:     p.Name,
+		Email:    p.Email,
+		Role:     p.Role,
+		TeamID:   p.TeamID,
+		SectorID: p.SectorID,
+		ChurchID: churchID,
+	})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+	return c.JSON(http.StatusCreated, member)
 }

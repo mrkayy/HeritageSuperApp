@@ -37,13 +37,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       const res = await api.get('/auth/me');
       const data = res.data;
-      
-      const roles: string[] = data.Roles || (data.role ? [data.role] : []);
+      console.log(data)
+      const roles: string[] = data.roles || (data.role ? [data.role] : []);
       const primaryRole = roles.length > 0 ? roles[0] : 'member';
       
       const fetchedUser: StoreUser = {
-        user_id: data.ID || data.user_id || '',
-        email: data.Email || data.email || '',
+        user_id: data.id || data.user_id || '',
+        email: data.email || data.email || '',
         first_name: data.first_name || data.firstName || '',
         last_name: data.last_name || data.lastName || '',
         role: primaryRole,

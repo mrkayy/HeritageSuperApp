@@ -1,16 +1,7 @@
 import api from "@/lib/api";
+import { Transportation } from "@/integrations/type_def";
 
-export interface Transportation {
-  transportation_id?: string;
-  soul_id: string;
-  pickup_location?: string;
-  dropoff_location?: string;
-  scheduled_date?: string;
-  status?: string;
-  driver_id?: string;
-  notes?: string;
-  created_at?: string;
-}
+export type { Transportation };
 
 export const transportService = {
   // Get all transportation requests
@@ -27,20 +18,9 @@ export const transportService = {
 
   // Create a new transportation request
   async createTransportation(
-    data: Omit<Transportation, "transportation_id" | "created_at">
+    data: Omit<Transportation, "transportation_id" | "request_id" | "id" | "created_at">
   ): Promise<Transportation> {
     const response = await api.post("/transportation", data);
-    return response.data;
-  },
-
-  // Update transportation status
-  async updateTransportationStatus(
-    id: string,
-    status: string
-  ): Promise<Transportation> {
-    const response = await api.patch(`/transportation/${id}/status`, {
-      status,
-    });
     return response.data;
   },
 

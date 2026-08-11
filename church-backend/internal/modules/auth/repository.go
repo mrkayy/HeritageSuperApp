@@ -12,6 +12,8 @@ import (
 type user struct {
 	ID           string
 	Email        string
+	FirstName    string
+	LastName     string
 	PasswordHash string
 	Roles        []string
 }
@@ -28,6 +30,8 @@ func mapEntUserToUser(eu *ent.User) user {
 	return user{
 		ID:           eu.ID.String(),
 		Email:        eu.Email,
+		FirstName:    eu.FirstName,
+		LastName:     eu.LastName,
 		PasswordHash: eu.PasswordHash,
 		Roles:        []string{string(eu.Role)},
 	}

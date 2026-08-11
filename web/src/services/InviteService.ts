@@ -1,19 +1,19 @@
 import api from '@/lib/api';
-import { OtpInvite } from '@repo/dto';
 
-type CreateInvitePayload = Pick<
-  OtpInvite,
-  'email' | 'role' | 'expires_at' | 'created_by_user_id'
-> & {
+type CreateInvitePayload = {
+  email: string;
+  role: string;
+  expires_at?: string;
+  created_by_user_id?: string;
   church_id?: string;
   sector_id?: string;
 };
 
 export class InviteService {
-  static async createInvite(payload: CreateInvitePayload): Promise<OtpInvite> {
+  static async createInvite(payload: CreateInvitePayload): Promise<any> {
     try {
       const { data } = await api.post('/otp-invites/invite', payload);
-      return data as OtpInvite;
+      return data;
     } catch (error: unknown) {
       const axiosError = error as {
         response?: { data?: { message?: string } };
@@ -29,10 +29,10 @@ export class InviteService {
     }
   }
 
-  static async resendInvite(email: string): Promise<OtpInvite> {
+  static async resendInvite(email: string): Promise<any> {
     try {
       const { data } = await api.put('/otp-invites/resend', { email });
-      return data as OtpInvite;
+      return data;
     } catch (error: unknown) {
       const axiosError = error as {
         response?: { data?: { message?: string } };

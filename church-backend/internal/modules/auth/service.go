@@ -20,9 +20,12 @@ func NewService(repo *Repository, jwtSecret string) *Service {
 }
 
 type LoginResult struct {
-	Token string
-	Email string
-	Roles []string
+	Token     string   `json:"token"`
+	ID        string   `json:"user_id"`
+	Email     string   `json:"email"`
+	FirstName string   `json:"first_name"`
+	LastName  string   `json:"last_name"`
+	Roles     []string `json:"roles"`
 }
 
 // Login is the single entry point every feature's frontend calls to
@@ -42,7 +45,14 @@ func (s *Service) Login(ctx context.Context, email, password string) (LoginResul
 		return LoginResult{}, err
 	}
 
-	return LoginResult{Token: token, Email: u.Email, Roles: u.Roles}, nil
+	return LoginResult{
+		Token:     token,
+		ID:        u.ID,
+		Email:     u.Email,
+		FirstName: u.FirstName,
+		LastName:  u.LastName,
+		Roles:     u.Roles,
+	}, nil
 }
 
 func (s *Service) LoginOrCreateOAuthUser(ctx context.Context, email string) (LoginResult, error) {
@@ -59,7 +69,14 @@ func (s *Service) LoginOrCreateOAuthUser(ctx context.Context, email string) (Log
 		return LoginResult{}, err
 	}
 
-	return LoginResult{Token: token, Email: u.Email, Roles: u.Roles}, nil
+	return LoginResult{
+		Token:     token,
+		ID:        u.ID,
+		Email:     u.Email,
+		FirstName: u.FirstName,
+		LastName:  u.LastName,
+		Roles:     u.Roles,
+	}, nil
 }
 
 func (s *Service) CheckMemberExists(ctx context.Context, email string) (bool, error) {

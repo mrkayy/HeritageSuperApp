@@ -7,7 +7,6 @@
     "skipLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@repo/dto": ["./src/dto/index.ts"],
       "@/*": ["./src/*"]
     },
 

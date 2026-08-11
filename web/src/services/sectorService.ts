@@ -1,11 +1,7 @@
 import api from "@/lib/api";
+import { Sector } from "@/integrations/type_def";
 
-export interface Sector {
-  sector_id?: string;
-  sector_name: string;
-  church_id: string;
-  created_at?: string;
-}
+export type { Sector };
 
 export const sectorService = {
   // Get all sectors
@@ -22,7 +18,7 @@ export const sectorService = {
 
   // Create a new sector
   async createSector(
-    data: Omit<Sector, "sector_id" | "created_at">
+    data: Omit<Sector, "id" | "sector_id" | "created_at">
   ): Promise<Sector> {
     const response = await api.post("/sectors", data);
     return response.data;

@@ -19,10 +19,7 @@ import { z } from "zod";
 import api from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 import { cn, generateOTP } from "@/lib/utils";
-import { Sector, LocalChurch as Church, User, AdminUser as Admin } from '@repo/dto';
-
-
-// Form schemas
+import { Sector, LocalChurch as Church, User, AdminUser as Admin } from '@/integrations/type_def';
 export const inviteSchema = z.object({
   email: z.string().email("Invalid email address"),
   otp_code: z.string().optional(), // Made optional as it's generated

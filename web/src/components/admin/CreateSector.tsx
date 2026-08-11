@@ -14,12 +14,10 @@ import { useAuthStore } from '@/store/authStore';
 import api from '@/lib/api';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-
-// Types
-import { Sector, LocalChurch as Church } from '@repo/dto';
+import { Sector, LocalChurch as Church } from '@/integrations/type_def';
 
 // Fix for default markers
-delete (L.Icon.Default.prototype as L.IconOptions & { _getIconUrl?: string | undefined })._getIconUrl;
+delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
