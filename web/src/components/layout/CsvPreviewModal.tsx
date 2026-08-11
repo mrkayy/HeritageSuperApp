@@ -357,7 +357,7 @@ export default function CsvPreviewModal({ open, onOpenChange, onSuccess }: CsvPr
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={`${step === 'preview' ? 'max-w-6xl w-[95vw]' : 'max-w-xl'} max-h-[90vh] flex flex-col p-6 rounded-2xl`}>
+      <DialogContent className={`${step === 'preview' ? 'max-w-[95vw] w-[95vw]' : 'max-w-xl'} max-h-[95vh] overflow-y-auto flex flex-col p-6 rounded-2xl`}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl font-bold">
             <FileSpreadsheet className="w-6 h-6 text-emerald-500" />
