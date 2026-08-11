@@ -30,3 +30,5 @@ church-frontend/pnpm-debug.log*
 church-backend/bin/
 church-backend/dist/
 church-backend/.env
+church-backend/app.log
+church-backend/server

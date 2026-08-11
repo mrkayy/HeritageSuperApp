@@ -21,8 +21,12 @@ func (Member) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("id", uuid.UUID{}).
 			Default(uuid.New),
-		field.Text("first_name"),
-		field.Text("surname"),
+		field.Text("first_name").
+			Optional().
+			Default(""),
+		field.Text("surname").
+			Optional().
+			Default(""),
 		field.Text("email").
 			Optional().
 			Nillable().
@@ -72,18 +76,30 @@ func (Member) Fields() []ent.Field {
 			Optional().
 			Nillable(),
 		field.Bool("is_placeholder").
-			Default(false),
+			Default(false).
+			Annotations(entsql.Default("false")),
 		field.Text("source_team").
 			Optional().
 			Nillable(),
 		field.UUID("created_by", uuid.UUID{}).
 			Optional().
 			Nillable(),
+		field.UUID("local_church_id", uuid.UUID{}).
+			Optional().
+			Nillable(),
+		field.UUID("sector_id", uuid.UUID{}).
+			Optional().
+			Nillable(),
+		field.UUID("team_id", uuid.UUID{}).
+			Optional().
+			Nillable(),
 		field.Time("created_at").
-			Default(time.Now),
+			Default(time.Now).
+			Annotations(entsql.Default("CURRENT_TIMESTAMP")),
 		field.Time("updated_at").
 			Default(time.Now).
-			UpdateDefault(time.Now),
+			UpdateDefault(time.Now).
+			Annotations(entsql.Default("CURRENT_TIMESTAMP")),
 		field.Enum("current_stage").
 			Values(
 				"first_time_guest",
@@ -94,7 +110,8 @@ func (Member) Fields() []ent.Field {
 				"membership_class",
 				"stewardship",
 			).
-			Default("first_time_guest"),
+			Default("first_time_guest").
+			Annotations(entsql.Default("'first_time_guest'")),
 	}
 }
 
@@ -106,6 +123,18 @@ func (Member) Edges() []ent.Edge {
 		edge.To("guardian_relationships_as_child", GuardianRelationship.Type),
 		edge.To("guardian_relationships_as_guardian", GuardianRelationship.Type),
 		edge.To("kids_ministry_profile", KidsMinistryProfile.Type).Unique(),
+		edge.From("local_church", LocalChurch.Type).
+			Ref("members").
+			Unique().
+			Field("local_church_id"),
+		edge.From("sector", Sector.Type).
+			Ref("members").
+			Unique().
+			Field("sector_id"),
+		edge.From("team", Team.Type).
+			Ref("members").
+			Unique().
+			Field("team_id"),
 	}
 }
 

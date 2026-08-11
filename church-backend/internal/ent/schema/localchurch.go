@@ -37,6 +37,7 @@ func (LocalChurch) Fields() []ent.Field {
 // Edges of the LocalChurch.
 func (LocalChurch) Edges() []ent.Edge {
 	return []ent.Edge{
+		edge.To("members", Member.Type),
 		edge.To("sectors", Sector.Type),
 		edge.To("teams", Team.Type),
 		edge.To("users", User.Type),

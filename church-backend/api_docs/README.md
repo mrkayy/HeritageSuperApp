@@ -108,3 +108,46 @@ When a request hits a protected endpoint, the `RequireAuth` middleware prints a 
 [RequireAuth] Claims verified - UserID: <id>, Email: <email>, Roles: <roles>
 ```
 
+---
+
+## 5. Summary of Active Backend Modules & Routes
+
+Below is the complete inventory of active routes registered in `cmd/server/main.go`:
+
+| Module | Route Prefix | HTTP Method | Path | Auth / Role Requirement |
+| :--- | :--- | :--- | :--- | :--- |
+| **Health** | `/api` | `GET` | `/health-check` | Public |
+| **Auth** | `/api/auth` | `POST` | `/login` | Public |
+| | | `GET` | `/login/google` | Public |
+| | | `GET` | `/callback/google` | Public |
+| | | `GET` | `/me` | Bearer Token |
+| **Profile** | `/api/profile` | `GET` | `/me` | Bearer Token |
+| | | `PUT` | `/me` | Bearer Token |
+| | | `GET` | `/me/kids` | Bearer Token |
+| | | `POST` | `/me/kids` | Bearer Token |
+| | | `PUT` | `/me/kids/:kidID` | Bearer Token |
+| | | `DELETE` | `/me/kids/:kidID` | Bearer Token |
+| | | `GET` | `/:userID` | Bearer Token (Any Role) |
+| **Users** | `/api/users` | `GET` | `/` | Bearer Token |
+| **Members** | `/api/members` | `GET` | `/` | Bearer Token + (`team_lead`, `resident_pastor`, `church_admin`) |
+| | | `GET` | `/:id` | Bearer Token + (`team_lead`, `resident_pastor`, `church_admin`) |
+| | | `POST` | `/` | Bearer Token + (`team_lead`, `resident_pastor`, `church_admin`) |
+| | | `POST` | `/profile` | Bearer Token + (`team_lead`, `resident_pastor`, `church_admin`) |
+| | | `PUT` | `/:id` | Bearer Token + (`team_lead`, `resident_pastor`, `church_admin`) |
+| | | `DELETE` | `/:id` | Bearer Token + (`team_lead`, `resident_pastor`, `church_admin`) |
+| **Teams** | `/api/teams` | `GET`, `POST` | `/` | Bearer Token |
+| | | `GET`, `PUT`, `DELETE` | `/:id` | Bearer Token |
+| **Sectors** | `/api/sectors` | `GET`, `POST` | `/` | Bearer Token |
+| | | `GET`, `PUT`, `DELETE` | `/:id` | Bearer Token |
+| **Churches** | `/api/churches` | `GET`, `POST` | `/` | Bearer Token |
+| | | `GET`, `PUT`, `DELETE` | `/:id` | Bearer Token |
+| **Souls** | `/api/souls` | `POST`, `GET` | `/` | Bearer Token |
+| | | `GET`, `PATCH`, `DELETE` | `/:id` | Bearer Token |
+| | | `POST`, `GET` | `/:id/journal` | Bearer Token |
+| **Follow-Up** | `/api/follow-up` | `POST`, `GET` | `/` | Bearer Token |
+| | | `GET`, `PATCH`, `DELETE` | `/:id` | Bearer Token |
+| **Transport** | `/api/transportation` | `POST`, `GET` | `/` | Bearer Token |
+| | | `GET`, `PATCH`, `DELETE` | `/:id` | Bearer Token |
+| **Dashboard** | `/api/dashboard` | `GET` | `/admin` | Bearer Token |
+
+

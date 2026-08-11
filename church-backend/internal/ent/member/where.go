@@ -146,6 +146,21 @@ func CreatedBy(v uuid.UUID) predicate.Member {
 	return predicate.Member(sql.FieldEQ(FieldCreatedBy, v))
 }
 
+// LocalChurchID applies equality check predicate on the "local_church_id" field. It's identical to LocalChurchIDEQ.
+func LocalChurchID(v uuid.UUID) predicate.Member {
+	return predicate.Member(sql.FieldEQ(FieldLocalChurchID, v))
+}
+
+// SectorID applies equality check predicate on the "sector_id" field. It's identical to SectorIDEQ.
+func SectorID(v uuid.UUID) predicate.Member {
+	return predicate.Member(sql.FieldEQ(FieldSectorID, v))
+}
+
+// TeamID applies equality check predicate on the "team_id" field. It's identical to TeamIDEQ.
+func TeamID(v uuid.UUID) predicate.Member {
+	return predicate.Member(sql.FieldEQ(FieldTeamID, v))
+}
+
 // CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
 func CreatedAt(v time.Time) predicate.Member {
 	return predicate.Member(sql.FieldEQ(FieldCreatedAt, v))
@@ -211,6 +226,16 @@ func FirstNameHasSuffix(v string) predicate.Member {
 	return predicate.Member(sql.FieldHasSuffix(FieldFirstName, v))
 }
 
+// FirstNameIsNil applies the IsNil predicate on the "first_name" field.
+func FirstNameIsNil() predicate.Member {
+	return predicate.Member(sql.FieldIsNull(FieldFirstName))
+}
+
+// FirstNameNotNil applies the NotNil predicate on the "first_name" field.
+func FirstNameNotNil() predicate.Member {
+	return predicate.Member(sql.FieldNotNull(FieldFirstName))
+}
+
 // FirstNameEqualFold applies the EqualFold predicate on the "first_name" field.
 func FirstNameEqualFold(v string) predicate.Member {
 	return predicate.Member(sql.FieldEqualFold(FieldFirstName, v))
@@ -274,6 +299,16 @@ func SurnameHasPrefix(v string) predicate.Member {
 // SurnameHasSuffix applies the HasSuffix predicate on the "surname" field.
 func SurnameHasSuffix(v string) predicate.Member {
 	return predicate.Member(sql.FieldHasSuffix(FieldSurname, v))
+}
+
+// SurnameIsNil applies the IsNil predicate on the "surname" field.
+func SurnameIsNil() predicate.Member {
+	return predicate.Member(sql.FieldIsNull(FieldSurname))
+}
+
+// SurnameNotNil applies the NotNil predicate on the "surname" field.
+func SurnameNotNil() predicate.Member {
+	return predicate.Member(sql.FieldNotNull(FieldSurname))
 }
 
 // SurnameEqualFold applies the EqualFold predicate on the "surname" field.
@@ -1356,6 +1391,96 @@ func CreatedByNotNil() predicate.Member {
 	return predicate.Member(sql.FieldNotNull(FieldCreatedBy))
 }
 
+// LocalChurchIDEQ applies the EQ predicate on the "local_church_id" field.
+func LocalChurchIDEQ(v uuid.UUID) predicate.Member {
+	return predicate.Member(sql.FieldEQ(FieldLocalChurchID, v))
+}
+
+// LocalChurchIDNEQ applies the NEQ predicate on the "local_church_id" field.
+func LocalChurchIDNEQ(v uuid.UUID) predicate.Member {
+	return predicate.Member(sql.FieldNEQ(FieldLocalChurchID, v))
+}
+
+// LocalChurchIDIn applies the In predicate on the "local_church_id" field.
+func LocalChurchIDIn(vs ...uuid.UUID) predicate.Member {
+	return predicate.Member(sql.FieldIn(FieldLocalChurchID, vs...))
+}
+
+// LocalChurchIDNotIn applies the NotIn predicate on the "local_church_id" field.
+func LocalChurchIDNotIn(vs ...uuid.UUID) predicate.Member {
+	return predicate.Member(sql.FieldNotIn(FieldLocalChurchID, vs...))
+}
+
+// LocalChurchIDIsNil applies the IsNil predicate on the "local_church_id" field.
+func LocalChurchIDIsNil() predicate.Member {
+	return predicate.Member(sql.FieldIsNull(FieldLocalChurchID))
+}
+
+// LocalChurchIDNotNil applies the NotNil predicate on the "local_church_id" field.
+func LocalChurchIDNotNil() predicate.Member {
+	return predicate.Member(sql.FieldNotNull(FieldLocalChurchID))
+}
+
+// SectorIDEQ applies the EQ predicate on the "sector_id" field.
+func SectorIDEQ(v uuid.UUID) predicate.Member {
+	return predicate.Member(sql.FieldEQ(FieldSectorID, v))
+}
+
+// SectorIDNEQ applies the NEQ predicate on the "sector_id" field.
+func SectorIDNEQ(v uuid.UUID) predicate.Member {
+	return predicate.Member(sql.FieldNEQ(FieldSectorID, v))
+}
+
+// SectorIDIn applies the In predicate on the "sector_id" field.
+func SectorIDIn(vs ...uuid.UUID) predicate.Member {
+	return predicate.Member(sql.FieldIn(FieldSectorID, vs...))
+}
+
+// SectorIDNotIn applies the NotIn predicate on the "sector_id" field.
+func SectorIDNotIn(vs ...uuid.UUID) predicate.Member {
+	return predicate.Member(sql.FieldNotIn(FieldSectorID, vs...))
+}
+
+// SectorIDIsNil applies the IsNil predicate on the "sector_id" field.
+func SectorIDIsNil() predicate.Member {
+	return predicate.Member(sql.FieldIsNull(FieldSectorID))
+}
+
+// SectorIDNotNil applies the NotNil predicate on the "sector_id" field.
+func SectorIDNotNil() predicate.Member {
+	return predicate.Member(sql.FieldNotNull(FieldSectorID))
+}
+
+// TeamIDEQ applies the EQ predicate on the "team_id" field.
+func TeamIDEQ(v uuid.UUID) predicate.Member {
+	return predicate.Member(sql.FieldEQ(FieldTeamID, v))
+}
+
+// TeamIDNEQ applies the NEQ predicate on the "team_id" field.
+func TeamIDNEQ(v uuid.UUID) predicate.Member {
+	return predicate.Member(sql.FieldNEQ(FieldTeamID, v))
+}
+
+// TeamIDIn applies the In predicate on the "team_id" field.
+func TeamIDIn(vs ...uuid.UUID) predicate.Member {
+	return predicate.Member(sql.FieldIn(FieldTeamID, vs...))
+}
+
+// TeamIDNotIn applies the NotIn predicate on the "team_id" field.
+func TeamIDNotIn(vs ...uuid.UUID) predicate.Member {
+	return predicate.Member(sql.FieldNotIn(FieldTeamID, vs...))
+}
+
+// TeamIDIsNil applies the IsNil predicate on the "team_id" field.
+func TeamIDIsNil() predicate.Member {
+	return predicate.Member(sql.FieldIsNull(FieldTeamID))
+}
+
+// TeamIDNotNil applies the NotNil predicate on the "team_id" field.
+func TeamIDNotNil() predicate.Member {
+	return predicate.Member(sql.FieldNotNull(FieldTeamID))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.Member {
 	return predicate.Member(sql.FieldEQ(FieldCreatedAt, v))
@@ -1563,6 +1688,75 @@ func HasKidsMinistryProfile() predicate.Member {
 func HasKidsMinistryProfileWith(preds ...predicate.KidsMinistryProfile) predicate.Member {
 	return predicate.Member(func(s *sql.Selector) {
 		step := newKidsMinistryProfileStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasLocalChurch applies the HasEdge predicate on the "local_church" edge.
+func HasLocalChurch() predicate.Member {
+	return predicate.Member(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, LocalChurchTable, LocalChurchColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasLocalChurchWith applies the HasEdge predicate on the "local_church" edge with a given conditions (other predicates).
+func HasLocalChurchWith(preds ...predicate.LocalChurch) predicate.Member {
+	return predicate.Member(func(s *sql.Selector) {
+		step := newLocalChurchStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasSector applies the HasEdge predicate on the "sector" edge.
+func HasSector() predicate.Member {
+	return predicate.Member(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, SectorTable, SectorColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasSectorWith applies the HasEdge predicate on the "sector" edge with a given conditions (other predicates).
+func HasSectorWith(preds ...predicate.Sector) predicate.Member {
+	return predicate.Member(func(s *sql.Selector) {
+		step := newSectorStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasTeam applies the HasEdge predicate on the "team" edge.
+func HasTeam() predicate.Member {
+	return predicate.Member(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, TeamTable, TeamColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasTeamWith applies the HasEdge predicate on the "team" edge with a given conditions (other predicates).
+func HasTeamWith(preds ...predicate.Team) predicate.Member {
+	return predicate.Member(func(s *sql.Selector) {
+		step := newTeamStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

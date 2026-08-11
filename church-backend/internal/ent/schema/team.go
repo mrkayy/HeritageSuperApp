@@ -45,6 +45,7 @@ func (Team) Fields() []ent.Field {
 // Edges of the Team.
 func (Team) Edges() []ent.Edge {
 	return []ent.Edge{
+		edge.To("members", Member.Type),
 		edge.From("church", LocalChurch.Type).
 			Ref("teams").
 			Unique().

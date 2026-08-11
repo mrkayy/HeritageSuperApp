@@ -15,10 +15,13 @@ import (
 	"github.com/google/uuid"
 	"github.com/hofchurchng/church-backend/internal/ent/guardianrelationship"
 	"github.com/hofchurchng/church-backend/internal/ent/kidsministryprofile"
+	"github.com/hofchurchng/church-backend/internal/ent/localchurch"
 	"github.com/hofchurchng/church-backend/internal/ent/member"
 	"github.com/hofchurchng/church-backend/internal/ent/membershipstagehistory"
 	"github.com/hofchurchng/church-backend/internal/ent/memberteam"
 	"github.com/hofchurchng/church-backend/internal/ent/predicate"
+	"github.com/hofchurchng/church-backend/internal/ent/sector"
+	"github.com/hofchurchng/church-backend/internal/ent/team"
 )
 
 // MemberQuery is the builder for querying Member entities.
@@ -33,6 +36,9 @@ type MemberQuery struct {
 	withGuardianRelationshipsAsChild    *GuardianRelationshipQuery
 	withGuardianRelationshipsAsGuardian *GuardianRelationshipQuery
 	withKidsMinistryProfile             *KidsMinistryProfileQuery
+	withLocalChurch                     *LocalChurchQuery
+	withSector                          *SectorQuery
+	withTeam                            *TeamQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -172,6 +178,72 @@ func (_q *MemberQuery) QueryKidsMinistryProfile() *KidsMinistryProfileQuery {
 			sqlgraph.From(member.Table, member.FieldID, selector),
 			sqlgraph.To(kidsministryprofile.Table, kidsministryprofile.FieldID),
 			sqlgraph.Edge(sqlgraph.O2O, false, member.KidsMinistryProfileTable, member.KidsMinistryProfileColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryLocalChurch chains the current query on the "local_church" edge.
+func (_q *MemberQuery) QueryLocalChurch() *LocalChurchQuery {
+	query := (&LocalChurchClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(member.Table, member.FieldID, selector),
+			sqlgraph.To(localchurch.Table, localchurch.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, member.LocalChurchTable, member.LocalChurchColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QuerySector chains the current query on the "sector" edge.
+func (_q *MemberQuery) QuerySector() *SectorQuery {
+	query := (&SectorClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(member.Table, member.FieldID, selector),
+			sqlgraph.To(sector.Table, sector.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, member.SectorTable, member.SectorColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryTeam chains the current query on the "team" edge.
+func (_q *MemberQuery) QueryTeam() *TeamQuery {
+	query := (&TeamClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(member.Table, member.FieldID, selector),
+			sqlgraph.To(team.Table, team.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, member.TeamTable, member.TeamColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -376,6 +448,9 @@ func (_q *MemberQuery) Clone() *MemberQuery {
 		withGuardianRelationshipsAsChild:    _q.withGuardianRelationshipsAsChild.Clone(),
 		withGuardianRelationshipsAsGuardian: _q.withGuardianRelationshipsAsGuardian.Clone(),
 		withKidsMinistryProfile:             _q.withKidsMinistryProfile.Clone(),
+		withLocalChurch:                     _q.withLocalChurch.Clone(),
+		withSector:                          _q.withSector.Clone(),
+		withTeam:                            _q.withTeam.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -434,6 +509,39 @@ func (_q *MemberQuery) WithKidsMinistryProfile(opts ...func(*KidsMinistryProfile
 		opt(query)
 	}
 	_q.withKidsMinistryProfile = query
+	return _q
+}
+
+// WithLocalChurch tells the query-builder to eager-load the nodes that are connected to
+// the "local_church" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *MemberQuery) WithLocalChurch(opts ...func(*LocalChurchQuery)) *MemberQuery {
+	query := (&LocalChurchClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withLocalChurch = query
+	return _q
+}
+
+// WithSector tells the query-builder to eager-load the nodes that are connected to
+// the "sector" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *MemberQuery) WithSector(opts ...func(*SectorQuery)) *MemberQuery {
+	query := (&SectorClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withSector = query
+	return _q
+}
+
+// WithTeam tells the query-builder to eager-load the nodes that are connected to
+// the "team" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *MemberQuery) WithTeam(opts ...func(*TeamQuery)) *MemberQuery {
+	query := (&TeamClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withTeam = query
 	return _q
 }
 
@@ -515,12 +623,15 @@ func (_q *MemberQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Membe
 	var (
 		nodes       = []*Member{}
 		_spec       = _q.querySpec()
-		loadedTypes = [5]bool{
+		loadedTypes = [8]bool{
 			_q.withStageHistories != nil,
 			_q.withTeams != nil,
 			_q.withGuardianRelationshipsAsChild != nil,
 			_q.withGuardianRelationshipsAsGuardian != nil,
 			_q.withKidsMinistryProfile != nil,
+			_q.withLocalChurch != nil,
+			_q.withSector != nil,
+			_q.withTeam != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -576,6 +687,24 @@ func (_q *MemberQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Membe
 	if query := _q.withKidsMinistryProfile; query != nil {
 		if err := _q.loadKidsMinistryProfile(ctx, query, nodes, nil,
 			func(n *Member, e *KidsMinistryProfile) { n.Edges.KidsMinistryProfile = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withLocalChurch; query != nil {
+		if err := _q.loadLocalChurch(ctx, query, nodes, nil,
+			func(n *Member, e *LocalChurch) { n.Edges.LocalChurch = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withSector; query != nil {
+		if err := _q.loadSector(ctx, query, nodes, nil,
+			func(n *Member, e *Sector) { n.Edges.Sector = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withTeam; query != nil {
+		if err := _q.loadTeam(ctx, query, nodes, nil,
+			func(n *Member, e *Team) { n.Edges.Team = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -729,6 +858,102 @@ func (_q *MemberQuery) loadKidsMinistryProfile(ctx context.Context, query *KidsM
 	}
 	return nil
 }
+func (_q *MemberQuery) loadLocalChurch(ctx context.Context, query *LocalChurchQuery, nodes []*Member, init func(*Member), assign func(*Member, *LocalChurch)) error {
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*Member)
+	for i := range nodes {
+		if nodes[i].LocalChurchID == nil {
+			continue
+		}
+		fk := *nodes[i].LocalChurchID
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(localchurch.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "local_church_id" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
+func (_q *MemberQuery) loadSector(ctx context.Context, query *SectorQuery, nodes []*Member, init func(*Member), assign func(*Member, *Sector)) error {
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*Member)
+	for i := range nodes {
+		if nodes[i].SectorID == nil {
+			continue
+		}
+		fk := *nodes[i].SectorID
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(sector.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "sector_id" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
+func (_q *MemberQuery) loadTeam(ctx context.Context, query *TeamQuery, nodes []*Member, init func(*Member), assign func(*Member, *Team)) error {
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*Member)
+	for i := range nodes {
+		if nodes[i].TeamID == nil {
+			continue
+		}
+		fk := *nodes[i].TeamID
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(team.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "team_id" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
 
 func (_q *MemberQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
@@ -754,6 +979,15 @@ func (_q *MemberQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != member.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
+		}
+		if _q.withLocalChurch != nil {
+			_spec.Node.AddColumnOnce(member.FieldLocalChurchID)
+		}
+		if _q.withSector != nil {
+			_spec.Node.AddColumnOnce(member.FieldSectorID)
+		}
+		if _q.withTeam != nil {
+			_spec.Node.AddColumnOnce(member.FieldTeamID)
 		}
 	}
 	if ps := _q.predicates; len(ps) > 0 {

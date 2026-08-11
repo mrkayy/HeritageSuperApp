@@ -391,6 +391,29 @@ func CreatedAtLTE(v time.Time) predicate.LocalChurch {
 	return predicate.LocalChurch(sql.FieldLTE(FieldCreatedAt, v))
 }
 
+// HasMembers applies the HasEdge predicate on the "members" edge.
+func HasMembers() predicate.LocalChurch {
+	return predicate.LocalChurch(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, MembersTable, MembersColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasMembersWith applies the HasEdge predicate on the "members" edge with a given conditions (other predicates).
+func HasMembersWith(preds ...predicate.Member) predicate.LocalChurch {
+	return predicate.LocalChurch(func(s *sql.Selector) {
+		step := newMembersStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasSectors applies the HasEdge predicate on the "sectors" edge.
 func HasSectors() predicate.LocalChurch {
 	return predicate.LocalChurch(func(s *sql.Selector) {

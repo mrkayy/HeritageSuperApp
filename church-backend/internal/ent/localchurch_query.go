@@ -16,6 +16,7 @@ import (
 	"github.com/hofchurchng/church-backend/internal/ent/churchevent"
 	"github.com/hofchurchng/church-backend/internal/ent/churchteams"
 	"github.com/hofchurchng/church-backend/internal/ent/localchurch"
+	"github.com/hofchurchng/church-backend/internal/ent/member"
 	"github.com/hofchurchng/church-backend/internal/ent/otpinvites"
 	"github.com/hofchurchng/church-backend/internal/ent/predicate"
 	"github.com/hofchurchng/church-backend/internal/ent/sector"
@@ -30,6 +31,7 @@ type LocalChurchQuery struct {
 	order            []localchurch.OrderOption
 	inters           []Interceptor
 	predicates       []predicate.LocalChurch
+	withMembers      *MemberQuery
 	withSectors      *SectorQuery
 	withTeams        *TeamQuery
 	withUsers        *UserQuery
@@ -70,6 +72,28 @@ func (_q *LocalChurchQuery) Unique(unique bool) *LocalChurchQuery {
 func (_q *LocalChurchQuery) Order(o ...localchurch.OrderOption) *LocalChurchQuery {
 	_q.order = append(_q.order, o...)
 	return _q
+}
+
+// QueryMembers chains the current query on the "members" edge.
+func (_q *LocalChurchQuery) QueryMembers() *MemberQuery {
+	query := (&MemberClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(localchurch.Table, localchurch.FieldID, selector),
+			sqlgraph.To(member.Table, member.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, localchurch.MembersTable, localchurch.MembersColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // QuerySectors chains the current query on the "sectors" edge.
@@ -396,6 +420,7 @@ func (_q *LocalChurchQuery) Clone() *LocalChurchQuery {
 		order:            append([]localchurch.OrderOption{}, _q.order...),
 		inters:           append([]Interceptor{}, _q.inters...),
 		predicates:       append([]predicate.LocalChurch{}, _q.predicates...),
+		withMembers:      _q.withMembers.Clone(),
 		withSectors:      _q.withSectors.Clone(),
 		withTeams:        _q.withTeams.Clone(),
 		withUsers:        _q.withUsers.Clone(),
@@ -406,6 +431,17 @@ func (_q *LocalChurchQuery) Clone() *LocalChurchQuery {
 		sql:  _q.sql.Clone(),
 		path: _q.path,
 	}
+}
+
+// WithMembers tells the query-builder to eager-load the nodes that are connected to
+// the "members" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *LocalChurchQuery) WithMembers(opts ...func(*MemberQuery)) *LocalChurchQuery {
+	query := (&MemberClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withMembers = query
+	return _q
 }
 
 // WithSectors tells the query-builder to eager-load the nodes that are connected to
@@ -552,7 +588,8 @@ func (_q *LocalChurchQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 	var (
 		nodes       = []*LocalChurch{}
 		_spec       = _q.querySpec()
-		loadedTypes = [6]bool{
+		loadedTypes = [7]bool{
+			_q.withMembers != nil,
 			_q.withSectors != nil,
 			_q.withTeams != nil,
 			_q.withUsers != nil,
@@ -578,6 +615,13 @@ func (_q *LocalChurchQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 	}
 	if len(nodes) == 0 {
 		return nodes, nil
+	}
+	if query := _q.withMembers; query != nil {
+		if err := _q.loadMembers(ctx, query, nodes,
+			func(n *LocalChurch) { n.Edges.Members = []*Member{} },
+			func(n *LocalChurch, e *Member) { n.Edges.Members = append(n.Edges.Members, e) }); err != nil {
+			return nil, err
+		}
 	}
 	if query := _q.withSectors; query != nil {
 		if err := _q.loadSectors(ctx, query, nodes,
@@ -624,6 +668,39 @@ func (_q *LocalChurchQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 	return nodes, nil
 }
 
+func (_q *LocalChurchQuery) loadMembers(ctx context.Context, query *MemberQuery, nodes []*LocalChurch, init func(*LocalChurch), assign func(*LocalChurch, *Member)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*LocalChurch)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(member.FieldLocalChurchID)
+	}
+	query.Where(predicate.Member(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(localchurch.MembersColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.LocalChurchID
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "local_church_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "local_church_id" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
 func (_q *LocalChurchQuery) loadSectors(ctx context.Context, query *SectorQuery, nodes []*LocalChurch, init func(*LocalChurch), assign func(*LocalChurch, *Sector)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[uuid.UUID]*LocalChurch)

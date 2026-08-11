@@ -12,6 +12,8 @@ import (
 type user struct {
 	ID           string
 	Email        string
+	FirstName    string
+	LastName     string
 	PasswordHash string
 	Roles        []string
 }
@@ -28,6 +30,8 @@ func mapEntUserToUser(eu *ent.User) user {
 	return user{
 		ID:           eu.ID.String(),
 		Email:        eu.Email,
+		FirstName:    eu.FirstName,
+		LastName:     eu.LastName,
 		PasswordHash: eu.PasswordHash,
 		Roles:        []string{string(eu.Role)},
 	}
@@ -68,6 +72,7 @@ func (r *Repository) FindOrCreateByEmail(ctx context.Context, email string) (use
 	// Insert new user if they are profiled in members. Default role is 'member'.
 	firstName := m.FirstName
 	lastName := m.Surname
+	isComplete := firstName != "" && lastName != ""
 
 	newEu, err := r.db.User.Create().
 		SetEmail(email).
@@ -76,7 +81,7 @@ func (r *Repository) FindOrCreateByEmail(ctx context.Context, email string) (use
 		SetLastName(lastName).
 		SetRole(entuser.RoleMember).
 		SetAccountStatus(entuser.AccountStatusActive).
-		SetIsProfileComplete(true).
+		SetIsProfileComplete(isComplete).
 		Save(ctx)
 	if err != nil {
 		return user{}, err

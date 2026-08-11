@@ -13,9 +13,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/hofchurchng/church-backend/internal/ent/guardianrelationship"
 	"github.com/hofchurchng/church-backend/internal/ent/kidsministryprofile"
+	"github.com/hofchurchng/church-backend/internal/ent/localchurch"
 	"github.com/hofchurchng/church-backend/internal/ent/member"
 	"github.com/hofchurchng/church-backend/internal/ent/membershipstagehistory"
 	"github.com/hofchurchng/church-backend/internal/ent/memberteam"
+	"github.com/hofchurchng/church-backend/internal/ent/sector"
+	"github.com/hofchurchng/church-backend/internal/ent/team"
 )
 
 // MemberCreate is the builder for creating a Member entity.
@@ -31,9 +34,25 @@ func (_c *MemberCreate) SetFirstName(v string) *MemberCreate {
 	return _c
 }
 
+// SetNillableFirstName sets the "first_name" field if the given value is not nil.
+func (_c *MemberCreate) SetNillableFirstName(v *string) *MemberCreate {
+	if v != nil {
+		_c.SetFirstName(*v)
+	}
+	return _c
+}
+
 // SetSurname sets the "surname" field.
 func (_c *MemberCreate) SetSurname(v string) *MemberCreate {
 	_c.mutation.SetSurname(v)
+	return _c
+}
+
+// SetNillableSurname sets the "surname" field if the given value is not nil.
+func (_c *MemberCreate) SetNillableSurname(v *string) *MemberCreate {
+	if v != nil {
+		_c.SetSurname(*v)
+	}
 	return _c
 }
 
@@ -289,6 +308,48 @@ func (_c *MemberCreate) SetNillableCreatedBy(v *uuid.UUID) *MemberCreate {
 	return _c
 }
 
+// SetLocalChurchID sets the "local_church_id" field.
+func (_c *MemberCreate) SetLocalChurchID(v uuid.UUID) *MemberCreate {
+	_c.mutation.SetLocalChurchID(v)
+	return _c
+}
+
+// SetNillableLocalChurchID sets the "local_church_id" field if the given value is not nil.
+func (_c *MemberCreate) SetNillableLocalChurchID(v *uuid.UUID) *MemberCreate {
+	if v != nil {
+		_c.SetLocalChurchID(*v)
+	}
+	return _c
+}
+
+// SetSectorID sets the "sector_id" field.
+func (_c *MemberCreate) SetSectorID(v uuid.UUID) *MemberCreate {
+	_c.mutation.SetSectorID(v)
+	return _c
+}
+
+// SetNillableSectorID sets the "sector_id" field if the given value is not nil.
+func (_c *MemberCreate) SetNillableSectorID(v *uuid.UUID) *MemberCreate {
+	if v != nil {
+		_c.SetSectorID(*v)
+	}
+	return _c
+}
+
+// SetTeamID sets the "team_id" field.
+func (_c *MemberCreate) SetTeamID(v uuid.UUID) *MemberCreate {
+	_c.mutation.SetTeamID(v)
+	return _c
+}
+
+// SetNillableTeamID sets the "team_id" field if the given value is not nil.
+func (_c *MemberCreate) SetNillableTeamID(v *uuid.UUID) *MemberCreate {
+	if v != nil {
+		_c.SetTeamID(*v)
+	}
+	return _c
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (_c *MemberCreate) SetCreatedAt(v time.Time) *MemberCreate {
 	_c.mutation.SetCreatedAt(v)
@@ -424,6 +485,21 @@ func (_c *MemberCreate) SetKidsMinistryProfile(v *KidsMinistryProfile) *MemberCr
 	return _c.SetKidsMinistryProfileID(v.ID)
 }
 
+// SetLocalChurch sets the "local_church" edge to the LocalChurch entity.
+func (_c *MemberCreate) SetLocalChurch(v *LocalChurch) *MemberCreate {
+	return _c.SetLocalChurchID(v.ID)
+}
+
+// SetSector sets the "sector" edge to the Sector entity.
+func (_c *MemberCreate) SetSector(v *Sector) *MemberCreate {
+	return _c.SetSectorID(v.ID)
+}
+
+// SetTeam sets the "team" edge to the Team entity.
+func (_c *MemberCreate) SetTeam(v *Team) *MemberCreate {
+	return _c.SetTeamID(v.ID)
+}
+
 // Mutation returns the MemberMutation object of the builder.
 func (_c *MemberCreate) Mutation() *MemberMutation {
 	return _c.mutation
@@ -459,6 +535,14 @@ func (_c *MemberCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (_c *MemberCreate) defaults() {
+	if _, ok := _c.mutation.FirstName(); !ok {
+		v := member.DefaultFirstName
+		_c.mutation.SetFirstName(v)
+	}
+	if _, ok := _c.mutation.Surname(); !ok {
+		v := member.DefaultSurname
+		_c.mutation.SetSurname(v)
+	}
 	if _, ok := _c.mutation.IsPlaceholder(); !ok {
 		v := member.DefaultIsPlaceholder
 		_c.mutation.SetIsPlaceholder(v)
@@ -483,12 +567,6 @@ func (_c *MemberCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (_c *MemberCreate) check() error {
-	if _, ok := _c.mutation.FirstName(); !ok {
-		return &ValidationError{Name: "first_name", err: errors.New(`ent: missing required field "Member.first_name"`)}
-	}
-	if _, ok := _c.mutation.Surname(); !ok {
-		return &ValidationError{Name: "surname", err: errors.New(`ent: missing required field "Member.surname"`)}
-	}
 	if v, ok := _c.mutation.Gender(); ok {
 		if err := member.GenderValidator(v); err != nil {
 			return &ValidationError{Name: "gender", err: fmt.Errorf(`ent: validator failed for field "Member.gender": %w`, err)}
@@ -721,6 +799,57 @@ func (_c *MemberCreate) createSpec() (*Member, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.LocalChurchIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   member.LocalChurchTable,
+			Columns: []string{member.LocalChurchColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(localchurch.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.LocalChurchID = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.SectorIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   member.SectorTable,
+			Columns: []string{member.SectorColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(sector.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.SectorID = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.TeamIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   member.TeamTable,
+			Columns: []string{member.TeamColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(team.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.TeamID = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

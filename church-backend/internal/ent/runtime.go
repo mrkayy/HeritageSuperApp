@@ -115,16 +115,24 @@ func init() {
 	localchurch.DefaultID = localchurchDescID.Default.(func() uuid.UUID)
 	memberFields := schema.Member{}.Fields()
 	_ = memberFields
+	// memberDescFirstName is the schema descriptor for first_name field.
+	memberDescFirstName := memberFields[1].Descriptor()
+	// member.DefaultFirstName holds the default value on creation for the first_name field.
+	member.DefaultFirstName = memberDescFirstName.Default.(string)
+	// memberDescSurname is the schema descriptor for surname field.
+	memberDescSurname := memberFields[2].Descriptor()
+	// member.DefaultSurname holds the default value on creation for the surname field.
+	member.DefaultSurname = memberDescSurname.Default.(string)
 	// memberDescIsPlaceholder is the schema descriptor for is_placeholder field.
 	memberDescIsPlaceholder := memberFields[18].Descriptor()
 	// member.DefaultIsPlaceholder holds the default value on creation for the is_placeholder field.
 	member.DefaultIsPlaceholder = memberDescIsPlaceholder.Default.(bool)
 	// memberDescCreatedAt is the schema descriptor for created_at field.
-	memberDescCreatedAt := memberFields[21].Descriptor()
+	memberDescCreatedAt := memberFields[24].Descriptor()
 	// member.DefaultCreatedAt holds the default value on creation for the created_at field.
 	member.DefaultCreatedAt = memberDescCreatedAt.Default.(func() time.Time)
 	// memberDescUpdatedAt is the schema descriptor for updated_at field.
-	memberDescUpdatedAt := memberFields[22].Descriptor()
+	memberDescUpdatedAt := memberFields[25].Descriptor()
 	// member.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	member.DefaultUpdatedAt = memberDescUpdatedAt.Default.(func() time.Time)
 	// member.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.

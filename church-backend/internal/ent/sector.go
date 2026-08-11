@@ -35,6 +35,8 @@ type Sector struct {
 
 // SectorEdges holds the relations/edges for other nodes in the graph.
 type SectorEdges struct {
+	// Members holds the value of the members edge.
+	Members []*Member `json:"members,omitempty"`
 	// Church holds the value of the church edge.
 	Church *LocalChurch `json:"church,omitempty"`
 	// Users holds the value of the users edge.
@@ -51,7 +53,16 @@ type SectorEdges struct {
 	UserSectors []*UserSector `json:"user_sectors,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [7]bool
+	loadedTypes [8]bool
+}
+
+// MembersOrErr returns the Members value or an error if the edge
+// was not loaded in eager-loading.
+func (e SectorEdges) MembersOrErr() ([]*Member, error) {
+	if e.loadedTypes[0] {
+		return e.Members, nil
+	}
+	return nil, &NotLoadedError{edge: "members"}
 }
 
 // ChurchOrErr returns the Church value or an error if the edge
@@ -59,7 +70,7 @@ type SectorEdges struct {
 func (e SectorEdges) ChurchOrErr() (*LocalChurch, error) {
 	if e.Church != nil {
 		return e.Church, nil
-	} else if e.loadedTypes[0] {
+	} else if e.loadedTypes[1] {
 		return nil, &NotFoundError{label: localchurch.Label}
 	}
 	return nil, &NotLoadedError{edge: "church"}
@@ -68,7 +79,7 @@ func (e SectorEdges) ChurchOrErr() (*LocalChurch, error) {
 // UsersOrErr returns the Users value or an error if the edge
 // was not loaded in eager-loading.
 func (e SectorEdges) UsersOrErr() ([]*User, error) {
-	if e.loadedTypes[1] {
+	if e.loadedTypes[2] {
 		return e.Users, nil
 	}
 	return nil, &NotLoadedError{edge: "users"}
@@ -77,7 +88,7 @@ func (e SectorEdges) UsersOrErr() ([]*User, error) {
 // TeamsOrErr returns the Teams value or an error if the edge
 // was not loaded in eager-loading.
 func (e SectorEdges) TeamsOrErr() ([]*Team, error) {
-	if e.loadedTypes[2] {
+	if e.loadedTypes[3] {
 		return e.Teams, nil
 	}
 	return nil, &NotLoadedError{edge: "teams"}
@@ -86,7 +97,7 @@ func (e SectorEdges) TeamsOrErr() ([]*Team, error) {
 // SoulsOrErr returns the Souls value or an error if the edge
 // was not loaded in eager-loading.
 func (e SectorEdges) SoulsOrErr() ([]*Soul, error) {
-	if e.loadedTypes[3] {
+	if e.loadedTypes[4] {
 		return e.Souls, nil
 	}
 	return nil, &NotLoadedError{edge: "souls"}
@@ -95,7 +106,7 @@ func (e SectorEdges) SoulsOrErr() ([]*Soul, error) {
 // OutreachReportsOrErr returns the OutreachReports value or an error if the edge
 // was not loaded in eager-loading.
 func (e SectorEdges) OutreachReportsOrErr() ([]*OutreachReport, error) {
-	if e.loadedTypes[4] {
+	if e.loadedTypes[5] {
 		return e.OutreachReports, nil
 	}
 	return nil, &NotLoadedError{edge: "outreach_reports"}
@@ -104,7 +115,7 @@ func (e SectorEdges) OutreachReportsOrErr() ([]*OutreachReport, error) {
 // OtpInvitesOrErr returns the OtpInvites value or an error if the edge
 // was not loaded in eager-loading.
 func (e SectorEdges) OtpInvitesOrErr() ([]*OtpInvites, error) {
-	if e.loadedTypes[5] {
+	if e.loadedTypes[6] {
 		return e.OtpInvites, nil
 	}
 	return nil, &NotLoadedError{edge: "otp_invites"}
@@ -113,7 +124,7 @@ func (e SectorEdges) OtpInvitesOrErr() ([]*OtpInvites, error) {
 // UserSectorsOrErr returns the UserSectors value or an error if the edge
 // was not loaded in eager-loading.
 func (e SectorEdges) UserSectorsOrErr() ([]*UserSector, error) {
-	if e.loadedTypes[6] {
+	if e.loadedTypes[7] {
 		return e.UserSectors, nil
 	}
 	return nil, &NotLoadedError{edge: "user_sectors"}
@@ -190,6 +201,11 @@ func (_m *Sector) assignValues(columns []string, values []any) error {
 // This includes values selected through modifiers, order, etc.
 func (_m *Sector) Value(name string) (ent.Value, error) {
 	return _m.selectValues.Get(name)
+}
+
+// QueryMembers queries the "members" edge of the Sector entity.
+func (_m *Sector) QueryMembers() *MemberQuery {
+	return NewSectorClient(_m.config).QueryMembers(_m)
 }
 
 // QueryChurch queries the "church" edge of the Sector entity.

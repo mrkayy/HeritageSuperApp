@@ -37,6 +37,7 @@ func (Sector) Fields() []ent.Field {
 // Edges of the Sector.
 func (Sector) Edges() []ent.Edge {
 	return []ent.Edge{
+		edge.To("members", Member.Type),
 		edge.From("church", LocalChurch.Type).
 			Ref("sectors").
 			Unique().

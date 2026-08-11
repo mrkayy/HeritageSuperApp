@@ -56,6 +56,12 @@ const (
 	FieldSourceTeam = "source_team"
 	// FieldCreatedBy holds the string denoting the created_by field in the database.
 	FieldCreatedBy = "created_by"
+	// FieldLocalChurchID holds the string denoting the local_church_id field in the database.
+	FieldLocalChurchID = "local_church_id"
+	// FieldSectorID holds the string denoting the sector_id field in the database.
+	FieldSectorID = "sector_id"
+	// FieldTeamID holds the string denoting the team_id field in the database.
+	FieldTeamID = "team_id"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
@@ -72,6 +78,18 @@ const (
 	EdgeGuardianRelationshipsAsGuardian = "guardian_relationships_as_guardian"
 	// EdgeKidsMinistryProfile holds the string denoting the kids_ministry_profile edge name in mutations.
 	EdgeKidsMinistryProfile = "kids_ministry_profile"
+	// EdgeLocalChurch holds the string denoting the local_church edge name in mutations.
+	EdgeLocalChurch = "local_church"
+	// EdgeSector holds the string denoting the sector edge name in mutations.
+	EdgeSector = "sector"
+	// EdgeTeam holds the string denoting the team edge name in mutations.
+	EdgeTeam = "team"
+	// LocalChurchFieldID holds the string denoting the ID field of the LocalChurch.
+	LocalChurchFieldID = "church_id"
+	// SectorFieldID holds the string denoting the ID field of the Sector.
+	SectorFieldID = "sector_id"
+	// TeamFieldID holds the string denoting the ID field of the Team.
+	TeamFieldID = "team_id"
 	// Table holds the table name of the member in the database.
 	Table = "members"
 	// StageHistoriesTable is the table that holds the stage_histories relation/edge.
@@ -109,6 +127,27 @@ const (
 	KidsMinistryProfileInverseTable = "kids_ministry_profiles"
 	// KidsMinistryProfileColumn is the table column denoting the kids_ministry_profile relation/edge.
 	KidsMinistryProfileColumn = "member_id"
+	// LocalChurchTable is the table that holds the local_church relation/edge.
+	LocalChurchTable = "members"
+	// LocalChurchInverseTable is the table name for the LocalChurch entity.
+	// It exists in this package in order to avoid circular dependency with the "localchurch" package.
+	LocalChurchInverseTable = "local_church"
+	// LocalChurchColumn is the table column denoting the local_church relation/edge.
+	LocalChurchColumn = "local_church_id"
+	// SectorTable is the table that holds the sector relation/edge.
+	SectorTable = "members"
+	// SectorInverseTable is the table name for the Sector entity.
+	// It exists in this package in order to avoid circular dependency with the "sector" package.
+	SectorInverseTable = "sector"
+	// SectorColumn is the table column denoting the sector relation/edge.
+	SectorColumn = "sector_id"
+	// TeamTable is the table that holds the team relation/edge.
+	TeamTable = "members"
+	// TeamInverseTable is the table name for the Team entity.
+	// It exists in this package in order to avoid circular dependency with the "team" package.
+	TeamInverseTable = "team"
+	// TeamColumn is the table column denoting the team relation/edge.
+	TeamColumn = "team_id"
 )
 
 // Columns holds all SQL columns for member fields.
@@ -134,6 +173,9 @@ var Columns = []string{
 	FieldIsPlaceholder,
 	FieldSourceTeam,
 	FieldCreatedBy,
+	FieldLocalChurchID,
+	FieldSectorID,
+	FieldTeamID,
 	FieldCreatedAt,
 	FieldUpdatedAt,
 	FieldCurrentStage,
@@ -150,6 +192,10 @@ func ValidColumn(column string) bool {
 }
 
 var (
+	// DefaultFirstName holds the default value on creation for the "first_name" field.
+	DefaultFirstName string
+	// DefaultSurname holds the default value on creation for the "surname" field.
+	DefaultSurname string
 	// DefaultIsPlaceholder holds the default value on creation for the "is_placeholder" field.
 	DefaultIsPlaceholder bool
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
@@ -350,6 +396,21 @@ func ByCreatedBy(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCreatedBy, opts...).ToFunc()
 }
 
+// ByLocalChurchID orders the results by the local_church_id field.
+func ByLocalChurchID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLocalChurchID, opts...).ToFunc()
+}
+
+// BySectorID orders the results by the sector_id field.
+func BySectorID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldSectorID, opts...).ToFunc()
+}
+
+// ByTeamID orders the results by the team_id field.
+func ByTeamID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTeamID, opts...).ToFunc()
+}
+
 // ByCreatedAt orders the results by the created_at field.
 func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
@@ -427,6 +488,27 @@ func ByKidsMinistryProfileField(field string, opts ...sql.OrderTermOption) Order
 		sqlgraph.OrderByNeighborTerms(s, newKidsMinistryProfileStep(), sql.OrderByField(field, opts...))
 	}
 }
+
+// ByLocalChurchField orders the results by local_church field.
+func ByLocalChurchField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newLocalChurchStep(), sql.OrderByField(field, opts...))
+	}
+}
+
+// BySectorField orders the results by sector field.
+func BySectorField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newSectorStep(), sql.OrderByField(field, opts...))
+	}
+}
+
+// ByTeamField orders the results by team field.
+func ByTeamField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newTeamStep(), sql.OrderByField(field, opts...))
+	}
+}
 func newStageHistoriesStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -460,5 +542,26 @@ func newKidsMinistryProfileStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(KidsMinistryProfileInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2O, false, KidsMinistryProfileTable, KidsMinistryProfileColumn),
+	)
+}
+func newLocalChurchStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(LocalChurchInverseTable, LocalChurchFieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, LocalChurchTable, LocalChurchColumn),
+	)
+}
+func newSectorStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(SectorInverseTable, SectorFieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, SectorTable, SectorColumn),
+	)
+}
+func newTeamStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(TeamInverseTable, TeamFieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, TeamTable, TeamColumn),
 	)
 }

@@ -25,6 +25,12 @@ type Member struct {
 	IsPlaceholder           bool    `json:"isPlaceholder"`
 	SourceTeam              *string `json:"sourceTeam"`
 	CreatedBy               *string `json:"createdBy"`
+	LocalChurchID           *string `json:"localChurchId"`
+	LocalChurchName         *string `json:"localChurchName"`
+	SectorID                *string `json:"sectorId"`
+	SectorName              *string `json:"sectorName"`
+	TeamID                  *string `json:"teamId"`
+	TeamName                *string `json:"teamName"`
 	CurrentStage            string  `json:"currentStage"`
 	CreatedAt               string  `json:"createdAt"`
 	UpdatedAt               string  `json:"updatedAt"`

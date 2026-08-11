@@ -28,7 +28,12 @@ func (r *Repository) Get(ctx context.Context, id string) (contracts.Member, erro
 		return contracts.Member{}, err
 	}
 
-	m, err := r.db.Member.Get(ctx, uid)
+	m, err := r.db.Member.Query().
+		Where(member.IDEQ(uid)).
+		WithLocalChurch().
+		WithSector().
+		WithTeam().
+		Only(ctx)
 	if err != nil {
 		return contracts.Member{}, err
 	}
@@ -39,6 +44,9 @@ func (r *Repository) Get(ctx context.Context, id string) (contracts.Member, erro
 func (r *Repository) List(ctx context.Context) ([]contracts.Member, error) {
 	members, err := r.db.Member.Query().
 		Order(ent.Asc(member.FieldFirstName), ent.Asc(member.FieldSurname)).
+		WithLocalChurch().
+		WithSector().
+		WithTeam().
 		All(ctx)
 	if err != nil {
 		return nil, err
@@ -73,6 +81,9 @@ type AddMemberInput struct {
 	SourceTeam              *string
 	CreatedBy               *uuid.UUID
 	CurrentStage            *string
+	LocalChurchID           *string
+	SectorID                *string
+	TeamID                  *string
 }
 
 func (r *Repository) Add(ctx context.Context, in AddMemberInput) (contracts.Member, error) {
@@ -144,6 +155,25 @@ func (r *Repository) Add(ctx context.Context, in AddMemberInput) (contracts.Memb
 		stage = *in.CurrentStage
 	}
 	builder.SetCurrentStage(member.CurrentStage(stage))
+
+	if in.LocalChurchID != nil && *in.LocalChurchID != "" {
+		lcid, err := uuid.Parse(*in.LocalChurchID)
+		if err == nil {
+			builder.SetLocalChurchID(lcid)
+		}
+	}
+	if in.SectorID != nil && *in.SectorID != "" {
+		scid, err := uuid.Parse(*in.SectorID)
+		if err == nil {
+			builder.SetSectorID(scid)
+		}
+	}
+	if in.TeamID != nil && *in.TeamID != "" {
+		tmid, err := uuid.Parse(*in.TeamID)
+		if err == nil {
+			builder.SetTeamID(tmid)
+		}
+	}
 
 	m, err := builder.Save(ctx)
 	if err != nil {
@@ -300,6 +330,45 @@ func mapEntMemberToContract(m *ent.Member) contracts.Member {
 		createdBy = &cb
 	}
 
+	var localChurchID *string
+	var localChurchName *string
+	if m.Edges.LocalChurch != nil {
+		id := m.Edges.LocalChurch.ID.String()
+		localChurchID = &id
+		nm := m.Edges.LocalChurch.Name
+		if m.Edges.LocalChurch.Center != "" {
+			nm = nm + " (" + m.Edges.LocalChurch.Center + ")"
+		}
+		localChurchName = &nm
+	} else if m.LocalChurchID != nil {
+		id := m.LocalChurchID.String()
+		localChurchID = &id
+	}
+
+	var sectorID *string
+	var sectorName *string
+	if m.Edges.Sector != nil {
+		id := m.Edges.Sector.ID.String()
+		sectorID = &id
+		nm := m.Edges.Sector.SectorName
+		sectorName = &nm
+	} else if m.SectorID != nil {
+		id := m.SectorID.String()
+		sectorID = &id
+	}
+
+	var teamID *string
+	var teamName *string
+	if m.Edges.Team != nil {
+		id := m.Edges.Team.ID.String()
+		teamID = &id
+		nm := m.Edges.Team.Name
+		teamName = &nm
+	} else if m.TeamID != nil {
+		id := m.TeamID.String()
+		teamID = &id
+	}
+
 	return contracts.Member{
 		ID:                      m.ID.String(),
 		FirstName:               m.FirstName,
@@ -322,9 +391,167 @@ func mapEntMemberToContract(m *ent.Member) contracts.Member {
 		IsPlaceholder:           m.IsPlaceholder,
 		SourceTeam:              m.SourceTeam,
 		CreatedBy:               createdBy,
+		LocalChurchID:           localChurchID,
+		LocalChurchName:         localChurchName,
+		SectorID:                sectorID,
+		SectorName:              sectorName,
+		TeamID:                  teamID,
+		TeamName:                teamName,
 		CurrentStage:            string(m.CurrentStage),
 		CreatedAt:               m.CreatedAt.Format(time.RFC3339),
 		UpdatedAt:               m.UpdatedAt.Format(time.RFC3339),
 		Name:                    name,
 	}
+}
+
+func (r *Repository) Update(ctx context.Context, id string, in AddMemberInput) (contracts.Member, error) {
+	uid, err := uuid.Parse(id)
+	if err != nil {
+		return contracts.Member{}, err
+	}
+
+	u := r.db.Member.UpdateOneID(uid).
+		SetFirstName(in.FirstName).
+		SetSurname(in.Surname).
+		SetIsPlaceholder(in.IsPlaceholder)
+
+	if in.Email != nil && *in.Email != "" {
+		u.SetEmail(*in.Email)
+	} else {
+		u.ClearEmail()
+	}
+	if in.PhoneNumber != nil && *in.PhoneNumber != "" {
+		u.SetPhoneNumber(*in.PhoneNumber)
+	} else {
+		u.ClearPhoneNumber()
+	}
+	if in.HomeAddress != nil && *in.HomeAddress != "" {
+		u.SetHomeAddress(*in.HomeAddress)
+	} else {
+		u.ClearHomeAddress()
+	}
+	if in.Gender != nil && *in.Gender != "" {
+		u.SetGender(member.Gender(*in.Gender))
+	} else {
+		u.ClearGender()
+	}
+	if in.DateOfBirthDay != nil {
+		u.SetDateOfBirthDay(*in.DateOfBirthDay)
+	} else {
+		u.ClearDateOfBirthDay()
+	}
+	if in.DateOfBirthMonth != nil {
+		u.SetDateOfBirthMonth(*in.DateOfBirthMonth)
+	} else {
+		u.ClearDateOfBirthMonth()
+	}
+	if in.MaritalStatus != nil && *in.MaritalStatus != "" {
+		u.SetMaritalStatus(member.MaritalStatus(*in.MaritalStatus))
+	} else {
+		u.ClearMaritalStatus()
+	}
+	if in.WeddingAnniversaryDay != nil {
+		u.SetWeddingAnniversaryDay(*in.WeddingAnniversaryDay)
+	} else {
+		u.ClearWeddingAnniversaryDay()
+	}
+	if in.WeddingAnniversaryMonth != nil {
+		u.SetWeddingAnniversaryMonth(*in.WeddingAnniversaryMonth)
+	} else {
+		u.ClearWeddingAnniversaryMonth()
+	}
+	if in.JobOccupation != nil && *in.JobOccupation != "" {
+		u.SetJobOccupation(*in.JobOccupation)
+	} else {
+		u.ClearJobOccupation()
+	}
+	if in.PhotoURL != nil && *in.PhotoURL != "" {
+		u.SetPhotoURL(*in.PhotoURL)
+	} else {
+		u.ClearPhotoURL()
+	}
+	if in.EmergencyContactName != nil && *in.EmergencyContactName != "" {
+		u.SetEmergencyContactName(*in.EmergencyContactName)
+	} else {
+		u.ClearEmergencyContactName()
+	}
+	if in.EmergencyContactPhone != nil && *in.EmergencyContactPhone != "" {
+		u.SetEmergencyContactPhone(*in.EmergencyContactPhone)
+	} else {
+		u.ClearEmergencyContactPhone()
+	}
+	if in.Allergies != nil && *in.Allergies != "" {
+		u.SetAllergies(*in.Allergies)
+	} else {
+		u.ClearAllergies()
+	}
+	if in.MedicalNotes != nil && *in.MedicalNotes != "" {
+		u.SetMedicalNotes(*in.MedicalNotes)
+	} else {
+		u.ClearMedicalNotes()
+	}
+	if in.SourceTeam != nil && *in.SourceTeam != "" {
+		u.SetSourceTeam(*in.SourceTeam)
+	} else {
+		u.ClearSourceTeam()
+	}
+
+	if in.LocalChurchID != nil && *in.LocalChurchID != "" {
+		lcid, err := uuid.Parse(*in.LocalChurchID)
+		if err == nil {
+			u.SetLocalChurchID(lcid)
+		}
+	} else {
+		u.ClearLocalChurch()
+	}
+
+	if in.SectorID != nil && *in.SectorID != "" {
+		scid, err := uuid.Parse(*in.SectorID)
+		if err == nil {
+			u.SetSectorID(scid)
+		}
+	} else {
+		u.ClearSector()
+	}
+
+	if in.TeamID != nil && *in.TeamID != "" {
+		tmid, err := uuid.Parse(*in.TeamID)
+		if err == nil {
+			u.SetTeamID(tmid)
+		}
+	} else {
+		u.ClearTeam()
+	}
+
+	if in.CurrentStage != nil && *in.CurrentStage != "" {
+		u.SetCurrentStage(member.CurrentStage(*in.CurrentStage))
+	}
+
+	m, err := u.Save(ctx)
+	if err != nil {
+		return contracts.Member{}, err
+	}
+
+	// Sync back to User account if one exists with the same email
+	if m.Email != nil && *m.Email != "" {
+		userUpdate := r.db.User.Update().Where(entuser.EmailEQ(*m.Email))
+		if m.TeamID != nil {
+			userUpdate.SetTeamID(*m.TeamID)
+		} else {
+			userUpdate.ClearTeamID()
+		}
+		if m.SectorID != nil {
+			userUpdate.SetSectorID(*m.SectorID)
+		} else {
+			userUpdate.ClearSectorID()
+		}
+		if m.LocalChurchID != nil {
+			userUpdate.SetChurchID(*m.LocalChurchID)
+		} else {
+			userUpdate.ClearChurchID()
+		}
+		_ = userUpdate.Exec(ctx)
+	}
+
+	return r.Get(ctx, m.ID.String())
 }

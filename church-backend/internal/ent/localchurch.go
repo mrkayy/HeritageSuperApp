@@ -36,6 +36,8 @@ type LocalChurch struct {
 
 // LocalChurchEdges holds the relations/edges for other nodes in the graph.
 type LocalChurchEdges struct {
+	// Members holds the value of the members edge.
+	Members []*Member `json:"members,omitempty"`
 	// Sectors holds the value of the sectors edge.
 	Sectors []*Sector `json:"sectors,omitempty"`
 	// Teams holds the value of the teams edge.
@@ -50,13 +52,22 @@ type LocalChurchEdges struct {
 	ChurchEvents []*ChurchEvent `json:"church_events,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [6]bool
+	loadedTypes [7]bool
+}
+
+// MembersOrErr returns the Members value or an error if the edge
+// was not loaded in eager-loading.
+func (e LocalChurchEdges) MembersOrErr() ([]*Member, error) {
+	if e.loadedTypes[0] {
+		return e.Members, nil
+	}
+	return nil, &NotLoadedError{edge: "members"}
 }
 
 // SectorsOrErr returns the Sectors value or an error if the edge
 // was not loaded in eager-loading.
 func (e LocalChurchEdges) SectorsOrErr() ([]*Sector, error) {
-	if e.loadedTypes[0] {
+	if e.loadedTypes[1] {
 		return e.Sectors, nil
 	}
 	return nil, &NotLoadedError{edge: "sectors"}
@@ -65,7 +76,7 @@ func (e LocalChurchEdges) SectorsOrErr() ([]*Sector, error) {
 // TeamsOrErr returns the Teams value or an error if the edge
 // was not loaded in eager-loading.
 func (e LocalChurchEdges) TeamsOrErr() ([]*Team, error) {
-	if e.loadedTypes[1] {
+	if e.loadedTypes[2] {
 		return e.Teams, nil
 	}
 	return nil, &NotLoadedError{edge: "teams"}
@@ -74,7 +85,7 @@ func (e LocalChurchEdges) TeamsOrErr() ([]*Team, error) {
 // UsersOrErr returns the Users value or an error if the edge
 // was not loaded in eager-loading.
 func (e LocalChurchEdges) UsersOrErr() ([]*User, error) {
-	if e.loadedTypes[2] {
+	if e.loadedTypes[3] {
 		return e.Users, nil
 	}
 	return nil, &NotLoadedError{edge: "users"}
@@ -83,7 +94,7 @@ func (e LocalChurchEdges) UsersOrErr() ([]*User, error) {
 // OtpInvitesOrErr returns the OtpInvites value or an error if the edge
 // was not loaded in eager-loading.
 func (e LocalChurchEdges) OtpInvitesOrErr() ([]*OtpInvites, error) {
-	if e.loadedTypes[3] {
+	if e.loadedTypes[4] {
 		return e.OtpInvites, nil
 	}
 	return nil, &NotLoadedError{edge: "otp_invites"}
@@ -92,7 +103,7 @@ func (e LocalChurchEdges) OtpInvitesOrErr() ([]*OtpInvites, error) {
 // ChurchTeamsOrErr returns the ChurchTeams value or an error if the edge
 // was not loaded in eager-loading.
 func (e LocalChurchEdges) ChurchTeamsOrErr() ([]*ChurchTeams, error) {
-	if e.loadedTypes[4] {
+	if e.loadedTypes[5] {
 		return e.ChurchTeams, nil
 	}
 	return nil, &NotLoadedError{edge: "church_teams"}
@@ -101,7 +112,7 @@ func (e LocalChurchEdges) ChurchTeamsOrErr() ([]*ChurchTeams, error) {
 // ChurchEventsOrErr returns the ChurchEvents value or an error if the edge
 // was not loaded in eager-loading.
 func (e LocalChurchEdges) ChurchEventsOrErr() ([]*ChurchEvent, error) {
-	if e.loadedTypes[5] {
+	if e.loadedTypes[6] {
 		return e.ChurchEvents, nil
 	}
 	return nil, &NotLoadedError{edge: "church_events"}
@@ -181,6 +192,11 @@ func (_m *LocalChurch) assignValues(columns []string, values []any) error {
 // This includes values selected through modifiers, order, etc.
 func (_m *LocalChurch) Value(name string) (ent.Value, error) {
 	return _m.selectValues.Get(name)
+}
+
+// QueryMembers queries the "members" edge of the LocalChurch entity.
+func (_m *LocalChurch) QueryMembers() *MemberQuery {
+	return NewLocalChurchClient(_m.config).QueryMembers(_m)
 }
 
 // QuerySectors queries the "sectors" edge of the LocalChurch entity.
