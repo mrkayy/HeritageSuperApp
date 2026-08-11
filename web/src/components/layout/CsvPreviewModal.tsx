@@ -357,7 +357,7 @@ export default function CsvPreviewModal({ open, onOpenChange, onSuccess }: CsvPr
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={`${step === 'preview' ? 'max-w-[95vw] w-[95vw]' : 'max-w-xl'} max-h-[95vh] overflow-y-auto flex flex-col p-6 rounded-2xl`}>
+      <DialogContent className={`${step === 'preview' ? 'max-w-[95vw] w-[95vw] overflow-hidden' : 'max-w-xl overflow-y-auto'} max-h-[95vh] flex flex-col p-6 rounded-2xl`}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl font-bold">
             <FileSpreadsheet className="w-6 h-6 text-emerald-500" />
@@ -411,9 +411,8 @@ export default function CsvPreviewModal({ open, onOpenChange, onSuccess }: CsvPr
             </div>
 
             {/* Scrollable Preview Grid */}
-            <div className="border border-border/50 rounded-xl overflow-hidden flex-1 flex flex-col">
-              <ScrollArea className="flex-1 w-full">
-                <Table className="text-xs">
+            <div className="border border-border/50 rounded-xl overflow-auto flex-1 w-full max-h-[60vh]">
+              <Table className="text-xs min-w-[1300px]">
                   <TableHeader className="bg-secondary/40 sticky top-0 z-10">
                     <TableRow>
                       <TableHead className="w-[150px]">First Name *</TableHead>
@@ -544,7 +543,6 @@ export default function CsvPreviewModal({ open, onOpenChange, onSuccess }: CsvPr
                     ))}
                   </TableBody>
                 </Table>
-              </ScrollArea>
             </div>
 
             <DialogFooter className="pt-4 border-t border-border/50 flex items-center justify-between sm:justify-between w-full">
