@@ -75,3 +75,11 @@ func (s *Service) ProfileMember(ctx context.Context, in ProfileMemberInput) (con
 
 	return s.repo.ProfileNewMember(ctx, in)
 }
+
+func (s *Service) ListMembersPaginated(ctx context.Context, page, limit int, search, stage string) ([]contracts.Member, int, error) {
+	return s.repo.ListPaginated(ctx, page, limit, search, stage)
+}
+
+func (s *Service) GetStageCounts(ctx context.Context) (map[string]int, error) {
+	return s.repo.GetStageCounts(ctx)
+}

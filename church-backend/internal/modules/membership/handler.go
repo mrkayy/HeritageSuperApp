@@ -2,6 +2,7 @@ package membership
 
 import (
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/google/uuid"
@@ -20,19 +21,60 @@ func NewHandler(svc *Service) *Handler {
 // Register defines this module's endpoints on the group.
 func (h *Handler) Register(g *echo.Group) {
 	g.GET("", h.list)
+	g.GET("/stage-counts", h.stageCounts)
 	g.GET("/:id", h.get)
 	g.POST("", h.add)
 	g.POST("/profile", h.profile)
+	g.POST("/bulk-profile", h.bulkProfile)
+	g.POST("/bulk-profile-json", h.bulkProfileJSON)
 	g.PUT("/:id", h.update)
 	g.DELETE("/:id", h.delete)
 }
 
 func (h *Handler) list(c echo.Context) error {
+	pageStr := c.QueryParam("page")
+	if pageStr != "" {
+		page, _ := strconv.Atoi(pageStr)
+		limit, _ := strconv.Atoi(c.QueryParam("limit"))
+		search := c.QueryParam("search")
+		stage := c.QueryParam("stage")
+
+		if page < 1 {
+			page = 1
+		}
+		if limit < 1 {
+			limit = 50
+		}
+
+		members, total, err := h.svc.ListMembersPaginated(c.Request().Context(), page, limit, search, stage)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+
+		totalPages := (total + limit - 1) / limit
+
+		return c.JSON(http.StatusOK, echo.Map{
+			"members":    members,
+			"total":      total,
+			"page":       page,
+			"limit":      limit,
+			"totalPages": totalPages,
+		})
+	}
+
 	members, err := h.svc.ListMembers(c.Request().Context())
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 	return c.JSON(http.StatusOK, members)
+}
+
+func (h *Handler) stageCounts(c echo.Context) error {
+	counts, err := h.svc.GetStageCounts(c.Request().Context())
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	return c.JSON(http.StatusOK, counts)
 }
 
 func (h *Handler) get(c echo.Context) error {
@@ -227,4 +269,55 @@ func (h *Handler) profile(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	return c.JSON(http.StatusCreated, member)
+}
+
+func (h *Handler) bulkProfile(c echo.Context) error {
+	fileHeader, err := c.FormFile("file")
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "a CSV file is required under form field 'file'")
+	}
+
+	src, err := fileHeader.Open()
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "failed to open uploaded CSV file")
+	}
+	defer src.Close()
+
+	var creatorID *uuid.UUID
+	if creatorUser, ok := contracts.UserFromContext(c.Request().Context()); ok && creatorUser.ID != "" {
+		if cid, err := uuid.Parse(creatorUser.ID); err == nil {
+			creatorID = &cid
+		}
+	}
+
+	res, err := h.svc.BulkImportCSV(c.Request().Context(), src, creatorID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, res)
+}
+
+func (h *Handler) bulkProfileJSON(c echo.Context) error {
+	var payload struct {
+		Members []AddMemberInput `json:"members"`
+	}
+
+	if err := c.Bind(&payload); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request payload")
+	}
+
+	var creatorID *uuid.UUID
+	if creatorUser, ok := contracts.UserFromContext(c.Request().Context()); ok && creatorUser.ID != "" {
+		if cid, err := uuid.Parse(creatorUser.ID); err == nil {
+			creatorID = &cid
+		}
+	}
+
+	res, err := h.svc.BulkImportJSON(c.Request().Context(), payload.Members, creatorID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, res)
 }

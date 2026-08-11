@@ -29,6 +29,13 @@ import FollowUpManagement from "./pages/admin/FollowUpManagement";
 import MemberAssignment from "./pages/admin/MemberAssignment";
 import PublicMap from "./pages/PublicMap";
 import NotFound from "./pages/NotFound";
+import MembershipDashboard from "./pages/teams/MembershipDashboard";
+import MembershipTeamCRM from "./pages/teams/MembershipTeamCRM";
+import BirthdayTracker from "./pages/teams/BirthdayTracker";
+import AnniversaryTracker from "./pages/teams/AnniversaryTracker";
+import MemberJourney from "./pages/teams/MemberJourney";
+import InfoCenterDashboard from "./pages/teams/InfoCenterDashboard";
+import InfoCenterMembers from "./pages/teams/InfoCenterMembers";
 
 const queryClient = new QueryClient();
 
@@ -83,6 +90,18 @@ const App = () => (
               <Route path="super-admin/denominations" element={<SuperAdminDenominations />} />
               <Route path="super-admin/invites" element={<SuperAdminInvites />} />
               <Route path="super-admin/settings" element={<SuperAdminSettings />} />
+
+              {/* Team specific capability routes */}
+              <Route path="teams/membership" element={<MembershipDashboard />} />
+              <Route path="teams/membership/members" element={<MembershipTeamCRM />} />
+              <Route path="teams/membership/birthdays" element={<BirthdayTracker />} />
+              <Route path="teams/membership/anniversaries" element={<AnniversaryTracker />} />
+              <Route path="teams/membership/journey" element={<MemberJourney />} />
+              
+              {/* Information Center routes */}
+              <Route path="teams/info-center" element={<InfoCenterDashboard />} />
+              <Route path="teams/info-center/members" element={<InfoCenterMembers />} />
+              <Route path="teams/info-center/journey" element={<MemberJourney />} />
             </Route>
 
             <Route path="*" element={<NotFound />} />

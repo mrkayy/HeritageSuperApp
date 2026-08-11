@@ -11,13 +11,15 @@ import (
 // platform/middleware), never issues them. That asymmetry is what makes
 // this a real single sign-on entry point: one login, one issuer, one
 // token accepted uniformly across every feature/ministry module.
-func issueToken(secret, userID, email string, roles []string) (string, error) {
+func issueToken(secret, userID, email string, roles []string, teamID, teamName string) (string, error) {
 	claims := jwt.MapClaims{
-		"sub":   userID,
-		"email": email,
-		"roles": roles,
-		"exp":   time.Now().Add(24 * time.Hour).Unix(),
-		"iat":   time.Now().Unix(),
+		"sub":      userID,
+		"email":    email,
+		"roles":    roles,
+		"teamId":   teamID,
+		"teamName": teamName,
+		"exp":      time.Now().Add(24 * time.Hour).Unix(),
+		"iat":      time.Now().Unix(),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(secret))

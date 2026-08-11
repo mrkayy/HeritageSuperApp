@@ -20,12 +20,15 @@ func NewService(repo *Repository, jwtSecret string) *Service {
 }
 
 type LoginResult struct {
-	Token     string   `json:"token"`
-	ID        string   `json:"user_id"`
-	Email     string   `json:"email"`
-	FirstName string   `json:"first_name"`
-	LastName  string   `json:"last_name"`
-	Roles     []string `json:"roles"`
+	Token       string   `json:"token"`
+	ID          string   `json:"user_id"`
+	Email       string   `json:"email"`
+	FirstName   string   `json:"first_name"`
+	LastName    string   `json:"last_name"`
+	Roles       []string `json:"roles"`
+	CurrentRole string   `json:"currentRole"`
+	TeamID      string   `json:"teamId"`
+	TeamName    string   `json:"teamName"`
 }
 
 // Login is the single entry point every feature's frontend calls to
@@ -40,18 +43,26 @@ func (s *Service) Login(ctx context.Context, email, password string) (LoginResul
 		return LoginResult{}, ErrInvalidCredentials
 	}
 
-	token, err := issueToken(s.jwtSecret, u.ID, u.Email, u.Roles)
+	token, err := issueToken(s.jwtSecret, u.ID, u.Email, u.Roles, u.TeamID, u.TeamName)
 	if err != nil {
 		return LoginResult{}, err
 	}
 
+	currentRole := ""
+	if len(u.Roles) > 0 {
+		currentRole = u.Roles[0]
+	}
+
 	return LoginResult{
-		Token:     token,
-		ID:        u.ID,
-		Email:     u.Email,
-		FirstName: u.FirstName,
-		LastName:  u.LastName,
-		Roles:     u.Roles,
+		Token:       token,
+		ID:          u.ID,
+		Email:       u.Email,
+		FirstName:   u.FirstName,
+		LastName:    u.LastName,
+		Roles:       u.Roles,
+		CurrentRole: currentRole,
+		TeamID:      u.TeamID,
+		TeamName:    u.TeamName,
 	}, nil
 }
 
@@ -64,18 +75,26 @@ func (s *Service) LoginOrCreateOAuthUser(ctx context.Context, email string) (Log
 		return LoginResult{}, err
 	}
 
-	token, err := issueToken(s.jwtSecret, u.ID, u.Email, u.Roles)
+	token, err := issueToken(s.jwtSecret, u.ID, u.Email, u.Roles, u.TeamID, u.TeamName)
 	if err != nil {
 		return LoginResult{}, err
 	}
 
+	currentRole := ""
+	if len(u.Roles) > 0 {
+		currentRole = u.Roles[0]
+	}
+
 	return LoginResult{
-		Token:     token,
-		ID:        u.ID,
-		Email:     u.Email,
-		FirstName: u.FirstName,
-		LastName:  u.LastName,
-		Roles:     u.Roles,
+		Token:       token,
+		ID:          u.ID,
+		Email:       u.Email,
+		FirstName:   u.FirstName,
+		LastName:    u.LastName,
+		Roles:       u.Roles,
+		CurrentRole: currentRole,
+		TeamID:      u.TeamID,
+		TeamName:    u.TeamName,
 	}, nil
 }
 

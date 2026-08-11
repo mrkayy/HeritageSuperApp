@@ -31,11 +31,13 @@ type Member struct {
 	SectorName              *string `json:"sectorName"`
 	TeamID                  *string `json:"teamId"`
 	TeamName                *string `json:"teamName"`
-	CurrentStage            string  `json:"currentStage"`
-	JoinedAt                string  `json:"joinedAt,omitempty"`
-	CreatedAt               string  `json:"createdAt"`
-	UpdatedAt               string  `json:"updatedAt"`
-	Name                    string  `json:"name"` // Computed first_name + surname for compatibility
+	CurrentStage            string   `json:"currentStage"`
+	Role                    string   `json:"role,omitempty"`
+	Roles                   []string `json:"roles,omitempty"`
+	JoinedAt                string   `json:"joinedAt,omitempty"`
+	CreatedAt               string   `json:"createdAt"`
+	UpdatedAt               string   `json:"updatedAt"`
+	Name                    string   `json:"name"` // Computed first_name + surname for compatibility
 }
 
 // MembershipReader is implemented by the membership module and consumed

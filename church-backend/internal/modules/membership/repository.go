@@ -44,7 +44,14 @@ func (r *Repository) Get(ctx context.Context, id string) (contracts.Member, erro
 		return contracts.Member{}, err
 	}
 
-	return mapEntMemberToContract(m), nil
+	role := "member"
+	if m.Email != nil && *m.Email != "" {
+		if u, err := r.db.User.Query().Where(entuser.EmailEQ(*m.Email)).Only(ctx); err == nil {
+			role = string(u.Role)
+		}
+	}
+
+	return mapEntMemberToContract(m, role), nil
 }
 
 func (r *Repository) List(ctx context.Context) ([]contracts.Member, error) {
@@ -58,11 +65,110 @@ func (r *Repository) List(ctx context.Context) ([]contracts.Member, error) {
 		return nil, err
 	}
 
+	users, _ := r.db.User.Query().All(ctx)
+	emailToRole := make(map[string]string)
+	for _, u := range users {
+		if u.Email != "" {
+			emailToRole[strings.ToLower(u.Email)] = string(u.Role)
+		}
+	}
+
 	out := make([]contracts.Member, 0, len(members))
 	for _, m := range members {
-		out = append(out, mapEntMemberToContract(m))
+		role := "member"
+		if m.Email != nil && *m.Email != "" {
+			if r, ok := emailToRole[strings.ToLower(*m.Email)]; ok && r != "" {
+				role = r
+			}
+		}
+		out = append(out, mapEntMemberToContract(m, role))
 	}
 	return out, nil
+}
+
+func (r *Repository) GetStageCounts(ctx context.Context) (map[string]int, error) {
+	var v []struct {
+		CurrentStage member.CurrentStage `json:"current_stage"`
+		Count        int                 `json:"count"`
+	}
+	err := r.db.Member.Query().
+		GroupBy(member.FieldCurrentStage).
+		Aggregate(ent.Count()).
+		Scan(ctx, &v)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make(map[string]int)
+	for _, row := range v {
+		out[string(row.CurrentStage)] = row.Count
+	}
+	return out, nil
+}
+
+func (r *Repository) ListPaginated(ctx context.Context, page, limit int, search, stage string) ([]contracts.Member, int, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 {
+		limit = 50
+	}
+	offset := (page - 1) * limit
+
+	q := r.db.Member.Query()
+
+	if stage != "" {
+		q = q.Where(member.CurrentStageEQ(member.CurrentStage(stage)))
+	}
+
+	if search != "" {
+		q = q.Where(
+			member.Or(
+				member.FirstNameContainsFold(search),
+				member.SurnameContainsFold(search),
+				member.EmailContainsFold(search),
+				member.PhoneNumberContainsFold(search),
+			),
+		)
+	}
+
+	total, err := q.Count(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	members, err := q.
+		Order(ent.Asc(member.FieldFirstName), ent.Asc(member.FieldSurname)).
+		Offset(offset).
+		Limit(limit).
+		WithLocalChurch().
+		WithSector().
+		WithTeam().
+		All(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	users, _ := r.db.User.Query().All(ctx)
+	emailToRole := make(map[string]string)
+	for _, u := range users {
+		if u.Email != "" {
+			emailToRole[strings.ToLower(u.Email)] = string(u.Role)
+		}
+	}
+
+	out := make([]contracts.Member, 0, len(members))
+	for _, m := range members {
+		role := "member"
+		if m.Email != nil && *m.Email != "" {
+			if r, ok := emailToRole[strings.ToLower(*m.Email)]; ok && r != "" {
+				role = r
+			}
+		}
+		out = append(out, mapEntMemberToContract(m, role))
+	}
+
+	return out, total, nil
 }
 
 type AddMemberInput struct {
@@ -521,7 +627,12 @@ func (r *Repository) ProfileNewMember(ctx context.Context, in ProfileMemberInput
 	return r.Get(ctx, m.ID.String())
 }
 
-func mapEntMemberToContract(m *ent.Member) contracts.Member {
+func mapEntMemberToContract(m *ent.Member, userRole ...string) contracts.Member {
+	role := "member"
+	if len(userRole) > 0 && userRole[0] != "" {
+		role = userRole[0]
+	}
+
 	name := m.FirstName
 	if m.Surname != "" {
 		name = name + " " + m.Surname
@@ -613,6 +724,8 @@ func mapEntMemberToContract(m *ent.Member) contracts.Member {
 		TeamID:                  teamID,
 		TeamName:                teamName,
 		CurrentStage:            string(m.CurrentStage),
+		Role:                    role,
+		Roles:                   []string{role},
 		JoinedAt:                m.JoinedAt.Format(time.RFC3339),
 		CreatedAt:               m.CreatedAt.Format(time.RFC3339),
 		UpdatedAt:               m.UpdatedAt.Format(time.RFC3339),

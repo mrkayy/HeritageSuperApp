@@ -16,6 +16,8 @@ type user struct {
 	LastName     string
 	PasswordHash string
 	Roles        []string
+	TeamID       string
+	TeamName     string
 }
 
 type Repository struct {
@@ -27,7 +29,7 @@ func NewRepository(db *ent.Client) *Repository {
 }
 
 func mapEntUserToUser(eu *ent.User) user {
-	return user{
+	u := user{
 		ID:           eu.ID.String(),
 		Email:        eu.Email,
 		FirstName:    eu.FirstName,
@@ -35,11 +37,19 @@ func mapEntUserToUser(eu *ent.User) user {
 		PasswordHash: eu.PasswordHash,
 		Roles:        []string{string(eu.Role)},
 	}
+	if eu.Edges.Team != nil {
+		u.TeamID = eu.Edges.Team.ID.String()
+		u.TeamName = eu.Edges.Team.Name
+	} else if eu.TeamID != nil {
+		u.TeamID = eu.TeamID.String()
+	}
+	return u
 }
 
 func (r *Repository) FindByEmail(ctx context.Context, email string) (user, error) {
 	eu, err := r.db.User.Query().
 		Where(entuser.Email(email)).
+		WithTeam().
 		Only(ctx)
 	if err != nil {
 		return user{}, err
@@ -50,6 +60,7 @@ func (r *Repository) FindByEmail(ctx context.Context, email string) (user, error
 func (r *Repository) FindOrCreateByEmail(ctx context.Context, email string) (user, error) {
 	eu, err := r.db.User.Query().
 		Where(entuser.Email(email)).
+		WithTeam().
 		Only(ctx)
 	if err == nil {
 		return mapEntUserToUser(eu), nil

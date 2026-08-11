@@ -178,6 +178,7 @@ func seedChurchesTeamsSectors(ctx context.Context, client *ent.Client) error {
 	}{
 		{"Worship Team", "Handles music and worship during services"},
 		{"Joyful Sounds", "Handles music and worship during services"},
+		{"Membership Team", "Handles membership and integration of new members"},
 		{"Media Ministry", "Manages church audio, visuals, and streaming"},
 		{"Communications Team", "Manages church audio, visuals, and streaming"},
 		{"Publishers Team", "Manages church audio, visuals, and streaming"},

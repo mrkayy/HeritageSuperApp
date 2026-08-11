@@ -15,6 +15,8 @@ import {
   Shield,
   Building,
   Users2,
+  Cake,
+  UserPlus,
   LucidePhoneCall,
   FolderEdit,
   LucideSettings
@@ -198,6 +200,94 @@ export function AppSidebar() {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {/* Membership Team Capabilities (Visible to Church Admin, Resident Pastor, Super Admin, or Membership Team Leads) */}
+        {(['super_admin', 'church_admin', 'resident_pastor'].includes(user?.role || '') ||
+          (user?.role === 'team_lead' && user?.teamName?.toLowerCase().includes('membership'))) && (
+          <SidebarGroup>
+            <SidebarGroupLabel className={isCollapsed ? "sr-only" : ""}>Membership Team</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={location.pathname === "/teams/membership"}>
+                    <Link to="/teams/membership" className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
+                      <Home className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
+                      {!isCollapsed && <span className="text-xs md:text-sm lg:text-base">Dashboard</span>}
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={location.pathname === "/teams/membership/members"}>
+                    <Link to="/teams/membership/members" className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
+                      <Users2 className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
+                      {!isCollapsed && <span className="text-xs md:text-sm lg:text-base">Members CRM</span>}
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={location.pathname === "/teams/membership/birthdays"}>
+                    <Link to="/teams/membership/birthdays" className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
+                      <Cake className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
+                      {!isCollapsed && <span className="text-xs md:text-sm lg:text-base">Birthday Tracker</span>}
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={location.pathname === "/teams/membership/anniversaries"}>
+                    <Link to="/teams/membership/anniversaries" className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
+                      <Heart className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
+                      {!isCollapsed && <span className="text-xs md:text-sm lg:text-base">Anniversary Tracker</span>}
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={location.pathname === "/teams/membership/journey"}>
+                    <Link to="/teams/membership/journey" className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
+                      <Trophy className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
+                      {!isCollapsed && <span className="text-xs md:text-sm lg:text-base">Member Journey</span>}
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {/* Information Center Capabilities (Visible to Church Admin, Resident Pastor, Super Admin, or Info Center Team Leads) */}
+        {(['super_admin', 'church_admin', 'resident_pastor'].includes(user?.role || '') ||
+          (user?.role === 'team_lead' && user?.teamName?.toLowerCase().includes('information'))) && (
+          <SidebarGroup>
+            <SidebarGroupLabel className={isCollapsed ? "sr-only" : ""}>Information Center</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={location.pathname === "/teams/info-center"}>
+                    <Link to="/teams/info-center" className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
+                      <Home className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
+                      {!isCollapsed && <span className="text-xs md:text-sm lg:text-base">Dashboard</span>}
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={location.pathname === "/teams/info-center/members"}>
+                    <Link to="/teams/info-center/members" className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
+                      <Users2 className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
+                      {!isCollapsed && <span className="text-xs md:text-sm lg:text-base">Member Directory</span>}
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={location.pathname === "/teams/info-center/journey"}>
+                    <Link to="/teams/info-center/journey" className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
+                      <Trophy className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
+                      {!isCollapsed && <span className="text-xs md:text-sm lg:text-base">Member Journey</span>}
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
