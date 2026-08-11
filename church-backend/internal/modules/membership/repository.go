@@ -532,5 +532,26 @@ func (r *Repository) Update(ctx context.Context, id string, in AddMemberInput) (
 		return contracts.Member{}, err
 	}
 
+	// Sync back to User account if one exists with the same email
+	if m.Email != nil && *m.Email != "" {
+		userUpdate := r.db.User.Update().Where(entuser.EmailEQ(*m.Email))
+		if m.TeamID != nil {
+			userUpdate.SetTeamID(*m.TeamID)
+		} else {
+			userUpdate.ClearTeamID()
+		}
+		if m.SectorID != nil {
+			userUpdate.SetSectorID(*m.SectorID)
+		} else {
+			userUpdate.ClearSectorID()
+		}
+		if m.LocalChurchID != nil {
+			userUpdate.SetChurchID(*m.LocalChurchID)
+		} else {
+			userUpdate.ClearChurchID()
+		}
+		_ = userUpdate.Exec(ctx)
+	}
+
 	return r.Get(ctx, m.ID.String())
 }

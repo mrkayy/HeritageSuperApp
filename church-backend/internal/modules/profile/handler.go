@@ -2,6 +2,7 @@ package profile
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/hofchurchng/church-backend/internal/contracts"
@@ -256,4 +257,96 @@ func (h *Handler) deleteKid(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 	return c.NoContent(http.StatusNoContent)
+}
+
+type userListDTO struct {
+	UserID     string                `json:"user_id"`
+	MemberID   string                `json:"member_id"`
+	FirstName  string                `json:"first_name"`
+	LastName   string                `json:"last_name"`
+	Email      string                `json:"email"`
+	Role       string                `json:"role"`
+	UserTeam   []userTeamDetailDTO   `json:"user_team"`
+	UserSector []userSectorDetailDTO `json:"user_sector"`
+}
+
+type userTeamDetailDTO struct {
+	Team teamSubDTO `json:"team"`
+}
+
+type teamSubDTO struct {
+	TeamID string `json:"team_id"`
+	Name   string `json:"name"`
+}
+
+type userSectorDetailDTO struct {
+	Sector sectorSubDTO `json:"sector"`
+}
+
+type sectorSubDTO struct {
+	SectorID   string `json:"sector_id"`
+	SectorName string `json:"sector_name"`
+}
+
+func (h *Handler) RegisterUsers(g *echo.Group) {
+	g.GET("", h.listUsers)
+}
+
+func (h *Handler) listUsers(c echo.Context) error {
+	users, err := h.svc.ListUsers(c.Request().Context())
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	// Fetch all members to match email -> ID
+	members, err := h.svc.repo.db.Member.Query().All(c.Request().Context())
+	memberMap := make(map[string]string)
+	if err == nil {
+		for _, m := range members {
+			if m.Email != nil && *m.Email != "" {
+				memberMap[strings.ToLower(*m.Email)] = m.ID.String()
+			}
+		}
+	}
+
+	out := make([]userListDTO, 0, len(users))
+	for _, u := range users {
+		memberID := ""
+		if id, ok := memberMap[strings.ToLower(u.Email)]; ok {
+			memberID = id
+		}
+
+		userTeams := make([]userTeamDetailDTO, 0)
+		if u.Edges.Team != nil {
+			userTeams = append(userTeams, userTeamDetailDTO{
+				Team: teamSubDTO{
+					TeamID: u.Edges.Team.ID.String(),
+					Name:   u.Edges.Team.Name,
+				},
+			})
+		}
+
+		userSectors := make([]userSectorDetailDTO, 0)
+		if u.Edges.Sector != nil {
+			userSectors = append(userSectors, userSectorDetailDTO{
+				Sector: sectorSubDTO{
+					SectorID:   u.Edges.Sector.ID.String(),
+					SectorName: u.Edges.Sector.SectorName,
+				},
+			})
+		}
+
+		out = append(out, userListDTO{
+			UserID:     u.ID.String(),
+			MemberID:   memberID,
+			FirstName:  u.FirstName,
+			LastName:   u.LastName,
+			Email:      u.Email,
+			Role:       string(u.Role),
+			UserTeam:   userTeams,
+			UserSector: userSectors,
+		})
+	}
+
+	return c.JSON(http.StatusOK, out)
 }

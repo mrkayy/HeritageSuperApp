@@ -731,3 +731,10 @@ func (r *Repository) DeleteKid(ctx context.Context, parentMemberID, childMemberI
 
 	return tx.Commit()
 }
+
+func (r *Repository) ListUsers(ctx context.Context) ([]*ent.User, error) {
+	return r.db.User.Query().
+		WithTeam().
+		WithSector().
+		All(ctx)
+}

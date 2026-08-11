@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/hofchurchng/church-backend/internal/contracts"
+	"github.com/hofchurchng/church-backend/internal/ent"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -240,4 +241,8 @@ func (s *Service) DeleteKid(ctx context.Context, email string, kidID string) err
 		return err
 	}
 	return s.repo.DeleteKid(ctx, parent.ID, kidUUID)
+}
+
+func (s *Service) ListUsers(ctx context.Context) ([]*ent.User, error) {
+	return s.repo.ListUsers(ctx)
 }
