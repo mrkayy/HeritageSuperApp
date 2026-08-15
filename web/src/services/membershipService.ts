@@ -71,11 +71,25 @@ export class MembershipService {
     return data || {};
   }
 
+  static async fetchGuardianRelationships(memberId: string): Promise<any[]> {
+    const { data } = await api.get(`/members/${memberId}/relationships`);
+    return data || [];
+  }
+
+  static async addGuardianRelationship(payload: { child_member_id: string; guardian_member_id: string; relationship: string }): Promise<void> {
+    await api.post(`/members/relationships`, payload);
+  }
+
+  static async deleteGuardianRelationship(relId: string): Promise<void> {
+    await api.delete(`/members/relationships/${relId}`);
+  }
+
   static async fetchMembersPaginated(
     page: number,
     limit: number,
     search: string,
-    stage: string
+    stage: string,
+    teamId?: string
   ): Promise<{
     members: Member[];
     total: number;
@@ -84,7 +98,7 @@ export class MembershipService {
     totalPages: number;
   }> {
     const { data } = await api.get('/members', {
-      params: { page, limit, search, stage },
+      params: { page, limit, search, stage, teamId },
     });
     return data;
   }

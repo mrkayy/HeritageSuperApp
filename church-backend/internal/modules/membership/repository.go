@@ -54,13 +54,20 @@ func (r *Repository) Get(ctx context.Context, id string) (contracts.Member, erro
 	return mapEntMemberToContract(m, role), nil
 }
 
-func (r *Repository) List(ctx context.Context) ([]contracts.Member, error) {
-	members, err := r.db.Member.Query().
+func (r *Repository) List(ctx context.Context, teamID string) ([]contracts.Member, error) {
+	q := r.db.Member.Query().
 		Order(ent.Asc(member.FieldFirstName), ent.Asc(member.FieldSurname)).
 		WithLocalChurch().
 		WithSector().
-		WithTeam().
-		All(ctx)
+		WithTeam()
+
+	if teamID != "" {
+		if tid, err := uuid.Parse(teamID); err == nil {
+			q = q.Where(member.TeamIDEQ(tid))
+		}
+	}
+
+	members, err := q.All(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -106,7 +113,7 @@ func (r *Repository) GetStageCounts(ctx context.Context) (map[string]int, error)
 	return out, nil
 }
 
-func (r *Repository) ListPaginated(ctx context.Context, page, limit int, search, stage string) ([]contracts.Member, int, error) {
+func (r *Repository) ListPaginated(ctx context.Context, page, limit int, search, stage, teamID string) ([]contracts.Member, int, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -130,6 +137,12 @@ func (r *Repository) ListPaginated(ctx context.Context, page, limit int, search,
 				member.PhoneNumberContainsFold(search),
 			),
 		)
+	}
+
+	if teamID != "" {
+		if tid, err := uuid.Parse(teamID); err == nil {
+			q = q.Where(member.TeamIDEQ(tid))
+		}
 	}
 
 	total, err := q.Count(ctx)
@@ -900,4 +913,91 @@ func (r *Repository) Update(ctx context.Context, id string, in AddMemberInput) (
 	}
 
 	return r.Get(ctx, m.ID.String())
+}
+
+type GuardianRelationshipInput struct {
+	ChildMemberID    string `json:"child_member_id"`
+	GuardianMemberID string `json:"guardian_member_id"`
+	Relationship     string `json:"relationship"`
+}
+
+type GuardianRelationshipDTO struct {
+	ID               string `json:"id"`
+	ChildMemberID    string `json:"child_member_id"`
+	GuardianMemberID string `json:"guardian_member_id"`
+	Relationship     string `json:"relationship"`
+	ChildName        string `json:"child_name,omitempty"`
+	GuardianName     string `json:"guardian_name,omitempty"`
+	CreatedAt        string `json:"created_at"`
+}
+
+func (r *Repository) AddGuardianRelationship(ctx context.Context, in GuardianRelationshipInput) error {
+	childID, err := uuid.Parse(in.ChildMemberID)
+	if err != nil {
+		return err
+	}
+	guardianID, err := uuid.Parse(in.GuardianMemberID)
+	if err != nil {
+		return err
+	}
+
+	_, err = r.db.GuardianRelationship.Create().
+		SetChildMemberID(childID).
+		SetGuardianMemberID(guardianID).
+		SetRelationship(guardianrelationship.Relationship(in.Relationship)).
+		Save(ctx)
+	return err
+}
+
+func (r *Repository) GetGuardianRelationshipsForMember(ctx context.Context, memberID string) ([]GuardianRelationshipDTO, error) {
+	mID, err := uuid.Parse(memberID)
+	if err != nil {
+		return nil, err
+	}
+
+	rels, err := r.db.GuardianRelationship.Query().
+		Where(
+			guardianrelationship.Or(
+				guardianrelationship.ChildMemberIDEQ(mID),
+				guardianrelationship.GuardianMemberIDEQ(mID),
+			),
+		).
+		WithChild().
+		WithGuardian().
+		All(ctx)
+
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]GuardianRelationshipDTO, len(rels))
+	for i, rel := range rels {
+		childName := ""
+		if rel.Edges.Child != nil {
+			childName = rel.Edges.Child.FirstName + " " + rel.Edges.Child.Surname
+		}
+		guardianName := ""
+		if rel.Edges.Guardian != nil {
+			guardianName = rel.Edges.Guardian.FirstName + " " + rel.Edges.Guardian.Surname
+		}
+
+		out[i] = GuardianRelationshipDTO{
+			ID:               rel.ID.String(),
+			ChildMemberID:    rel.ChildMemberID.String(),
+			GuardianMemberID: rel.GuardianMemberID.String(),
+			Relationship:     string(rel.Relationship),
+			ChildName:        childName,
+			GuardianName:     guardianName,
+			CreatedAt:        rel.CreatedAt.Format(time.RFC3339),
+		}
+	}
+	return out, nil
+}
+
+func (r *Repository) DeleteGuardianRelationship(ctx context.Context, relID string) error {
+	rID, err := uuid.Parse(relID)
+	if err != nil {
+		return err
+	}
+	return r.db.GuardianRelationship.DeleteOneID(rID).Exec(ctx)
 }

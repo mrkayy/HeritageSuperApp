@@ -23,8 +23,8 @@ func (s *Service) GetMember(ctx context.Context, id string) (contracts.Member, e
 	return s.repo.Get(ctx, id)
 }
 
-func (s *Service) ListMembers(ctx context.Context) ([]contracts.Member, error) {
-	return s.repo.List(ctx)
+func (s *Service) ListMembers(ctx context.Context, teamID string) ([]contracts.Member, error) {
+	return s.repo.List(ctx, teamID)
 }
 
 func (s *Service) AddMember(ctx context.Context, in AddMemberInput) (contracts.Member, error) {
@@ -46,7 +46,7 @@ func (s *Service) UpdateMember(ctx context.Context, id string, in AddMemberInput
 	if !contracts.IsValidRole(in.Role) {
 		return contracts.Member{}, fmt.Errorf("invalid role: %s", in.Role)
 	}
-	
+
 	return s.repo.Update(ctx, id, in)
 }
 
@@ -76,10 +76,22 @@ func (s *Service) ProfileMember(ctx context.Context, in ProfileMemberInput) (con
 	return s.repo.ProfileNewMember(ctx, in)
 }
 
-func (s *Service) ListMembersPaginated(ctx context.Context, page, limit int, search, stage string) ([]contracts.Member, int, error) {
-	return s.repo.ListPaginated(ctx, page, limit, search, stage)
+func (s *Service) ListMembersPaginated(ctx context.Context, page, limit int, search, stage, teamID string) ([]contracts.Member, int, error) {
+	return s.repo.ListPaginated(ctx, page, limit, search, stage, teamID)
 }
 
 func (s *Service) GetStageCounts(ctx context.Context) (map[string]int, error) {
 	return s.repo.GetStageCounts(ctx)
+}
+
+func (s *Service) AddGuardianRelationship(ctx context.Context, in GuardianRelationshipInput) error {
+	return s.repo.AddGuardianRelationship(ctx, in)
+}
+
+func (s *Service) GetGuardianRelationships(ctx context.Context, memberID string) ([]GuardianRelationshipDTO, error) {
+	return s.repo.GetGuardianRelationshipsForMember(ctx, memberID)
+}
+
+func (s *Service) DeleteGuardianRelationship(ctx context.Context, relID string) error {
+	return s.repo.DeleteGuardianRelationship(ctx, relID)
 }

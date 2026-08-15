@@ -29,6 +29,11 @@ func (h *Handler) Register(g *echo.Group) {
 	g.POST("/bulk-profile-json", h.bulkProfileJSON)
 	g.PUT("/:id", h.update)
 	g.DELETE("/:id", h.delete)
+
+	// Guardian Relationships
+	g.GET("/:id/relationships", h.getGuardianRelationships)
+	g.POST("/relationships", h.addGuardianRelationship)
+	g.DELETE("/relationships/:rel_id", h.deleteGuardianRelationship)
 }
 
 func (h *Handler) list(c echo.Context) error {
@@ -38,6 +43,7 @@ func (h *Handler) list(c echo.Context) error {
 		limit, _ := strconv.Atoi(c.QueryParam("limit"))
 		search := c.QueryParam("search")
 		stage := c.QueryParam("stage")
+		teamID := c.QueryParam("teamId")
 
 		if page < 1 {
 			page = 1
@@ -46,7 +52,7 @@ func (h *Handler) list(c echo.Context) error {
 			limit = 50
 		}
 
-		members, total, err := h.svc.ListMembersPaginated(c.Request().Context(), page, limit, search, stage)
+		members, total, err := h.svc.ListMembersPaginated(c.Request().Context(), page, limit, search, stage, teamID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
@@ -62,7 +68,8 @@ func (h *Handler) list(c echo.Context) error {
 		})
 	}
 
-	members, err := h.svc.ListMembers(c.Request().Context())
+	teamID := c.QueryParam("teamId")
+	members, err := h.svc.ListMembers(c.Request().Context(), teamID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -89,6 +96,7 @@ func (h *Handler) get(c echo.Context) error {
 type createPayload struct {
 	FirstName               string  `json:"firstName"`
 	Surname                 string  `json:"surname"`
+	Role                    *string `json:"role"`
 	Email                   *string `json:"email"`
 	PhoneNumber             *string `json:"phoneNumber"`
 	HomeAddress             *string `json:"homeAddress"`
@@ -121,9 +129,15 @@ func (h *Handler) add(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "firstName and surname are required")
 	}
 
+	role := ""
+	if p.Role != nil {
+		role = *p.Role
+	}
+
 	member, err := h.svc.AddMember(c.Request().Context(), AddMemberInput{
 		FirstName:               p.FirstName,
 		Surname:                 p.Surname,
+		Role:                    role,
 		Email:                   p.Email,
 		PhoneNumber:             p.PhoneNumber,
 		HomeAddress:             p.HomeAddress,
@@ -162,9 +176,15 @@ func (h *Handler) update(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "firstName and surname are required")
 	}
 
+	role := ""
+	if p.Role != nil {
+		role = *p.Role
+	}
+
 	member, err := h.svc.UpdateMember(c.Request().Context(), id, AddMemberInput{
 		FirstName:               p.FirstName,
 		Surname:                 p.Surname,
+		Role:                    role,
 		Email:                   p.Email,
 		PhoneNumber:             p.PhoneNumber,
 		HomeAddress:             p.HomeAddress,
@@ -197,6 +217,34 @@ func (h *Handler) delete(c echo.Context) error {
 	id := c.Param("id")
 	err := h.svc.DeleteMember(c.Request().Context(), id)
 	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	return c.NoContent(http.StatusNoContent)
+}
+
+func (h *Handler) getGuardianRelationships(c echo.Context) error {
+	memberID := c.Param("id")
+	rels, err := h.svc.GetGuardianRelationships(c.Request().Context(), memberID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	return c.JSON(http.StatusOK, rels)
+}
+
+func (h *Handler) addGuardianRelationship(c echo.Context) error {
+	var in GuardianRelationshipInput
+	if err := c.Bind(&in); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+	if err := h.svc.AddGuardianRelationship(c.Request().Context(), in); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	return c.NoContent(http.StatusCreated)
+}
+
+func (h *Handler) deleteGuardianRelationship(c echo.Context) error {
+	relID := c.Param("rel_id")
+	if err := h.svc.DeleteGuardianRelationship(c.Request().Context(), relID); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 	return c.NoContent(http.StatusNoContent)

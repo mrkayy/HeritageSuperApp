@@ -19,7 +19,8 @@ import {
   UserPlus,
   LucidePhoneCall,
   FolderEdit,
-  LucideSettings
+  LucideSettings,
+  ChevronDown
 } from 'lucide-react';
 import {
   Sidebar,
@@ -34,6 +35,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
@@ -186,111 +188,138 @@ export function AppSidebar() {
         </SidebarGroup>
 
         {(user?.role === 'church_admin' || user?.role === 'super_admin') && (
-          <SidebarGroup>
-            <SidebarGroupLabel className={isCollapsed ? "sr-only" : ""}>Administration</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {adminItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild isActive={location.pathname === item.url}>
-                      <Link to={item.url} className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
-                        <item.icon className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
-                        {!isCollapsed && <span className="text-xs md:text-sm lg:text-base">{item.title}</span>}
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+          <Collapsible defaultOpen className="group/collapsible">
+            <SidebarGroup>
+              <SidebarGroupLabel asChild className={isCollapsed ? "sr-only" : "cursor-pointer"}>
+                <CollapsibleTrigger className="flex items-center w-full">
+                  <span>Administration</span>
+                  <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                </CollapsibleTrigger>
+              </SidebarGroupLabel>
+              <CollapsibleContent>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {adminItems.map((item) => (
+                      <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton asChild isActive={location.pathname === item.url}>
+                          <Link to={item.url} className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
+                            <item.icon className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
+                            {!isCollapsed && <span className="text-xs md:text-sm lg:text-base">{item.title}</span>}
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </SidebarGroup>
+          </Collapsible>
         )}
 
         {/* Membership Team Capabilities (Visible to Church Admin, Resident Pastor, Super Admin, or Membership Team Leads) */}
         {(['super_admin', 'church_admin', 'resident_pastor'].includes(user?.role || '') ||
           (user?.role === 'team_lead' && user?.teamName?.toLowerCase().includes('membership'))) && (
-          <SidebarGroup>
-            <SidebarGroupLabel className={isCollapsed ? "sr-only" : ""}>Membership Team</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={location.pathname === "/teams/membership"}>
-                    <Link to="/teams/membership" className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
-                      <Home className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
-                      {!isCollapsed && <span className="text-xs md:text-sm lg:text-base">Dashboard</span>}
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={location.pathname === "/teams/membership/members"}>
-                    <Link to="/teams/membership/members" className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
-                      <Users2 className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
-                      {!isCollapsed && <span className="text-xs md:text-sm lg:text-base">Members CRM</span>}
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={location.pathname === "/teams/membership/birthdays"}>
-                    <Link to="/teams/membership/birthdays" className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
-                      <Cake className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
-                      {!isCollapsed && <span className="text-xs md:text-sm lg:text-base">Birthday Tracker</span>}
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={location.pathname === "/teams/membership/anniversaries"}>
-                    <Link to="/teams/membership/anniversaries" className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
-                      <Heart className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
-                      {!isCollapsed && <span className="text-xs md:text-sm lg:text-base">Anniversary Tracker</span>}
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={location.pathname === "/teams/membership/journey"}>
-                    <Link to="/teams/membership/journey" className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
-                      <Trophy className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
-                      {!isCollapsed && <span className="text-xs md:text-sm lg:text-base">Member Journey</span>}
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+          <Collapsible defaultOpen className="group/collapsible">
+            <SidebarGroup>
+              <SidebarGroupLabel asChild className={isCollapsed ? "sr-only" : "cursor-pointer"}>
+                <CollapsibleTrigger className="flex items-center w-full">
+                  <span>Membership Team</span>
+                  <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                </CollapsibleTrigger>
+              </SidebarGroupLabel>
+              <CollapsibleContent>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton asChild isActive={location.pathname === "/teams/membership"}>
+                        <Link to="/teams/membership" className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
+                          <Home className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
+                          {!isCollapsed && <span className="text-xs md:text-sm lg:text-base">Dashboard</span>}
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton asChild isActive={location.pathname === "/teams/membership/members"}>
+                        <Link to="/teams/membership/members" className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
+                          <Users2 className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
+                          {!isCollapsed && <span className="text-xs md:text-sm lg:text-base">Members CRM</span>}
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton asChild isActive={location.pathname === "/teams/membership/birthdays"}>
+                        <Link to="/teams/membership/birthdays" className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
+                          <Cake className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
+                          {!isCollapsed && <span className="text-xs md:text-sm lg:text-base">Birthday Tracker</span>}
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton asChild isActive={location.pathname === "/teams/membership/anniversaries"}>
+                        <Link to="/teams/membership/anniversaries" className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
+                          <Heart className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
+                          {!isCollapsed && <span className="text-xs md:text-sm lg:text-base">Anniversary Tracker</span>}
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton asChild isActive={location.pathname === "/teams/membership/journey"}>
+                        <Link to="/teams/membership/journey" className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
+                          <Trophy className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
+                          {!isCollapsed && <span className="text-xs md:text-sm lg:text-base">Member Journey</span>}
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </SidebarGroup>
+          </Collapsible>
         )}
 
         {/* Information Center Capabilities (Visible to Church Admin, Resident Pastor, Super Admin, or Info Center Team Leads) */}
         {(['super_admin', 'church_admin', 'resident_pastor'].includes(user?.role || '') ||
           (user?.role === 'team_lead' && user?.teamName?.toLowerCase().includes('information'))) && (
-          <SidebarGroup>
-            <SidebarGroupLabel className={isCollapsed ? "sr-only" : ""}>Information Center</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={location.pathname === "/teams/info-center"}>
-                    <Link to="/teams/info-center" className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
-                      <Home className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
-                      {!isCollapsed && <span className="text-xs md:text-sm lg:text-base">Dashboard</span>}
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={location.pathname === "/teams/info-center/members"}>
-                    <Link to="/teams/info-center/members" className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
-                      <Users2 className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
-                      {!isCollapsed && <span className="text-xs md:text-sm lg:text-base">Member Directory</span>}
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={location.pathname === "/teams/info-center/journey"}>
-                    <Link to="/teams/info-center/journey" className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
-                      <Trophy className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
-                      {!isCollapsed && <span className="text-xs md:text-sm lg:text-base">Member Journey</span>}
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+          <Collapsible defaultOpen className="group/collapsible">
+            <SidebarGroup>
+              <SidebarGroupLabel asChild className={isCollapsed ? "sr-only" : "cursor-pointer"}>
+                <CollapsibleTrigger className="flex items-center w-full">
+                  <span>Information Center</span>
+                  <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                </CollapsibleTrigger>
+              </SidebarGroupLabel>
+              <CollapsibleContent>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton asChild isActive={location.pathname === "/teams/info-center"}>
+                        <Link to="/teams/info-center" className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
+                          <Home className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
+                          {!isCollapsed && <span className="text-xs md:text-sm lg:text-base">Dashboard</span>}
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton asChild isActive={location.pathname === "/teams/info-center/members"}>
+                        <Link to="/teams/info-center/members" className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
+                          <Users2 className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
+                          {!isCollapsed && <span className="text-xs md:text-sm lg:text-base">Member Directory</span>}
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton asChild isActive={location.pathname === "/teams/info-center/journey"}>
+                        <Link to="/teams/info-center/journey" className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
+                          <Trophy className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
+                          {!isCollapsed && <span className="text-xs md:text-sm lg:text-base">Member Journey</span>}
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </SidebarGroup>
+          </Collapsible>
         )}
 
         {user?.role === 'super_admin' && superAdminItems.length > 0 && (

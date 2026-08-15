@@ -181,7 +181,7 @@ export default function MemberJourney() {
 
       {/* Stage Members Modal (Dialog) */}
       <Dialog open={stageModalOpen} onOpenChange={setStageModalOpen}>
-        <DialogContent className="max-w-xl max-h-[85vh] flex flex-col p-6">
+        <DialogContent className="max-w-xl max-h-[85vh] overflow-y-auto flex flex-col p-6">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Users className="w-5 h-5 text-primary" />

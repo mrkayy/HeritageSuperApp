@@ -35,7 +35,7 @@ const MEMBERSHIP_STAGES = [
   { value: 'sunday_school_module_3', label: 'Sunday School 3' },
   { value: 'membership_class', label: 'Membership Class' },
   { value: 'stewardship', label: 'Stewardship' },
-  { value: 'mit', label: 'MIT' },
+  { value: 'mit', label: 'Minister In Traning' },
   { value: 'resident_pastor', label: 'Resident Pastor' },
 ];
 

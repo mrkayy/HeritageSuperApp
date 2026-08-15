@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { MembershipService, Member, SaveMemberPayload } from '@/services/membershipService';
+import { useAuth } from '@/contexts/AuthContext';
 import { AdminBackOfficeServices } from '@/services/AdminBackOfficeServices';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -71,6 +72,7 @@ const formatMonthName = (monthNum?: number) => {
 };
 
 export default function MembershipTeamCRM() {
+  const { user } = useAuth();
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -107,7 +109,7 @@ export default function MembershipTeamCRM() {
   const loadMembers = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await MembershipService.fetchMembers();
+      const data = await MembershipService.fetchMembers(user?.teamId);
       setMembers(data);
     } catch (err) {
       console.error(err);

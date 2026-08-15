@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { MembershipService, Member, SaveMemberPayload } from '@/services/membershipService';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import CsvPreviewModal from '@/components/layout/CsvPreviewModal';
+import GuardianRelationshipModal from '@/components/members/GuardianRelationshipModal';
 import { 
   Users, 
   Search, 
@@ -50,6 +52,7 @@ const USER_ROLES = [
 ];
 
 export default function InfoCenterMembers() {
+  const { user } = useAuth();
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -61,6 +64,9 @@ export default function InfoCenterMembers() {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [saving, setSaving] = useState(false);
+
+  const [guardianModalOpen, setGuardianModalOpen] = useState(false);
+  const [guardianMember, setGuardianMember] = useState<Member | null>(null);
 
   // CSV Upload State
   const [csvModalOpen, setCsvModalOpen] = useState(false);
@@ -81,7 +87,7 @@ export default function InfoCenterMembers() {
   const loadMembers = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await MembershipService.fetchMembers();
+      const data = await MembershipService.fetchMembers(user?.teamId);
       setMembers(data);
     } catch (err) {
       console.error(err);
@@ -341,6 +347,19 @@ export default function InfoCenterMembers() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button variant="ghost" size="sm" onClick={() => {
+                                  setGuardianMember(m);
+                                  setGuardianModalOpen(true);
+                                }}>
+                                  <Users className="w-4 h-4 text-blue-500" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Manage Family/Guardians</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                           <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleOpenEdit(m)}>
                             <Pencil className="w-4 h-4 text-muted-foreground hover:text-foreground" />
                           </Button>
@@ -468,9 +487,16 @@ export default function InfoCenterMembers() {
 
       {/* CSV Bulk Profiling Modal */}
       <CsvPreviewModal 
-        open={csvModalOpen} 
-        onOpenChange={setCsvModalOpen} 
-        onSuccess={loadMembers} 
+        open={csvModalOpen}
+        onOpenChange={setCsvModalOpen}
+        onSuccess={loadMembers}
+      />
+
+      <GuardianRelationshipModal
+        open={guardianModalOpen}
+        onOpenChange={setGuardianModalOpen}
+        member={guardianMember}
+        allMembers={members}
       />
     </div>
   );
