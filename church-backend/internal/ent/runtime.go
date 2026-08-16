@@ -9,6 +9,7 @@ import (
 	"github.com/hofchurchng/church-backend/internal/ent/churchevent"
 	"github.com/hofchurchng/church-backend/internal/ent/churchteams"
 	"github.com/hofchurchng/church-backend/internal/ent/districts"
+	"github.com/hofchurchng/church-backend/internal/ent/featureflag"
 	"github.com/hofchurchng/church-backend/internal/ent/followup"
 	"github.com/hofchurchng/church-backend/internal/ent/guardianrelationship"
 	"github.com/hofchurchng/church-backend/internal/ent/kidsministryprofile"
@@ -71,6 +72,38 @@ func init() {
 	districtsDescID := districtsFields[0].Descriptor()
 	// districts.DefaultID holds the default value on creation for the id field.
 	districts.DefaultID = districtsDescID.Default.(func() uuid.UUID)
+	featureflagFields := schema.FeatureFlag{}.Fields()
+	_ = featureflagFields
+	// featureflagDescKey is the schema descriptor for key field.
+	featureflagDescKey := featureflagFields[1].Descriptor()
+	// featureflag.KeyValidator is a validator for the "key" field. It is called by the builders before save.
+	featureflag.KeyValidator = featureflagDescKey.Validators[0].(func(string) error)
+	// featureflagDescName is the schema descriptor for name field.
+	featureflagDescName := featureflagFields[2].Descriptor()
+	// featureflag.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	featureflag.NameValidator = featureflagDescName.Validators[0].(func(string) error)
+	// featureflagDescCategory is the schema descriptor for category field.
+	featureflagDescCategory := featureflagFields[4].Descriptor()
+	// featureflag.DefaultCategory holds the default value on creation for the category field.
+	featureflag.DefaultCategory = featureflagDescCategory.Default.(string)
+	// featureflagDescIsEnabled is the schema descriptor for is_enabled field.
+	featureflagDescIsEnabled := featureflagFields[5].Descriptor()
+	// featureflag.DefaultIsEnabled holds the default value on creation for the is_enabled field.
+	featureflag.DefaultIsEnabled = featureflagDescIsEnabled.Default.(bool)
+	// featureflagDescCreatedAt is the schema descriptor for created_at field.
+	featureflagDescCreatedAt := featureflagFields[8].Descriptor()
+	// featureflag.DefaultCreatedAt holds the default value on creation for the created_at field.
+	featureflag.DefaultCreatedAt = featureflagDescCreatedAt.Default.(func() time.Time)
+	// featureflagDescUpdatedAt is the schema descriptor for updated_at field.
+	featureflagDescUpdatedAt := featureflagFields[9].Descriptor()
+	// featureflag.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	featureflag.DefaultUpdatedAt = featureflagDescUpdatedAt.Default.(func() time.Time)
+	// featureflag.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	featureflag.UpdateDefaultUpdatedAt = featureflagDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// featureflagDescID is the schema descriptor for id field.
+	featureflagDescID := featureflagFields[0].Descriptor()
+	// featureflag.DefaultID holds the default value on creation for the id field.
+	featureflag.DefaultID = featureflagDescID.Default.(func() uuid.UUID)
 	followupFields := schema.FollowUp{}.Fields()
 	_ = followupFields
 	// followupDescCreatedAt is the schema descriptor for created_at field.

@@ -10,6 +10,7 @@ import (
 	entsql "entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
 	"github.com/hofchurchng/church-backend/internal/ent"
+	"github.com/hofchurchng/church-backend/internal/ent/featureflag"
 	"github.com/hofchurchng/church-backend/internal/ent/localchurch"
 	"github.com/hofchurchng/church-backend/internal/ent/sector"
 	"github.com/hofchurchng/church-backend/internal/ent/team"
@@ -49,6 +50,12 @@ func Connect(ctx context.Context, url string) (*ent.Client, error) {
 	if err := seedChurchesTeamsSectors(ctx, client); err != nil {
 		client.Close()
 		return nil, fmt.Errorf("seed org tables: %w", err)
+	}
+
+	// Seed default feature flags
+	if err := seedFeatureFlags(ctx, client); err != nil {
+		client.Close()
+		return nil, fmt.Errorf("seed feature flags: %w", err)
 	}
 
 	return client, nil
@@ -213,3 +220,94 @@ func seedChurchesTeamsSectors(ctx context.Context, client *ent.Client) error {
 
 	return nil
 }
+
+func seedFeatureFlags(ctx context.Context, client *ent.Client) error {
+	log.Println("[db] Seeding default feature flags...")
+	defaultFlags := []struct {
+		Key         string
+		Name        string
+		Description string
+		Category    string
+		IsEnabled   bool
+	}{
+		{
+			Key:         "feature_souls",
+			Name:        "Soul Winning & Registration",
+			Description: "Allows members to register converts and soul winning activities",
+			Category:    "main_menu",
+			IsEnabled:   true,
+		},
+		{
+			Key:         "feature_soul_journal",
+			Name:        "Soul Journal",
+			Description: "Personal journal for tracking soul follow-up and discipleship logs",
+			Category:    "main_menu",
+			IsEnabled:   true,
+		},
+		{
+			Key:         "feature_followup",
+			Name:        "Follow-Up Ministry",
+			Description: "Task assignment, outreach follow-ups, and convert check-ins",
+			Category:    "main_menu",
+			IsEnabled:   true,
+		},
+		{
+			Key:         "feature_transport",
+			Name:        "Transport Coordination",
+			Description: "Bus routing, bus stops, and Sunday transport requests",
+			Category:    "main_menu",
+			IsEnabled:   true,
+		},
+		{
+			Key:         "feature_leaderboard",
+			Name:        "Ministry Leaderboard",
+			Description: "Evangelism and soul-winning team rankings and metrics",
+			Category:    "main_menu",
+			IsEnabled:   true,
+		},
+		{
+			Key:         "feature_admin_panel",
+			Name:        "Church Administration Panel",
+			Description: "Church admin oversight tools, user management, and stats",
+			Category:    "admin",
+			IsEnabled:   true,
+		},
+		{
+			Key:         "feature_membership_team",
+			Name:        "Membership Team Module",
+			Description: "Complete member onboarding, stages journey, birthdays, and anniversaries CRM",
+			Category:    "teams",
+			IsEnabled:   true,
+		},
+		{
+			Key:         "feature_info_center",
+			Name:        "Information Center Module",
+			Description: "First-time visitor registration, member directory, and guardian matching",
+			Category:    "teams",
+			IsEnabled:   true,
+		},
+	}
+
+	for _, f := range defaultFlags {
+		exists, err := client.FeatureFlag.Query().Where(featureflag.KeyEQ(f.Key)).Exist(ctx)
+		if err != nil {
+			return err
+		}
+		if !exists {
+			_, err = client.FeatureFlag.Create().
+				SetKey(f.Key).
+				SetName(f.Name).
+				SetDescription(f.Description).
+				SetCategory(f.Category).
+				SetIsEnabled(f.IsEnabled).
+				Save(ctx)
+			if err != nil {
+				return err
+			}
+			log.Printf("[db] Seeded feature flag: %s (%s)", f.Name, f.Key)
+		}
+	}
+
+	return nil
+}
+

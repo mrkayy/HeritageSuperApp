@@ -15,6 +15,9 @@ type ChurchTeams func(*sql.Selector)
 // Districts is the predicate function for districts builders.
 type Districts func(*sql.Selector)
 
+// FeatureFlag is the predicate function for featureflag builders.
+type FeatureFlag func(*sql.Selector)
+
 // FollowUp is the predicate function for followup builders.
 type FollowUp func(*sql.Selector)
 

@@ -7,6 +7,7 @@ package contracts
 type Role string
 
 const (
+	RoleSuperAdmin     Role = "super_admin"
 	RoleChurchAdmin    Role = "church_admin"
 	RoleTeamLead       Role = "team_lead"
 	RoleResidentPastor Role = "resident_pastor"
@@ -19,6 +20,7 @@ const (
 // AllRoles is the canonical list, used for validation (e.g. when an
 // admin assigns a role) and for rendering role pickers on the frontend.
 var AllRoles = []Role{
+	RoleSuperAdmin,
 	RoleChurchAdmin,
 	RoleTeamLead,
 	RoleResidentPastor,

@@ -18,6 +18,8 @@ type Tx struct {
 	ChurchTeams *ChurchTeamsClient
 	// Districts is the client for interacting with the Districts builders.
 	Districts *DistrictsClient
+	// FeatureFlag is the client for interacting with the FeatureFlag builders.
+	FeatureFlag *FeatureFlagClient
 	// FollowUp is the client for interacting with the FollowUp builders.
 	FollowUp *FollowUpClient
 	// GuardianRelationship is the client for interacting with the GuardianRelationship builders.
@@ -190,6 +192,7 @@ func (tx *Tx) init() {
 	tx.ChurchEvent = NewChurchEventClient(tx.config)
 	tx.ChurchTeams = NewChurchTeamsClient(tx.config)
 	tx.Districts = NewDistrictsClient(tx.config)
+	tx.FeatureFlag = NewFeatureFlagClient(tx.config)
 	tx.FollowUp = NewFollowUpClient(tx.config)
 	tx.GuardianRelationship = NewGuardianRelationshipClient(tx.config)
 	tx.KidsMinistryProfile = NewKidsMinistryProfileClient(tx.config)

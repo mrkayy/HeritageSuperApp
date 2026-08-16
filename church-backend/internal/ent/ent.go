@@ -15,6 +15,7 @@ import (
 	"github.com/hofchurchng/church-backend/internal/ent/churchevent"
 	"github.com/hofchurchng/church-backend/internal/ent/churchteams"
 	"github.com/hofchurchng/church-backend/internal/ent/districts"
+	"github.com/hofchurchng/church-backend/internal/ent/featureflag"
 	"github.com/hofchurchng/church-backend/internal/ent/followup"
 	"github.com/hofchurchng/church-backend/internal/ent/guardianrelationship"
 	"github.com/hofchurchng/church-backend/internal/ent/kidsministryprofile"
@@ -97,6 +98,7 @@ func checkColumn(t, c string) error {
 			churchevent.Table:            churchevent.ValidColumn,
 			churchteams.Table:            churchteams.ValidColumn,
 			districts.Table:              districts.ValidColumn,
+			featureflag.Table:            featureflag.ValidColumn,
 			followup.Table:               followup.ValidColumn,
 			guardianrelationship.Table:   guardianrelationship.ValidColumn,
 			kidsministryprofile.Table:    kidsministryprofile.ValidColumn,

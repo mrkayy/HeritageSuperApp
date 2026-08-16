@@ -14,6 +14,7 @@ import (
 	"github.com/hofchurchng/church-backend/internal/contracts"
 	"github.com/hofchurchng/church-backend/internal/modules/auth"
 	"github.com/hofchurchng/church-backend/internal/modules/dashboard"
+	"github.com/hofchurchng/church-backend/internal/modules/featureflags"
 	"github.com/hofchurchng/church-backend/internal/modules/followup"
 	"github.com/hofchurchng/church-backend/internal/modules/membership"
 	"github.com/hofchurchng/church-backend/internal/modules/profile"
@@ -87,6 +88,11 @@ func main() {
 	transportSvc := transport.NewService(transportRepo, soulsSvc)
 	transportHandler := transport.NewHandler(transportSvc)
 
+	// Feature Flags module handles system feature gates and permissions
+	featureflagsRepo := featureflags.NewRepository(client)
+	featureflagsSvc := featureflags.NewService(featureflagsRepo)
+	featureflagsHandler := featureflags.NewHandler(featureflagsSvc)
+
 	// Dashboard module handles admin dashboard aggregations
 	dashboardHandler := dashboard.NewHandler(client)
 
@@ -130,14 +136,19 @@ func main() {
 	authHandler.RegisterPublic(authGroup)
 	authHandler.RegisterProtected(authGroup.Group("", requireAuth))
 
-	// Protected module routes
+	// Feature Flags routes (authenticated users can read, super_admins can toggle)
+	featureFlagsGroup := api.Group("/feature-flags", requireAuth)
+	featureflagsHandler.Register(featureFlagsGroup)
+
+	// Protected module routes with feature flag guards
 	requireAdminOrPastorOrLead := middleware.RequireAnyRole(
 		string(contracts.RoleTeamLead),
 		string(contracts.RoleResidentPastor),
 		string(contracts.RoleChurchAdmin),
+		string(contracts.RoleSuperAdmin),
 	)
 
-	membersGroup := api.Group("/members", requireAuth, requireAdminOrPastorOrLead)
+	membersGroup := api.Group("/members", requireAuth, requireAdminOrPastorOrLead, middleware.RequireFeature(featureflagsSvc, "feature_membership_team"))
 	membershipHandler.Register(membersGroup)
 
 	teamsGroup := api.Group("/teams", requireAuth)
@@ -155,13 +166,13 @@ func main() {
 	usersGroup := api.Group("/users", requireAuth)
 	profileHandler.RegisterUsers(usersGroup)
 
-	soulsGroup := api.Group("/souls", requireAuth)
+	soulsGroup := api.Group("/souls", requireAuth, middleware.RequireFeature(featureflagsSvc, "feature_souls"))
 	soulsHandler.Register(soulsGroup)
 
-	followupGroup := api.Group("/follow-up", requireAuth)
+	followupGroup := api.Group("/follow-up", requireAuth, middleware.RequireFeature(featureflagsSvc, "feature_followup"))
 	followupHandler.Register(followupGroup)
 
-	transportGroup := api.Group("/transportation", requireAuth)
+	transportGroup := api.Group("/transportation", requireAuth, middleware.RequireFeature(featureflagsSvc, "feature_transport"))
 	transportHandler.Register(transportGroup)
 
 	dashboardGroup := api.Group("/dashboard", requireAuth)

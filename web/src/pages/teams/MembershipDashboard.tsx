@@ -19,6 +19,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const STAGES = [
   { key: 'first_time_guest', label: 'First Time Guest' },
@@ -28,8 +29,6 @@ const STAGES = [
   { key: 'sunday_school_module_3', label: 'Sunday School 3' },
   { key: 'membership_class', label: 'Membership Class' },
   { key: 'stewardship', label: 'Stewardship' },
-  { key: 'mit', label: 'MIT' },
-  { key: 'resident_pastor', label: 'Resident Pastor' },
 ];
 
 const MONTH_NAMES = [
@@ -88,6 +87,48 @@ export default function MembershipDashboard() {
   const newMembersThisMonth = members.filter(m => {
     if (!m.createdAt) return false;
     return new Date(m.createdAt) >= thirtyDaysAgo;
+  });
+
+  // Stage Chart Data (Current vs Previous Month)
+  const now = new Date();
+  const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const startOfPreviousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+  const stageChartData = STAGES.map(stage => {
+    let currentMonthCount = 0;
+    let previousMonthCount = 0;
+
+    members.forEach(m => {
+      const s = m.currentStage || 'first_time_guest';
+      if (s === stage.key && m.createdAt) {
+        const createdDate = new Date(m.createdAt);
+        if (createdDate >= startOfCurrentMonth) {
+          currentMonthCount++;
+        } else if (createdDate >= startOfPreviousMonth && createdDate < startOfCurrentMonth) {
+          previousMonthCount++;
+        }
+      }
+    });
+
+    let label = stage.label;
+    if (label.includes('Sunday School')) {
+      label = label.replace('Sunday School ', 'SS ');
+    } else if (label === 'Foundation Class') {
+      label = 'Foundation';
+    } else if (label === 'First Time Guest') {
+      label = 'FTG';
+    } else if (label === 'Membership Class') {
+      label = 'Membership';
+    } else if (label === 'Resident Pastor') {
+      label = 'Pastor';
+    }
+
+    return {
+      name: label,
+      "Current Month": currentMonthCount,
+      "Previous Month": previousMonthCount,
+      fullName: stage.label,
+    };
   });
 
   return (
@@ -212,20 +253,29 @@ export default function MembershipDashboard() {
               </Link>
             </Button>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {STAGES.map(stage => {
-              const count = stageCounts[stage.key] || 0;
-              const percentage = members.length > 0 ? Math.round((count / members.length) * 100) : 0;
-              return (
-                <div key={stage.key} className="space-y-1.5">
-                  <div className="flex justify-between text-xs font-medium">
-                    <span className="text-foreground">{stage.label}</span>
-                    <span className="text-muted-foreground">{count} member{count !== 1 ? 's' : ''} ({percentage}%)</span>
-                  </div>
-                  <Progress value={percentage} className="h-2" />
-                </div>
-              );
-            })}
+          <CardContent className="h-[350px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={stageChartData} margin={{ top: 20, right: 30, left: 0, bottom: 25 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis 
+                  dataKey="name" 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fontSize: 11 }} 
+                  angle={-45} 
+                  textAnchor="end" 
+                  interval={0}
+                />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12 }} allowDecimals={false} />
+                <RechartsTooltip 
+                  cursor={{ fill: 'transparent' }} 
+                  contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '13px' }}
+                />
+                <Legend verticalAlign="top" height={36} iconType="circle" />
+                <Bar dataKey="Current Month" fill="#3b82f6" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                <Bar dataKey="Previous Month" fill="#94a3b8" radius={[4, 4, 0, 0]} maxBarSize={40} />
+              </BarChart>
+            </ResponsiveContainer>
           </CardContent>
         </Card>
 

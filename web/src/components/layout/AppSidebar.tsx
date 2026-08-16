@@ -2,6 +2,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useFeatureFlag } from '@/contexts/FeatureFlagContext';
 import {
   Home,
   User,
@@ -39,7 +40,14 @@ import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/component
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-const menuItems = [
+interface MenuItemConfig {
+  title: string;
+  url: string;
+  icon: any;
+  flagKey?: string;
+}
+
+const menuItems: MenuItemConfig[] = [
   {
     title: "Dashboard",
     url: "/",
@@ -49,38 +57,26 @@ const menuItems = [
     title: "Soul",
     url: "/souls/register",
     icon: Heart,
+    flagKey: "feature_souls",
   },
   {
     title: "Soul Journal",
     url: "/souls/journal",
     icon: User,
+    flagKey: "feature_soul_journal",
   },
   {
     title: "Follow-Up",
     url: "/follow-up",
     icon: MessageSquare,
+    flagKey: "feature_followup",
   },
-  /* 
-  // Commented out: No dedicated backend endpoint currently supporting Map View
-  {
-    title: "Map View",
-    url: "/map",
-    icon: MapPin,
-  },
-  */
   {
     title: "Transport",
     url: "/transport",
     icon: Calendar,
+    flagKey: "feature_transport",
   },
-  /*
-  // Commented out: No backend endpoint currently supporting Leaderboard stats
-  {
-    title: "Leaderboard",
-    url: "/leaderboard",
-    icon: Trophy,
-  }
-  */
 ];
 
 const adminItems = [
@@ -147,6 +143,16 @@ export function AppSidebar() {
   const location = useLocation();
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
+  const { isFeatureEnabled } = useFeatureFlag() as { isFeatureEnabled: (key?: string, def?: boolean) => boolean };
+
+  const membershipEnabled = isFeatureEnabled("feature_membership_team", true);
+  const infoCenterEnabled = isFeatureEnabled("feature_info_center", true);
+  const adminPanelEnabled = isFeatureEnabled("feature_admin_panel", true);
+
+  const visibleMenuItems = menuItems.filter(item => {
+    if (!item.flagKey) return true;
+    return isFeatureEnabled(item.flagKey, true);
+  });
 
   return (
     <Sidebar className="border-r glass-card">
@@ -161,35 +167,37 @@ export function AppSidebar() {
           </div>
           {!isCollapsed && (
             <div className="hidden sm:block">
-              <h2 className="font-bold text-sm md:text-base lg:text-lg text-primary">Soul Bank</h2>
-              <p className="text-xs md:text-sm text-muted-foreground">Navigator</p>
+              <h2 className="font-bold text-sm md:text-base lg:text-lg text-primary">Heritage MMC</h2>
+              <p className="text-xs md:text-sm text-muted-foreground">Member Management Console</p>
             </div>
           )}
         </div>
       </SidebarHeader>
 
       <SidebarContent className="px-1 md:px-2 lg:px-4">
-        <SidebarGroup>
-          <SidebarGroupLabel className={isCollapsed ? "sr-only" : ""}>Main Menu</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={location.pathname === item.url}>
-                    <Link to={item.url} className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
-                      <item.icon className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
-                      {!isCollapsed && <span className="text-xs md:text-sm lg:text-base">{item.title}</span>}
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {visibleMenuItems.length > 0 && (
+          <SidebarGroup className="border-[0.75px] border-primary/30 rounded-xl p-1.5 mb-3 bg-card/30">
+            <SidebarGroupLabel className={isCollapsed ? "sr-only" : ""}>Main Menu</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {visibleMenuItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild isActive={location.pathname === item.url}>
+                      <Link to={item.url} className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
+                        <item.icon className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
+                        {!isCollapsed && <span className="text-xs">{item.title}</span>}
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
 
-        {(user?.role === 'church_admin' || user?.role === 'super_admin') && (
+        {adminPanelEnabled && (user?.role === 'church_admin' || user?.role === 'super_admin') && (
           <Collapsible defaultOpen className="group/collapsible">
-            <SidebarGroup>
+            <SidebarGroup className="border-[0.75px] border-primary/30 rounded-xl p-1.5 mb-3 bg-card/30">
               <SidebarGroupLabel asChild className={isCollapsed ? "sr-only" : "cursor-pointer"}>
                 <CollapsibleTrigger className="flex items-center w-full">
                   <span>Administration</span>
@@ -204,7 +212,7 @@ export function AppSidebar() {
                         <SidebarMenuButton asChild isActive={location.pathname === item.url}>
                           <Link to={item.url} className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
                             <item.icon className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
-                            {!isCollapsed && <span className="text-xs md:text-sm lg:text-base">{item.title}</span>}
+                            {!isCollapsed && <span className="text-xs">{item.title}</span>}
                           </Link>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
@@ -217,10 +225,10 @@ export function AppSidebar() {
         )}
 
         {/* Membership Team Capabilities (Visible to Church Admin, Resident Pastor, Super Admin, or Membership Team Leads) */}
-        {(['super_admin', 'church_admin', 'resident_pastor'].includes(user?.role || '') ||
+        {membershipEnabled && (['super_admin', 'church_admin', 'resident_pastor'].includes(user?.role || '') ||
           (user?.role === 'team_lead' && user?.teamName?.toLowerCase().includes('membership'))) && (
           <Collapsible defaultOpen className="group/collapsible">
-            <SidebarGroup>
+            <SidebarGroup className="border-[0.75px] border-primary/30 rounded-xl p-1.5 mb-3 bg-card/30">
               <SidebarGroupLabel asChild className={isCollapsed ? "sr-only" : "cursor-pointer"}>
                 <CollapsibleTrigger className="flex items-center w-full">
                   <span>Membership Team</span>
@@ -234,7 +242,7 @@ export function AppSidebar() {
                       <SidebarMenuButton asChild isActive={location.pathname === "/teams/membership"}>
                         <Link to="/teams/membership" className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
                           <Home className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
-                          {!isCollapsed && <span className="text-xs md:text-sm lg:text-base">Dashboard</span>}
+                          {!isCollapsed && <span className="text-xs">Dashboard</span>}
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -242,7 +250,7 @@ export function AppSidebar() {
                       <SidebarMenuButton asChild isActive={location.pathname === "/teams/membership/members"}>
                         <Link to="/teams/membership/members" className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
                           <Users2 className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
-                          {!isCollapsed && <span className="text-xs md:text-sm lg:text-base">Members CRM</span>}
+                          {!isCollapsed && <span className="text-xs">Members CRM</span>}
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -250,7 +258,7 @@ export function AppSidebar() {
                       <SidebarMenuButton asChild isActive={location.pathname === "/teams/membership/birthdays"}>
                         <Link to="/teams/membership/birthdays" className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
                           <Cake className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
-                          {!isCollapsed && <span className="text-xs md:text-sm lg:text-base">Birthday Tracker</span>}
+                          {!isCollapsed && <span className="text-xs">Birthday Tracker</span>}
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -258,7 +266,7 @@ export function AppSidebar() {
                       <SidebarMenuButton asChild isActive={location.pathname === "/teams/membership/anniversaries"}>
                         <Link to="/teams/membership/anniversaries" className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
                           <Heart className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
-                          {!isCollapsed && <span className="text-xs md:text-sm lg:text-base">Anniversary Tracker</span>}
+                          {!isCollapsed && <span className="text-xs">Anniversary Tracker</span>}
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -266,7 +274,7 @@ export function AppSidebar() {
                       <SidebarMenuButton asChild isActive={location.pathname === "/teams/membership/journey"}>
                         <Link to="/teams/membership/journey" className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
                           <Trophy className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
-                          {!isCollapsed && <span className="text-xs md:text-sm lg:text-base">Member Journey</span>}
+                          {!isCollapsed && <span className="text-xs">Member Journey</span>}
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -278,10 +286,10 @@ export function AppSidebar() {
         )}
 
         {/* Information Center Capabilities (Visible to Church Admin, Resident Pastor, Super Admin, or Info Center Team Leads) */}
-        {(['super_admin', 'church_admin', 'resident_pastor'].includes(user?.role || '') ||
+        {infoCenterEnabled && (['super_admin', 'church_admin', 'resident_pastor'].includes(user?.role || '') ||
           (user?.role === 'team_lead' && user?.teamName?.toLowerCase().includes('information'))) && (
           <Collapsible defaultOpen className="group/collapsible">
-            <SidebarGroup>
+            <SidebarGroup className="border-[0.75px] border-primary/30 rounded-xl p-1.5 mb-3 bg-card/30">
               <SidebarGroupLabel asChild className={isCollapsed ? "sr-only" : "cursor-pointer"}>
                 <CollapsibleTrigger className="flex items-center w-full">
                   <span>Information Center</span>
@@ -295,7 +303,7 @@ export function AppSidebar() {
                       <SidebarMenuButton asChild isActive={location.pathname === "/teams/info-center"}>
                         <Link to="/teams/info-center" className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
                           <Home className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
-                          {!isCollapsed && <span className="text-xs md:text-sm lg:text-base">Dashboard</span>}
+                          {!isCollapsed && <span className="text-xs">Dashboard</span>}
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -303,7 +311,7 @@ export function AppSidebar() {
                       <SidebarMenuButton asChild isActive={location.pathname === "/teams/info-center/members"}>
                         <Link to="/teams/info-center/members" className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
                           <Users2 className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
-                          {!isCollapsed && <span className="text-xs md:text-sm lg:text-base">Member Directory</span>}
+                          {!isCollapsed && <span className="text-xs">Member Directory</span>}
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -311,7 +319,7 @@ export function AppSidebar() {
                       <SidebarMenuButton asChild isActive={location.pathname === "/teams/info-center/journey"}>
                         <Link to="/teams/info-center/journey" className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
                           <Trophy className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
-                          {!isCollapsed && <span className="text-xs md:text-sm lg:text-base">Member Journey</span>}
+                          {!isCollapsed && <span className="text-xs">Member Journey</span>}
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -322,8 +330,8 @@ export function AppSidebar() {
           </Collapsible>
         )}
 
-        {user?.role === 'super_admin' && superAdminItems.length > 0 && (
-          <SidebarGroup>
+        {user?.role === 'super_admin' || user?.role === 'church_admin' && superAdminItems.length > 0 && (
+          <SidebarGroup className="border-[0.75px] border-primary/30 rounded-xl p-1.5 mb-3 bg-card/30">
             <SidebarGroupLabel className={isCollapsed ? "sr-only" : ""}>Super Administration</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
@@ -332,7 +340,7 @@ export function AppSidebar() {
                     <SidebarMenuButton asChild isActive={location.pathname === item.url}>
                       <Link to={item.url} className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
                         <item.icon className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
-                        {!isCollapsed && <span className="text-xs md:text-sm lg:text-base">{item.title}</span>}
+                        {!isCollapsed && <span className="text-xs">{item.title}</span>}
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

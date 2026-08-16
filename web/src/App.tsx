@@ -37,77 +37,154 @@ import MemberJourney from "./pages/teams/MemberJourney";
 import InfoCenterDashboard from "./pages/teams/InfoCenterDashboard";
 import InfoCenterMembers from "./pages/teams/InfoCenterMembers";
 
+import { FeatureFlagProvider } from "./contexts/FeatureFlagContext";
+import FeatureFlagGate from "./components/auth/FeatureFlagGate";
+
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            {/* Public routes */}
-            <Route path="/login" element={
-              <PublicRoute>
-                <Login />
-              </PublicRoute>
-            } />
-            <Route path="/admin-login" element={
-              <PublicRoute>
-                <AdminLogin />
-              </PublicRoute>
-            } />
-            <Route path="/register" element={
-              <PublicRoute>
-                <Register />
-              </PublicRoute>
-            } />
-            <Route path="/public-map" element={<PublicMap />} />
+      <FeatureFlagProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              {/* Public routes */}
+              <Route path="/login" element={
+                <PublicRoute>
+                  <Login />
+                </PublicRoute>
+              } />
+              <Route path="/admin-login" element={
+                <PublicRoute>
+                  <AdminLogin />
+                </PublicRoute>
+              } />
+              <Route path="/register" element={
+                <PublicRoute>
+                  <Register />
+                </PublicRoute>
+              } />
+              <Route path="/public-map" element={<PublicMap />} />
 
-            {/* Protected routes with sidebar layout */}
-            <Route path="/" element={
-              <ProtectedRoute>
-                <SidebarProvider>
-                  <AppLayout />
-                </SidebarProvider>
-              </ProtectedRoute>
-            }>
-              <Route index element={<Dashboard />} />
-              <Route path="dashboard" element={<Dashboard />} />
-              <Route path="souls/register" element={<SoulRegistration />} />
-              <Route path="souls/journal" element={<SoulJournal />} />
-              <Route path="follow-up" element={<FollowUp />} />
-              <Route path="map" element={<MapView />} />
-              <Route path="transport" element={<Transport />} />
-              <Route path="leaderboard" element={<Leaderboard />} />
-              <Route path="admin" element={<Admin />} />
-              <Route path="admin/management" element={<AdminManagement />} />
-              <Route path="admin/member-invites" element={<MemberInvites />} />
-              <Route path="admin/follow-up-management" element={<FollowUpManagement />} />
-              <Route path="admin/member-assignment" element={<MemberAssignment />} />
-              <Route path="super-admin" element={<SuperAdmin />} />
-              <Route path="super-admin/denominations" element={<SuperAdminDenominations />} />
-              <Route path="super-admin/invites" element={<SuperAdminInvites />} />
-              <Route path="super-admin/settings" element={<SuperAdminSettings />} />
+              {/* Protected routes with sidebar layout */}
+              <Route path="/" element={
+                <ProtectedRoute>
+                  <SidebarProvider>
+                    <AppLayout />
+                  </SidebarProvider>
+                </ProtectedRoute>
+              }>
+                <Route index element={<Dashboard />} />
+                <Route path="dashboard" element={<Dashboard />} />
+                <Route path="souls/register" element={
+                  <FeatureFlagGate flagKey="feature_souls">
+                    <SoulRegistration />
+                  </FeatureFlagGate>
+                } />
+                <Route path="souls/journal" element={
+                  <FeatureFlagGate flagKey="feature_soul_journal">
+                    <SoulJournal />
+                  </FeatureFlagGate>
+                } />
+                <Route path="follow-up" element={
+                  <FeatureFlagGate flagKey="feature_followup">
+                    <FollowUp />
+                  </FeatureFlagGate>
+                } />
+                <Route path="map" element={<MapView />} />
+                <Route path="transport" element={
+                  <FeatureFlagGate flagKey="feature_transport">
+                    <Transport />
+                  </FeatureFlagGate>
+                } />
+                <Route path="leaderboard" element={
+                  <FeatureFlagGate flagKey="feature_leaderboard">
+                    <Leaderboard />
+                  </FeatureFlagGate>
+                } />
+                <Route path="admin" element={
+                  <FeatureFlagGate flagKey="feature_admin_panel">
+                    <Admin />
+                  </FeatureFlagGate>
+                } />
+                <Route path="admin/management" element={
+                  <FeatureFlagGate flagKey="feature_admin_panel">
+                    <AdminManagement />
+                  </FeatureFlagGate>
+                } />
+                <Route path="admin/member-invites" element={
+                  <FeatureFlagGate flagKey="feature_admin_panel">
+                    <MemberInvites />
+                  </FeatureFlagGate>
+                } />
+                <Route path="admin/follow-up-management" element={
+                  <FeatureFlagGate flagKey="feature_admin_panel">
+                    <FollowUpManagement />
+                  </FeatureFlagGate>
+                } />
+                <Route path="admin/member-assignment" element={
+                  <FeatureFlagGate flagKey="feature_admin_panel">
+                    <MemberAssignment />
+                  </FeatureFlagGate>
+                } />
+                <Route path="super-admin" element={<SuperAdmin />} />
+                <Route path="super-admin/denominations" element={<SuperAdminDenominations />} />
+                <Route path="super-admin/invites" element={<SuperAdminInvites />} />
+                <Route path="super-admin/settings" element={<SuperAdminSettings />} />
 
-              {/* Team specific capability routes */}
-              <Route path="teams/membership" element={<MembershipDashboard />} />
-              <Route path="teams/membership/members" element={<MembershipTeamCRM />} />
-              <Route path="teams/membership/birthdays" element={<BirthdayTracker />} />
-              <Route path="teams/membership/anniversaries" element={<AnniversaryTracker />} />
-              <Route path="teams/membership/journey" element={<MemberJourney />} />
-              
-              {/* Information Center routes */}
-              <Route path="teams/info-center" element={<InfoCenterDashboard />} />
-              <Route path="teams/info-center/members" element={<InfoCenterMembers />} />
-              <Route path="teams/info-center/journey" element={<MemberJourney />} />
-            </Route>
+                {/* Team specific capability routes */}
+                <Route path="teams/membership" element={
+                  <FeatureFlagGate flagKey="feature_membership_team">
+                    <MembershipDashboard />
+                  </FeatureFlagGate>
+                } />
+                <Route path="teams/membership/members" element={
+                  <FeatureFlagGate flagKey="feature_membership_team">
+                    <MembershipTeamCRM />
+                  </FeatureFlagGate>
+                } />
+                <Route path="teams/membership/birthdays" element={
+                  <FeatureFlagGate flagKey="feature_membership_team">
+                    <BirthdayTracker />
+                  </FeatureFlagGate>
+                } />
+                <Route path="teams/membership/anniversaries" element={
+                  <FeatureFlagGate flagKey="feature_membership_team">
+                    <AnniversaryTracker />
+                  </FeatureFlagGate>
+                } />
+                <Route path="teams/membership/journey" element={
+                  <FeatureFlagGate flagKey="feature_membership_team">
+                    <MemberJourney />
+                  </FeatureFlagGate>
+                } />
+                
+                {/* Information Center routes */}
+                <Route path="teams/info-center" element={
+                  <FeatureFlagGate flagKey="feature_info_center">
+                    <InfoCenterDashboard />
+                  </FeatureFlagGate>
+                } />
+                <Route path="teams/info-center/members" element={
+                  <FeatureFlagGate flagKey="feature_info_center">
+                    <InfoCenterMembers />
+                  </FeatureFlagGate>
+                } />
+                <Route path="teams/info-center/journey" element={
+                  <FeatureFlagGate flagKey="feature_info_center">
+                    <MemberJourney />
+                  </FeatureFlagGate>
+                } />
+              </Route>
 
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </FeatureFlagProvider>
     </AuthProvider>
   </QueryClientProvider>
 );

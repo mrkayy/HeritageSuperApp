@@ -61,8 +61,10 @@ export interface SaveMemberPayload {
 }
 
 export class MembershipService {
-  static async fetchMembers(): Promise<Member[]> {
-    const { data } = await api.get('/members');
+  static async fetchMembers(teamId?: string): Promise<Member[]> {
+    const { data } = await api.get('/members', {
+      params: teamId ? { teamId } : undefined,
+    });
     return data || [];
   }
 

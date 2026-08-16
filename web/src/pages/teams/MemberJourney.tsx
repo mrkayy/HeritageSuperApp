@@ -238,10 +238,26 @@ export default function MemberJourney() {
                         </div>
                       )}
                     </div>
+                    <Select
+                      disabled={movingMemberId === m.id}
+                      value={m.currentStage || 'first_time_guest'}
+                      onValueChange={newStage => handleStageChange(m, newStage)}
+                    >
+                      <SelectTrigger className="h-8 text-xs w-[180px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {STAGES.map(s => (
+                          <SelectItem key={s.key} value={s.key}>
+                            {s.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   {/* Stage Move Dropdown */}
-                  <div className="mt-4 pt-3 border-t border-border/40 flex items-center justify-between">
+                  {/*<div className="mt-4 pt-3 border-t border-border/40 flex items-center justify-between">
                     <span className="text-xs text-muted-foreground uppercase font-semibold">Move to Stage:</span>
                     <Select
                       disabled={movingMemberId === m.id}
@@ -260,6 +276,7 @@ export default function MemberJourney() {
                       </SelectContent>
                     </Select>
                   </div>
+                  */}
                 </Card>
               ))
             )}

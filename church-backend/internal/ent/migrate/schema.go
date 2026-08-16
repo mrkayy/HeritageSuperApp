@@ -82,6 +82,25 @@ var (
 		Columns:    DistrictsColumns,
 		PrimaryKey: []*schema.Column{DistrictsColumns[0]},
 	}
+	// FeatureFlagsColumns holds the columns for the "feature_flags" table.
+	FeatureFlagsColumns = []*schema.Column{
+		{Name: "feature_flag_id", Type: field.TypeUUID},
+		{Name: "key", Type: field.TypeString, Unique: true},
+		{Name: "name", Type: field.TypeString},
+		{Name: "description", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "category", Type: field.TypeString, Default: "global"},
+		{Name: "is_enabled", Type: field.TypeBool, Default: true},
+		{Name: "allowed_roles", Type: field.TypeJSON, Nullable: true},
+		{Name: "updated_by", Type: field.TypeString, Nullable: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+	}
+	// FeatureFlagsTable holds the schema information for the "feature_flags" table.
+	FeatureFlagsTable = &schema.Table{
+		Name:       "feature_flags",
+		Columns:    FeatureFlagsColumns,
+		PrimaryKey: []*schema.Column{FeatureFlagsColumns[0]},
+	}
 	// FollowUpColumns holds the columns for the "follow_up" table.
 	FollowUpColumns = []*schema.Column{
 		{Name: "follow_up_id", Type: field.TypeUUID},
@@ -718,6 +737,7 @@ var (
 		ChurchEventTable,
 		ChurchTeamsTable,
 		DistrictsTable,
+		FeatureFlagsTable,
 		FollowUpTable,
 		GuardianRelationshipsTable,
 		KidsMinistryProfilesTable,
@@ -752,6 +772,9 @@ func init() {
 	}
 	DistrictsTable.Annotation = &entsql.Annotation{
 		Table: "districts",
+	}
+	FeatureFlagsTable.Annotation = &entsql.Annotation{
+		Table: "feature_flags",
 	}
 	FollowUpTable.ForeignKeys[0].RefTable = SoulTable
 	FollowUpTable.ForeignKeys[1].RefTable = UsersTable

@@ -47,3 +47,20 @@ build:
 	cd church-backend && go build -o bin/server ./cmd/server
 	@echo "Building Vite frontend..."
 	cd web && npm run build
+
+# Production Docker commands
+prod-build:
+	@echo "Building production Docker images..."
+	docker compose -f docker-compose.prod.yml build
+
+prod-up:
+	@echo "Starting production stack in background..."
+	docker compose -f docker-compose.prod.yml up -d
+
+prod-down:
+	@echo "Stopping production stack..."
+	docker compose -f docker-compose.prod.yml down
+
+prod-logs:
+	@echo "Tailing production stack logs..."
+	docker compose -f docker-compose.prod.yml logs -f
