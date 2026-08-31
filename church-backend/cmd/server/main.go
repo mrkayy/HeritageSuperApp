@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/hofchurchng/church-backend/internal/app"
+	"github.com/hofchurchng/church-backend/app"
 	"github.com/hofchurchng/church-backend/internal/platform/config"
 	"github.com/hofchurchng/church-backend/internal/platform/db"
 )
