@@ -1,0 +1,4 @@
+church-backend
+Makefile
+docker-compose*.yml
+*.md
