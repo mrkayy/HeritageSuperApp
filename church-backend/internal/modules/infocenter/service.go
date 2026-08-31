@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -192,6 +194,113 @@ func (s *Service) MarkVisitorProfiled(ctx context.Context, visitorID string, mem
 	return s.repo.MarkVisitorProfiled(ctx, visitorID, memberID)
 }
 
+func (s *Service) BulkImportVisitors(ctx context.Context, visitors []contracts.CreateVisitorDTO, userID string) (contracts.BulkVisitorImportResult, error) {
+	if len(visitors) == 0 {
+		return contracts.BulkVisitorImportResult{}, errors.New("no visitors provided")
+	}
+
+	churchID, err := s.repo.GetUserChurchID(ctx, userID)
+	if err != nil {
+		return contracts.BulkVisitorImportResult{}, fmt.Errorf("resolving church: %w", err)
+	}
+
+	createdBy, err := uuid.Parse(userID)
+	if err != nil {
+		return contracts.BulkVisitorImportResult{}, fmt.Errorf("invalid user id: %w", err)
+	}
+
+	totalRecords := len(visitors)
+	jobs := make(chan struct {
+		Index   int
+		Visitor contracts.CreateVisitorDTO
+	}, totalRecords)
+	results := make(chan contracts.BulkRowErrorDetail, totalRecords)
+
+	workerCount := 5
+	if totalRecords < workerCount {
+		workerCount = totalRecords
+	}
+
+	var wg sync.WaitGroup
+	for w := 0; w < workerCount; w++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for job := range jobs {
+				v := job.Visitor
+				if strings.TrimSpace(v.FirstName) == "" {
+					results <- contracts.BulkRowErrorDetail{
+						Row:   job.Index + 1,
+						Name:  v.FirstName + " " + v.LastName,
+						Error: "first_name is required",
+					}
+					continue
+				}
+				if strings.TrimSpace(v.LastName) == "" {
+					results <- contracts.BulkRowErrorDetail{
+						Row:   job.Index + 1,
+						Name:  v.FirstName + " " + v.LastName,
+						Error: "last_name is required",
+					}
+					continue
+				}
+				if strings.TrimSpace(v.PhoneNumber) == "" {
+					results <- contracts.BulkRowErrorDetail{
+						Row:   job.Index + 1,
+						Name:  v.FirstName + " " + v.LastName,
+						Error: "phone_number is required",
+					}
+					continue
+				}
+				if strings.TrimSpace(v.Address) == "" {
+					v.Address = "Not Specified"
+				}
+				if strings.TrimSpace(v.Gender) == "" {
+					v.Gender = "male"
+				}
+
+				_, err := s.repo.CreateVisitor(ctx, v, churchID, createdBy)
+				if err != nil {
+					results <- contracts.BulkRowErrorDetail{
+						Row:   job.Index + 1,
+						Name:  v.FirstName + " " + v.LastName,
+						Error: err.Error(),
+					}
+				} else {
+					results <- contracts.BulkRowErrorDetail{Row: 0}
+				}
+			}
+		}()
+	}
+
+	for i, v := range visitors {
+		jobs <- struct {
+			Index   int
+			Visitor contracts.CreateVisitorDTO
+		}{Index: i, Visitor: v}
+	}
+	close(jobs)
+
+	wg.Wait()
+	close(results)
+
+	res := contracts.BulkVisitorImportResult{
+		TotalRecords: totalRecords,
+		Errors:       []contracts.BulkRowErrorDetail{},
+	}
+
+	for r := range results {
+		if r.Row == 0 {
+			res.SuccessCount++
+		} else {
+			res.ErrorCount++
+			res.Errors = append(res.Errors, r)
+		}
+	}
+
+	return res, nil
+}
+
 // ---------------------------------------------------------------------------
 // Church settings
 // ---------------------------------------------------------------------------
@@ -211,3 +320,4 @@ func (s *Service) UpdateSettings(ctx context.Context, userID string, input contr
 	}
 	return s.repo.UpdateSettings(ctx, churchID, input)
 }
+

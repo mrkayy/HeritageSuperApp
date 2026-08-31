@@ -58,6 +58,12 @@ func Connect(ctx context.Context, url string) (*ent.Client, error) {
 		return nil, fmt.Errorf("seed feature flags: %w", err)
 	}
 
+	// Seed dummy users for testing
+	if err := seedDummyUsers(ctx, client); err != nil {
+		client.Close()
+		return nil, fmt.Errorf("seed dummy users: %w", err)
+	}
+
 	return client, nil
 }
 
@@ -310,6 +316,67 @@ func seedFeatureFlags(ctx context.Context, client *ent.Client) error {
 			}
 			log.Printf("[db] Seeded feature flag: %s (%s)", f.Name, f.Key)
 		}
+	}
+
+	return nil
+}
+
+func seedDummyUsers(ctx context.Context, client *ent.Client) error {
+	log.Println("[db] Seeding dummy users...")
+
+	ikejaChurchID, err := uuid.Parse("7769b083-feac-480d-ae83-79828a9dced4")
+	if err != nil {
+		return err
+	}
+
+	hash, err := bcrypt.GenerateFromPassword([]byte("Password123@"), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	users := []struct {
+		FirstName string
+		LastName  string
+		Email     string
+		Role      entuser.Role
+		Phone     string
+	}{
+		{"Olayinka", "Adekunle", "josepholukayode05+olayinka@gmail.com", entuser.RoleChurchAdmin, "+2348101000001"},
+		{"Chidinma", "Okafor", "josepholukayode05+chidinma@gmail.com", entuser.RoleInfoCenterLead, "+2348101000002"},
+		{"Emeka", "Nwosu", "josepholukayode05+emeka@gmail.com", entuser.RoleInfoCenterWorker, "+2348101000003"},
+		{"Funke", "Adeyemi", "josepholukayode05+funke@gmail.com", entuser.RoleMembershipTeamLead, "+2348101000004"},
+		{"Tunde", "Bakare", "josepholukayode05+tunde@gmail.com", entuser.RoleTeamLead, "+2348101000005"},
+		{"Amara", "Eze", "josepholukayode05+amara@gmail.com", entuser.RoleSteward, "+2348101000006"},
+		{"Biodun", "Salami", "josepholukayode05+biodun@gmail.com", entuser.RoleMember, "+2348101000007"},
+		{"Ngozi", "Uche", "josepholukayode05+ngozi@gmail.com", entuser.RoleMember, "+2348101000008"},
+		{"Dare", "Afolabi", "josepholukayode05+dare@gmail.com", entuser.RoleFirstTimer, "+2348101000009"},
+		{"Kemi", "Oluwole", "josepholukayode05+kemi@gmail.com", entuser.RoleGuest, "+2348101000010"},
+	}
+
+	for _, u := range users {
+		exists, err := client.User.Query().Where(entuser.EmailEQ(u.Email)).Exist(ctx)
+		if err != nil {
+			return err
+		}
+		if exists {
+			continue
+		}
+
+		_, err = client.User.Create().
+			SetEmail(u.Email).
+			SetPasswordHash(string(hash)).
+			SetFirstName(u.FirstName).
+			SetLastName(u.LastName).
+			SetRole(u.Role).
+			SetPhoneNumber(u.Phone).
+			SetChurchID(ikejaChurchID).
+			SetAccountStatus(entuser.AccountStatusActive).
+			SetIsProfileComplete(true).
+			Save(ctx)
+		if err != nil {
+			return err
+		}
+		log.Printf("[db] Seeded user: %s %s (%s)", u.FirstName, u.LastName, u.Role)
 	}
 
 	return nil

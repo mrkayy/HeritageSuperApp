@@ -57,10 +57,23 @@ export interface MarkAttendancePayload {
   service_type?: string;
 }
 
+export interface BulkVisitorImportResult {
+  totalRecords: number;
+  successCount: number;
+  skippedCount: number;
+  errorCount: number;
+  errors?: Array<{ row: number; name: string; error: string }>;
+}
+
 export const InfoCenterService = {
   // Visitors
   async createVisitor(data: CreateVisitorPayload): Promise<Visitor> {
     const res = await api.post('/info-center/visitors', data);
+    return res.data;
+  },
+
+  async bulkImportVisitors(visitors: CreateVisitorPayload[]): Promise<BulkVisitorImportResult> {
+    const res = await api.post('/info-center/visitors/bulk', { visitors });
     return res.data;
   },
 

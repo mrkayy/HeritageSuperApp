@@ -50,6 +50,20 @@ type CreateVisitorDTO struct {
 	Notes             *string `json:"notes,omitempty"`
 }
 
+type BulkRowErrorDetail struct {
+	Row   int    `json:"row"`
+	Name  string `json:"name"`
+	Error string `json:"error"`
+}
+
+type BulkVisitorImportResult struct {
+	TotalRecords int                  `json:"totalRecords"`
+	SuccessCount int                  `json:"successCount"`
+	SkippedCount int                  `json:"skippedCount"`
+	ErrorCount   int                  `json:"errorCount"`
+	Errors       []BulkRowErrorDetail `json:"errors"`
+}
+
 type UpdateVisitorDTO struct {
 	FirstName     *string `json:"first_name,omitempty"`
 	LastName      *string `json:"last_name,omitempty"`

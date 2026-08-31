@@ -26,8 +26,10 @@ import {
   UserCheck, 
   Edit3, 
   Search,
-  Users
+  Users,
+  FileSpreadsheet
 } from 'lucide-react';
+import VisitorCsvPreviewModal from '@/components/layout/VisitorCsvPreviewModal';
 import { toast } from '@/hooks/use-toast';
 import { useZodForm, FieldError } from '@/hooks/useZodForm';
 import { visitorIntakeSchema, type VisitorIntakeFormValues } from '@/lib/schemas/infocenter';
@@ -52,6 +54,7 @@ export default function VisitorIntake() {
   const [isSubsequentMarking, setIsSubsequentMarking] = useState(false);
   const [phoneChecked, setPhoneChecked] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [csvModalOpen, setCsvModalOpen] = useState(false);
 
   // Inviter Selection State
   const [members, setMembers] = useState<Member[]>([]);
@@ -236,18 +239,31 @@ export default function VisitorIntake() {
             Capture first-time guest details and automatically log service presence.
           </p>
         </div>
-        {isEditMode && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              setIsEditMode(false);
-              form.reset();
-            }}
-          >
-            Cancel Edit
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {!isEditMode && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCsvModalOpen(true)}
+              className="gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
+            >
+              <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
+              Bulk CSV Intake
+            </Button>
+          )}
+          {isEditMode && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setIsEditMode(false);
+                form.reset();
+              }}
+            >
+              Cancel Edit
+            </Button>
+          )}
+        </div>
       </div>
 
       <Card className="glass-card">
@@ -540,6 +556,18 @@ export default function VisitorIntake() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Bulk First-Timer CSV Modal */}
+      <VisitorCsvPreviewModal
+        open={csvModalOpen}
+        onOpenChange={setCsvModalOpen}
+        onImportComplete={() => {
+          toast({
+            title: "Intake Complete",
+            description: "First-timers successfully imported and attendance logged.",
+          });
+        }}
+      />
     </div>
   );
 }

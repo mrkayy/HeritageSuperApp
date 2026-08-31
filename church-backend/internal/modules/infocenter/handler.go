@@ -18,6 +18,7 @@ func NewHandler(svc *Service) *Handler {
 func (h *Handler) Register(g *echo.Group) {
 	// Visitor CRUD
 	g.POST("/visitors", h.createVisitor)
+	g.POST("/visitors/bulk", h.bulkImportVisitors)
 	g.GET("/visitors", h.listVisitors)
 	g.GET("/visitors/check-phone", h.checkPhone)
 	g.GET("/visitors/:id", h.getVisitor)
@@ -39,6 +40,26 @@ func (h *Handler) Register(g *echo.Group) {
 // ---------------------------------------------------------------------------
 // Visitor handlers
 // ---------------------------------------------------------------------------
+
+func (h *Handler) bulkImportVisitors(c echo.Context) error {
+	var payload struct {
+		Visitors []contracts.CreateVisitorDTO `json:"visitors"`
+	}
+	if err := c.Bind(&payload); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
+	}
+
+	user, ok := contracts.UserFromContext(c.Request().Context())
+	if !ok {
+		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
+	}
+
+	res, err := h.svc.BulkImportVisitors(c.Request().Context(), payload.Visitors, user.ID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+	return c.JSON(http.StatusOK, res)
+}
 
 func (h *Handler) createVisitor(c echo.Context) error {
 	var input contracts.CreateVisitorDTO
