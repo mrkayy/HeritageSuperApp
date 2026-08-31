@@ -3,6 +3,7 @@ package app
 import (
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/hofchurchng/church-backend/internal/contracts"
 	"github.com/hofchurchng/church-backend/internal/ent"
@@ -91,10 +92,20 @@ func New(cfg config.Config, client *ent.Client, logWriter io.Writer) *echo.Echo 
 	// --- Echo router ---
 	e := echo.New()
 
+	origins := []string{"http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173"}
+	if cfg.FrontendURL != "" {
+		for _, o := range strings.Split(cfg.FrontendURL, ",") {
+			trimmed := strings.TrimSpace(o)
+			if trimmed != "" {
+				origins = append(origins, trimmed)
+			}
+		}
+	}
+
 	e.Use(middleware.RequestResponseLogger(logWriter))
 	e.Use(echoMiddleware.Recover())
 	e.Use(echoMiddleware.CORSWithConfig(echoMiddleware.CORSConfig{
-		AllowOrigins:     []string{cfg.FrontendURL},
+		AllowOrigins:     origins,
 		AllowMethods:     []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete, http.MethodOptions},
 		AllowHeaders:     []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept, echo.HeaderAuthorization},
 		AllowCredentials: true,
