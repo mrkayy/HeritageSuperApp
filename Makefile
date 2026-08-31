@@ -11,9 +11,16 @@ help:
 	@echo "  make dev          Run both backend and frontend concurrently in dev mode"
 	@echo "  make backend      Run backend in dev mode (church-backend)"
 	@echo "  make frontend     Run frontend in dev mode (web)"
+	@echo "  make db-reset     Wipe and reset the PostgreSQL schema to start fresh"
 	@echo "  make install      Install dependencies for both frontend and backend"
 	@echo "  make build        Build production artifacts for backend and frontend"
 	@echo "========================================================================"
+
+# Reset the PostgreSQL database schema
+db-reset:
+	@echo "Wiping and resetting PostgreSQL database schema..."
+	@docker exec local_postgres psql -U postgres -d hof_church -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+	@echo "✅ Database wiped successfully! Run 'make dev' to re-run auto-migrations and fresh seeding."
 
 # Run both backend and frontend concurrently
 dev:
