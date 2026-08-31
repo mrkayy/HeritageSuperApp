@@ -70,6 +70,7 @@ export function useMemberCRM() {
           ...data,
           firstName: data.firstName,
           surname: data.surname,
+          role: data.role || 'member',
         };
         if (selectedMember) {
           await MembershipService.updateMember(selectedMember.id, payload);

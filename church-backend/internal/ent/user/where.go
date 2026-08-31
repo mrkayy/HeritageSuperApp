@@ -926,6 +926,16 @@ func RoleNotIn(vs ...Role) predicate.User {
 	return predicate.User(sql.FieldNotIn(FieldRole, vs...))
 }
 
+// RolesIsNil applies the IsNil predicate on the "roles" field.
+func RolesIsNil() predicate.User {
+	return predicate.User(sql.FieldIsNull(FieldRoles))
+}
+
+// RolesNotNil applies the NotNil predicate on the "roles" field.
+func RolesNotNil() predicate.User {
+	return predicate.User(sql.FieldNotNull(FieldRoles))
+}
+
 // AccountStatusEQ applies the EQ predicate on the "account_status" field.
 func AccountStatusEQ(v AccountStatus) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldAccountStatus, v))

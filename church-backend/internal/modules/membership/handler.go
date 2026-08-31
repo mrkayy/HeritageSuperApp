@@ -218,6 +218,16 @@ func (h *Handler) update(c echo.Context) error {
 }
 
 func (h *Handler) delete(c echo.Context) error {
+	userCtx, ok := contracts.UserFromContext(c.Request().Context())
+	if !ok {
+		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
+	}
+
+	canDelete := userCtx.HasRole("super_admin") || userCtx.HasRole("church_admin") || userCtx.HasRole("resident_pastor") || userCtx.HasRole("team_lead")
+	if !canDelete {
+		return echo.NewHTTPError(http.StatusForbidden, "only team leads and admins can delete member records")
+	}
+
 	id := c.Param("id")
 	err := h.svc.DeleteMember(c.Request().Context(), id)
 	if err != nil {

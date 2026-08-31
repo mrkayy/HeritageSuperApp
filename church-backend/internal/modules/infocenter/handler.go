@@ -252,6 +252,11 @@ func (h *Handler) updateSettings(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
 	}
 
+	canManageSettings := user.HasRole("super_admin") || user.HasRole("church_admin") || user.HasRole("resident_pastor") || user.HasRole("team_lead")
+	if !canManageSettings {
+		return echo.NewHTTPError(http.StatusForbidden, "only team leads and admins can change attendance threshold settings")
+	}
+
 	var input contracts.UpdateChurchSettingDTO
 	if err := c.Bind(&input); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")

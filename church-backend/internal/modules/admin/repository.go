@@ -3,6 +3,7 @@ package admin
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -10,12 +11,94 @@ import (
 	"github.com/hofchurchng/church-backend/internal/ent"
 	"github.com/hofchurchng/church-backend/internal/ent/attendancerecord"
 	"github.com/hofchurchng/church-backend/internal/ent/auditlog"
+	"github.com/hofchurchng/church-backend/internal/ent/churchsetting"
+	"github.com/hofchurchng/church-backend/internal/ent/featureflag"
 	"github.com/hofchurchng/church-backend/internal/ent/localchurch"
 	"github.com/hofchurchng/church-backend/internal/ent/member"
 	"github.com/hofchurchng/church-backend/internal/ent/membershipstagehistory"
 	"github.com/hofchurchng/church-backend/internal/ent/otpinvites"
+	entuser "github.com/hofchurchng/church-backend/internal/ent/user"
 	"github.com/hofchurchng/church-backend/internal/ent/visitor"
 )
+
+var (
+	settingsMu     sync.RWMutex
+	globalSettings = contracts.SystemSettingsDTO{
+		MinistryName:                 "Heritage of Faith International Church",
+		SupportEmail:                 "support@hofchurchng.org",
+		SupportPhone:                 "+234 800 463 2487",
+		WebsiteURL:                   "https://hofchurchng.org",
+		Timezone:                     "Africa/Lagos",
+		DateFormat:                   "DD/MM/YYYY",
+		DefaultLanguage:              "en",
+		SessionTimeoutMinutes:        60,
+		MaxPinAttempts:               5,
+		PinLockoutMinutes:            15,
+		MagicLinkExpiryHours:         72,
+		EnforcePinLogin:              true,
+		MaintenanceMode:              false,
+		MaintenanceMessage:           "System undergoing scheduled platform maintenance. Please check back shortly.",
+		FoundationClassMinAttendance: 2,
+		FollowupSlaDays:              3,
+		AutoArchiveInactiveMonths:    6,
+		EmailSenderName:              "HOF Admin",
+		EmailSenderAddress:           "no-reply@hofchurchng.org",
+		SmsEnabled:                   true,
+		SmsSenderID:                  "HOFCHURCH",
+		UpdatedAt:                    time.Now(),
+	}
+
+	permsMu         sync.RWMutex
+	rolePermissions = defaultRolePermissions()
+)
+
+func defaultRolePermissions() map[string]map[string]map[string]bool {
+	modulePerms := map[string][]string{
+		"souls":       {"can_create", "can_update", "can_view", "can_delete", "can_view_only_self", "can_export"},
+		"follow_ups":  {"can_create", "can_update", "can_view", "can_delete", "can_assign", "can_view_only_assigned"},
+		"transport":   {"can_create", "can_update", "can_view", "can_delete", "can_approve", "can_view_only_team"},
+		"admin":       {"can_create", "can_update", "can_view", "can_delete", "can_invite_users", "can_manage_roles"},
+		"reports":     {"can_view", "can_export", "can_view_church_stats", "can_view_global_stats"},
+		"events":      {"can_create", "can_update", "can_view", "can_delete", "can_publish"},
+		"data":        {"can_backup", "can_restore", "can_bulk_import", "can_bulk_export"},
+	}
+
+	roles := []string{
+		"super_admin", "general_overseer", "church_admin", "resident_pastor", "team_lead", "steward", "member", "guest",
+	}
+
+	matrix := make(map[string]map[string]map[string]bool)
+	for _, r := range roles {
+		matrix[r] = make(map[string]map[string]bool)
+		for mod, perms := range modulePerms {
+			matrix[r][mod] = make(map[string]bool)
+			for _, p := range perms {
+				switch r {
+				case "super_admin":
+					matrix[r][mod][p] = true
+				case "general_overseer":
+					matrix[r][mod][p] = p == "can_view" || p == "can_export" || p == "can_view_church_stats" || p == "can_view_global_stats"
+				case "resident_pastor":
+					matrix[r][mod][p] = p != "can_delete" && p != "can_backup" && p != "can_restore"
+				case "church_admin":
+					matrix[r][mod][p] = p != "can_delete" && p != "can_backup" && p != "can_restore" && p != "can_view_global_stats"
+				case "team_lead":
+					matrix[r][mod][p] = p == "can_view" || p == "can_create" || p == "can_update" || p == "can_view_only_team" || p == "can_assign" || p == "can_approve"
+				case "steward":
+					matrix[r][mod][p] = p == "can_view" || p == "can_create" || p == "can_update" || p == "can_view_only_self"
+				case "member":
+					matrix[r][mod][p] = p == "can_view" || p == "can_view_only_self"
+				case "guest":
+					matrix[r][mod][p] = p == "can_view"
+				default:
+					matrix[r][mod][p] = false
+				}
+			}
+		}
+	}
+	return matrix
+}
+
 
 type Repository struct {
 	client *ent.Client
@@ -265,14 +348,19 @@ func (r *Repository) CreateLeadershipInvite(ctx context.Context, input contracts
 		SetExpiresAt(time.Now().Add(72 * time.Hour)).
 		SetCreatedByUserID(creatorID)
 
+	var churchUUID *uuid.UUID
+	var sectorUUID *uuid.UUID
+
 	if input.ChurchID != nil && *input.ChurchID != "" {
 		if cid, err := uuid.Parse(*input.ChurchID); err == nil {
 			builder.SetChurchID(cid)
+			churchUUID = &cid
 		}
 	}
 	if input.SectorID != nil && *input.SectorID != "" {
 		if sid, err := uuid.Parse(*input.SectorID); err == nil {
 			builder.SetSectorID(sid)
+			sectorUUID = &sid
 		}
 	}
 
@@ -280,6 +368,8 @@ func (r *Repository) CreateLeadershipInvite(ctx context.Context, input contracts
 	if err != nil {
 		return contracts.LeadershipInviteDTO{}, err
 	}
+
+	r.syncLeadershipInviteToMemberAndUser(ctx, input.Email, input.FirstName, input.LastName, input.Role, churchUUID, sectorUUID)
 
 	return contracts.LeadershipInviteDTO{
 		ID:        inv.ID.String(),
@@ -292,6 +382,87 @@ func (r *Repository) CreateLeadershipInvite(ctx context.Context, input contracts
 		ExpiresAt: inv.ExpiresAt,
 		CreatedAt: inv.CreatedAt,
 	}, nil
+}
+
+func (r *Repository) syncLeadershipInviteToMemberAndUser(ctx context.Context, email, firstName, lastName, roleStr string, churchID, sectorID *uuid.UUID) {
+	if email == "" {
+		return
+	}
+	if roleStr == "" {
+		roleStr = "member"
+	}
+
+	// 1. Sync Member record in members table
+	m, err := r.client.Member.Query().
+		Where(member.EmailEqualFold(email)).
+		Only(ctx)
+
+	if err == nil {
+		up := r.client.Member.UpdateOneID(m.ID).
+			SetFirstName(firstName).
+			SetSurname(lastName)
+
+		if churchID != nil {
+			up.SetLocalChurchID(*churchID)
+		}
+		if sectorID != nil {
+			up.SetSectorID(*sectorID)
+		}
+		m, _ = up.Save(ctx)
+	} else {
+		cp := r.client.Member.Create().
+			SetEmail(email).
+			SetFirstName(firstName).
+			SetSurname(lastName).
+			SetCurrentStage(member.CurrentStageStewardship)
+
+		if churchID != nil {
+			cp.SetLocalChurchID(*churchID)
+		}
+		if sectorID != nil {
+			cp.SetSectorID(*sectorID)
+		}
+		m, _ = cp.Save(ctx)
+	}
+
+	// 2. Sync User record in users table
+	eu, err := r.client.User.Query().
+		Where(entuser.EmailEqualFold(email)).
+		Only(ctx)
+
+	if err == nil {
+		up := r.client.User.UpdateOneID(eu.ID).
+			SetFirstName(firstName).
+			SetLastName(lastName).
+			SetRole(entuser.Role(roleStr)).
+			SetRoles([]string{roleStr})
+
+		if churchID != nil {
+			up.SetChurchID(*churchID)
+		}
+		if sectorID != nil {
+			up.SetSectorID(*sectorID)
+		}
+		_, _ = up.Save(ctx)
+	} else {
+		cp := r.client.User.Create().
+			SetEmail(email).
+			SetPasswordHash("pending-magic-link-activation").
+			SetFirstName(firstName).
+			SetLastName(lastName).
+			SetRole(entuser.Role(roleStr)).
+			SetRoles([]string{roleStr}).
+			SetAccountStatus(entuser.AccountStatusPending).
+			SetIsProfileComplete(false)
+
+		if churchID != nil {
+			cp.SetChurchID(*churchID)
+		}
+		if sectorID != nil {
+			cp.SetSectorID(*sectorID)
+		}
+		_, _ = cp.Save(ctx)
+	}
 }
 
 func (r *Repository) RevokeInvite(ctx context.Context, id uuid.UUID) error {
@@ -540,3 +711,225 @@ func (r *Repository) ListAuditLogs(ctx context.Context, limit int) ([]contracts.
 
 	return res, nil
 }
+
+// ---------------------------------------------------------------------------
+// System Settings & Governance
+// ---------------------------------------------------------------------------
+
+func (r *Repository) GetSystemSettings(ctx context.Context) (contracts.SystemSettingsDTO, error) {
+	settingsMu.RLock()
+	defer settingsMu.RUnlock()
+	return globalSettings, nil
+}
+
+func (r *Repository) UpdateSystemSettings(ctx context.Context, input contracts.UpdateSystemSettingsDTO) (contracts.SystemSettingsDTO, error) {
+	settingsMu.Lock()
+	defer settingsMu.Unlock()
+
+	if input.MinistryName != nil {
+		globalSettings.MinistryName = *input.MinistryName
+	}
+	if input.SupportEmail != nil {
+		globalSettings.SupportEmail = *input.SupportEmail
+	}
+	if input.SupportPhone != nil {
+		globalSettings.SupportPhone = *input.SupportPhone
+	}
+	if input.WebsiteURL != nil {
+		globalSettings.WebsiteURL = *input.WebsiteURL
+	}
+	if input.Timezone != nil {
+		globalSettings.Timezone = *input.Timezone
+	}
+	if input.DateFormat != nil {
+		globalSettings.DateFormat = *input.DateFormat
+	}
+	if input.DefaultLanguage != nil {
+		globalSettings.DefaultLanguage = *input.DefaultLanguage
+	}
+	if input.SessionTimeoutMinutes != nil {
+		globalSettings.SessionTimeoutMinutes = *input.SessionTimeoutMinutes
+	}
+	if input.MaxPinAttempts != nil {
+		globalSettings.MaxPinAttempts = *input.MaxPinAttempts
+	}
+	if input.PinLockoutMinutes != nil {
+		globalSettings.PinLockoutMinutes = *input.PinLockoutMinutes
+	}
+	if input.MagicLinkExpiryHours != nil {
+		globalSettings.MagicLinkExpiryHours = *input.MagicLinkExpiryHours
+	}
+	if input.EnforcePinLogin != nil {
+		globalSettings.EnforcePinLogin = *input.EnforcePinLogin
+	}
+	if input.MaintenanceMode != nil {
+		globalSettings.MaintenanceMode = *input.MaintenanceMode
+	}
+	if input.MaintenanceMessage != nil {
+		globalSettings.MaintenanceMessage = *input.MaintenanceMessage
+	}
+	if input.FoundationClassMinAttendance != nil {
+		globalSettings.FoundationClassMinAttendance = *input.FoundationClassMinAttendance
+	}
+	if input.FollowupSlaDays != nil {
+		globalSettings.FollowupSlaDays = *input.FollowupSlaDays
+	}
+	if input.AutoArchiveInactiveMonths != nil {
+		globalSettings.AutoArchiveInactiveMonths = *input.AutoArchiveInactiveMonths
+	}
+	if input.EmailSenderName != nil {
+		globalSettings.EmailSenderName = *input.EmailSenderName
+	}
+	if input.EmailSenderAddress != nil {
+		globalSettings.EmailSenderAddress = *input.EmailSenderAddress
+	}
+	if input.SmsEnabled != nil {
+		globalSettings.SmsEnabled = *input.SmsEnabled
+	}
+	if input.SmsSenderID != nil {
+		globalSettings.SmsSenderID = *input.SmsSenderID
+	}
+	globalSettings.UpdatedAt = time.Now()
+
+	return globalSettings, nil
+}
+
+func (r *Repository) GetRolePermissions(ctx context.Context) (contracts.RolePermissionsMatrixDTO, error) {
+	permsMu.RLock()
+	defer permsMu.RUnlock()
+
+	// Clone matrix
+	cloned := make(map[string]map[string]map[string]bool)
+	for role, modules := range rolePermissions {
+		cloned[role] = make(map[string]map[string]bool)
+		for mod, perms := range modules {
+			cloned[role][mod] = make(map[string]bool)
+			for p, val := range perms {
+				cloned[role][mod][p] = val
+			}
+		}
+	}
+
+	return contracts.RolePermissionsMatrixDTO{
+		Permissions: cloned,
+		UpdatedAt:   time.Now(),
+	}, nil
+}
+
+func (r *Repository) UpdateRolePermissions(ctx context.Context, input contracts.UpdateRolePermissionsDTO) (contracts.RolePermissionsMatrixDTO, error) {
+	permsMu.Lock()
+	defer permsMu.Unlock()
+
+	if input.Permissions != nil {
+		for role, modules := range input.Permissions {
+			if _, ok := rolePermissions[role]; !ok {
+				rolePermissions[role] = make(map[string]map[string]bool)
+			}
+			for mod, perms := range modules {
+				if _, ok := rolePermissions[role][mod]; !ok {
+					rolePermissions[role][mod] = make(map[string]bool)
+				}
+				for p, val := range perms {
+					rolePermissions[role][mod][p] = val
+				}
+			}
+		}
+	}
+
+	return contracts.RolePermissionsMatrixDTO{
+		Permissions: rolePermissions,
+		UpdatedAt:   time.Now(),
+	}, nil
+}
+
+func (r *Repository) GetSystemDiagnostics(ctx context.Context, uptimeSeconds int64) (contracts.SystemDiagnosticsDTO, error) {
+	totalUsers, _ := r.client.User.Query().Count(ctx)
+	totalChurches, _ := r.client.LocalChurch.Query().Count(ctx)
+	totalMembers, _ := r.client.Member.Query().Count(ctx)
+	activeFlags, _ := r.client.FeatureFlag.Query().Where(featureflag.IsEnabledEQ(true)).Count(ctx)
+
+	dbStatus := "connected"
+	if _, err := r.client.User.Query().Limit(1).All(ctx); err != nil {
+		dbStatus = "degraded"
+	}
+
+	return contracts.SystemDiagnosticsDTO{
+		Status:             "healthy",
+		DatabaseStatus:     dbStatus,
+		ServerTime:         time.Now(),
+		UptimeSeconds:      uptimeSeconds,
+		Environment:        "production",
+		Version:            "v2.4.0",
+		TotalUsers:         totalUsers,
+		TotalChurches:      totalChurches,
+		TotalMembers:       totalMembers,
+		ActiveFeatureFlags: activeFlags,
+	}, nil
+}
+
+func (r *Repository) GetChurchSettings(ctx context.Context, churchID uuid.UUID) (contracts.ChurchSettingDTO, error) {
+	s, err := r.client.ChurchSetting.Query().
+		Where(churchsetting.ChurchIDEQ(churchID)).
+		Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			created, createErr := r.client.ChurchSetting.Create().
+				SetChurchID(churchID).
+				SetFoundationClassMinAttendance(2).
+				Save(ctx)
+			if createErr != nil {
+				return contracts.ChurchSettingDTO{}, createErr
+			}
+			return contracts.ChurchSettingDTO{
+				ID:                           created.ID.String(),
+				ChurchID:                     created.ChurchID.String(),
+				FoundationClassMinAttendance: created.FoundationClassMinAttendance,
+			}, nil
+		}
+		return contracts.ChurchSettingDTO{}, err
+	}
+	return contracts.ChurchSettingDTO{
+		ID:                           s.ID.String(),
+		ChurchID:                     s.ChurchID.String(),
+		FoundationClassMinAttendance: s.FoundationClassMinAttendance,
+	}, nil
+}
+
+func (r *Repository) UpdateChurchSettings(ctx context.Context, churchID uuid.UUID, minAttendance int) (contracts.ChurchSettingDTO, error) {
+	s, err := r.client.ChurchSetting.Query().
+		Where(churchsetting.ChurchIDEQ(churchID)).
+		Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			created, createErr := r.client.ChurchSetting.Create().
+				SetChurchID(churchID).
+				SetFoundationClassMinAttendance(minAttendance).
+				Save(ctx)
+			if createErr != nil {
+				return contracts.ChurchSettingDTO{}, createErr
+			}
+			return contracts.ChurchSettingDTO{
+				ID:                           created.ID.String(),
+				ChurchID:                     created.ChurchID.String(),
+				FoundationClassMinAttendance: created.FoundationClassMinAttendance,
+			}, nil
+		}
+		return contracts.ChurchSettingDTO{}, err
+	}
+
+	updated, err := s.Update().
+		SetFoundationClassMinAttendance(minAttendance).
+		SetUpdatedAt(time.Now()).
+		Save(ctx)
+	if err != nil {
+		return contracts.ChurchSettingDTO{}, err
+	}
+
+	return contracts.ChurchSettingDTO{
+		ID:                           updated.ID.String(),
+		ChurchID:                     updated.ChurchID.String(),
+		FoundationClassMinAttendance: updated.FoundationClassMinAttendance,
+	}, nil
+}
+
+

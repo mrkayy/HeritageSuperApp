@@ -36,6 +36,8 @@ const MemberInvites = () => {
     selectedUserForRole,
     selectedRole,
     setSelectedRole,
+    selectedRoles,
+    handleToggleRole,
     roleUpdating,
     handleOpenRoleModal,
     handleUpdateRole,
@@ -134,8 +136,8 @@ const MemberInvites = () => {
         open={roleModalOpen}
         onOpenChange={setRoleModalOpen}
         selectedUser={selectedUserForRole}
-        selectedRole={selectedRole}
-        onRoleChange={setSelectedRole}
+        selectedRoles={selectedRoles}
+        onToggleRole={handleToggleRole}
         onSave={handleUpdateRole}
         loading={roleUpdating}
       />

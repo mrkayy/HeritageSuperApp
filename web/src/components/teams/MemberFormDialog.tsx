@@ -15,6 +15,7 @@ import {
   DAYS,
   GENDER_OPTIONS,
   MARITAL_STATUS_OPTIONS,
+  USER_ROLES,
 } from '@/lib/constants';
 
 const INITIAL_VALUES: MemberCRMFormValues = {
@@ -24,6 +25,7 @@ const INITIAL_VALUES: MemberCRMFormValues = {
   phoneNumber: '',
   homeAddress: '',
   gender: '',
+  role: 'member',
   dateOfBirthDay: null,
   dateOfBirthMonth: null,
   maritalStatus: '',
@@ -53,6 +55,7 @@ function memberToFormValues(member: Member): MemberCRMFormValues {
     phoneNumber: member.phoneNumber || '',
     homeAddress: member.homeAddress || '',
     gender: member.gender || '',
+    role: member.role || 'member',
     dateOfBirthDay: member.dateOfBirthDay ?? null,
     dateOfBirthMonth: member.dateOfBirthMonth ?? null,
     maritalStatus: member.maritalStatus || '',
@@ -188,6 +191,22 @@ export function MemberFormDialog({
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="role">User Role</Label>
+                <Select {...form.getSelectProps('role')}>
+                  <SelectTrigger id="role">
+                    <SelectValue placeholder="Select user role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {USER_ROLES.map((r) => (
+                      <SelectItem key={r.value} value={r.value}>
+                        {r.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </TabsContent>
 

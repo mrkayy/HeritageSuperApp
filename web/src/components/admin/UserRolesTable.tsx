@@ -102,9 +102,13 @@ export function UserRolesTable({
                     </TableCell>
                     <TableCell>{u.email}</TableCell>
                     <TableCell>
-                      <Badge variant={getRoleBadgeVariant(u.role)} className="capitalize">
-                        {u.role ? u.role.replace(/_/g, ' ') : 'Member'}
-                      </Badge>
+                      <div className="flex flex-wrap gap-1">
+                        {(u.roles && u.roles.length > 0 ? u.roles : [u.role || 'member']).map((r) => (
+                          <Badge key={r} variant={getRoleBadgeVariant(r)} className="capitalize text-[11px] py-0.5 px-2">
+                            {r.replace(/_/g, ' ')}
+                          </Badge>
+                        ))}
+                      </div>
                     </TableCell>
                     <TableCell>{userSector}</TableCell>
                     <TableCell>{userTeam}</TableCell>

@@ -200,6 +200,12 @@ func (_c *UserCreate) SetNillableRole(v *user.Role) *UserCreate {
 	return _c
 }
 
+// SetRoles sets the "roles" field.
+func (_c *UserCreate) SetRoles(v []string) *UserCreate {
+	_c.mutation.SetRoles(v)
+	return _c
+}
+
 // SetAccountStatus sets the "account_status" field.
 func (_c *UserCreate) SetAccountStatus(v user.AccountStatus) *UserCreate {
 	_c.mutation.SetAccountStatus(v)
@@ -490,6 +496,10 @@ func (_c *UserCreate) defaults() {
 		v := user.DefaultRole
 		_c.mutation.SetRole(v)
 	}
+	if _, ok := _c.mutation.Roles(); !ok {
+		v := user.DefaultRoles
+		_c.mutation.SetRoles(v)
+	}
 	if _, ok := _c.mutation.AccountStatus(); !ok {
 		v := user.DefaultAccountStatus
 		_c.mutation.SetAccountStatus(v)
@@ -622,6 +632,10 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Role(); ok {
 		_spec.SetField(user.FieldRole, field.TypeEnum, value)
 		_node.Role = value
+	}
+	if value, ok := _c.mutation.Roles(); ok {
+		_spec.SetField(user.FieldRoles, field.TypeJSON, value)
+		_node.Roles = value
 	}
 	if value, ok := _c.mutation.AccountStatus(); ok {
 		_spec.SetField(user.FieldAccountStatus, field.TypeEnum, value)

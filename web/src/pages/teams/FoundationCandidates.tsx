@@ -9,6 +9,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from '@/hooks/use-toast';
+import { useZodForm, FieldError } from '@/hooks/useZodForm';
+import { churchSettingsSchema, type ChurchSettingsFormValues } from '@/lib/schemas/infocenter';
 import {
   GraduationCap,
   Users,
@@ -16,12 +20,14 @@ import {
   Send,
   CheckCircle2,
   AlertCircle,
+  Lock,
 } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
-import { useZodForm, FieldError } from '@/hooks/useZodForm';
-import { churchSettingsSchema, type ChurchSettingsFormValues } from '@/lib/schemas/infocenter';
 
 export default function FoundationCandidates() {
+  const { user } = useAuth();
+  const userRoles = user?.roles || (user?.role ? [user.role] : []);
+  const canManageThreshold = ['super_admin', 'church_admin', 'resident_pastor', 'team_lead'].some(r => userRoles.includes(r));
+
   const [candidates, setCandidates] = useState<Visitor[]>([]);
   const [loading, setLoading] = useState(true);
   const [settings, setSettings] = useState<ChurchSettings | null>(null);
@@ -256,6 +262,12 @@ export default function FoundationCandidates() {
               </CardDescription>
             </CardHeader>
             <CardContent>
+              {!canManageThreshold && (
+                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-900 dark:text-amber-300 flex items-center gap-2 mb-4">
+                  <Lock className="w-4 h-4 flex-shrink-0 text-amber-600 dark:text-amber-400" />
+                  Minimum attendance threshold configuration is restricted to Team Leads, Pastors, and Admins.
+                </div>
+              )}
               <form onSubmit={settingsForm.handleSubmit(handleSaveSettings)} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="foundation_class_min_attendance">
@@ -266,6 +278,7 @@ export default function FoundationCandidates() {
                     type="number"
                     min={1}
                     max={10}
+                    disabled={!canManageThreshold}
                     value={settingsForm.values.foundation_class_min_attendance}
                     onChange={(e) =>
                       settingsForm.setValue(
@@ -279,9 +292,11 @@ export default function FoundationCandidates() {
                     Visitors with this many recorded attendances will appear in the candidates list.
                   </p>
                 </div>
-                <Button type="submit" disabled={savingSettings}>
-                  {savingSettings ? 'Saving...' : 'Save Settings'}
-                </Button>
+                {canManageThreshold && (
+                  <Button type="submit" disabled={savingSettings}>
+                    {savingSettings ? 'Saving...' : 'Save Settings'}
+                  </Button>
+                )}
               </form>
             </CardContent>
           </Card>

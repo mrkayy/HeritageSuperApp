@@ -927,6 +927,51 @@ As a Super Admin, I want an immutable, tamper-evident audit log tracking all hig
 - [x] Automatically records all high-privilege actions with actor, IP, timestamp, and payload diffs.
 - [x] Read-only view with rich search and filtering.
 
+---
+
+#### 7. Comprehensive Platform System Settings, Governance & Role Matrix Engine
+
+**Priority:** High  
+**Status:** Done  
+
+**User Story:**  
+As a Super Admin, I want a centralized Platform Governance and System Settings hub to configure organization metadata, localization, authentication security policies, discipleship thresholds, notification gateways, fine-grained role permission matrices, and live system health diagnostics.
+
+**Who can use this:**  
+`super_admin`.
+
+**What it looks like (UI):**  
+- Lives under sidebar: **Super Admin > System Settings**.
+- Multi-tab governance center:
+  - **General Config Tab:** Ministry profile (Name, Website, Support channels), Localization (Timezone, Date format, Default language), Security & Quick-Login policies (Session timeout, PIN max attempts & lockout duration, Magic link expiry, PIN enforcement, Maintenance Mode toggle with alert banner), Membership/Discipleship defaults (Foundation class min attendance, Follow-up SLA, Inactive archive threshold), Notification channels (Email sender name/address, SMS gateway toggle & Sender ID).
+  - **Feature Flags Tab:** Searchable flag cards with live status badges, category filters, and instant toggles.
+  - **Role Permissions Tab:** Dynamic matrix controlling 19+ granular capabilities per role across all 7 platform modules with persistent backend synchronization and default resets.
+  - **Branch Settings Tab:** Branch selector to customize local church branch rules and attendance requirements.
+  - **System Health Tab:** Live server uptime, PostgreSQL connection pulse, environment telemetry, and database entity inventory metrics.
+
+**What it does (behaviour):**  
+1. Super Admin adjusts any platform configuration or role permission toggle.
+2. Changes are validated and committed with automated security audit logging.
+3. Feature flag and role capability updates propagate across the application.
+
+**Data needed:**  
+- `system_settings`: Platform metadata, security thresholds, notification sender parameters, and maintenance controls.
+- `role_permissions`: Additive granular capabilities per role and module.
+- `church_settings`: `church_id`, `foundation_class_min_attendance`.
+
+**Backend notes:**  
+- `GET/PUT /api/v1/super-admin/settings`
+- `GET/PUT /api/v1/super-admin/settings/permissions`
+- `GET /api/v1/super-admin/settings/diagnostics`
+- `GET/PUT /api/v1/super-admin/settings/churches/{id}`
+
+**Acceptance Criteria:**  
+- [x] Super Admin can configure and persist universal platform settings with audit trail.
+- [x] Dynamic role and module permission matrix with immediate persistence.
+- [x] Local church branch configuration overrides for discipleship rules.
+- [x] Live system health monitoring, database status, and entity telemetry.
+
+
 
 ---
 

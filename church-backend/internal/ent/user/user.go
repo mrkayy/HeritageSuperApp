@@ -44,6 +44,8 @@ const (
 	FieldAddress = "address"
 	// FieldRole holds the string denoting the role field in the database.
 	FieldRole = "role"
+	// FieldRoles holds the string denoting the roles field in the database.
+	FieldRoles = "roles"
 	// FieldAccountStatus holds the string denoting the account_status field in the database.
 	FieldAccountStatus = "account_status"
 	// FieldIsProfileComplete holds the string denoting the is_profile_complete field in the database.
@@ -236,6 +238,7 @@ var Columns = []string{
 	FieldDateOfBirth,
 	FieldAddress,
 	FieldRole,
+	FieldRoles,
 	FieldAccountStatus,
 	FieldIsProfileComplete,
 	FieldCreatedAt,
@@ -252,6 +255,8 @@ func ValidColumn(column string) bool {
 }
 
 var (
+	// DefaultRoles holds the default value on creation for the "roles" field.
+	DefaultRoles []string
 	// DefaultIsProfileComplete holds the default value on creation for the "is_profile_complete" field.
 	DefaultIsProfileComplete bool
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
@@ -268,23 +273,16 @@ const DefaultRole = RoleMember
 
 // Role values.
 const (
-	RoleSuperAdmin                  Role = "super_admin"
-	RoleGeneralOverseer             Role = "general_overseer"
-	RoleResidentPastor              Role = "resident_pastor"
-	RoleChurchAdmin                 Role = "church_admin"
-	RoleSectorLead                  Role = "sector_lead"
-	RoleTeamLead                    Role = "team_lead"
-	RoleAssistantTeamLead           Role = "assistant_team_lead"
-	RoleMembershipTeamLead          Role = "membership_team_lead"
-	RoleMembershipAssistantTeamLead Role = "membership_assistant_team_lead"
-	RoleInfoCenterLead              Role = "info_center_lead"
-	RoleInfoCenterWorker            Role = "info_center_worker"
-	RoleTrainingCoordinator         Role = "training_coordinator"
-	RoleClassTeacher                Role = "class_teacher"
-	RoleSteward                     Role = "steward"
-	RoleMember                      Role = "member"
-	RoleFirstTimer                  Role = "first_timer"
-	RoleGuest                       Role = "guest"
+	RoleSuperAdmin      Role = "super_admin"
+	RoleGeneralOverseer Role = "general_overseer"
+	RoleResidentPastor  Role = "resident_pastor"
+	RoleChurchAdmin     Role = "church_admin"
+	RoleSectorLead      Role = "sector_lead"
+	RoleTeamLead        Role = "team_lead"
+	RoleSteward         Role = "steward"
+	RoleMember          Role = "member"
+	RoleFirstTimer      Role = "first_timer"
+	RoleGuest           Role = "guest"
 )
 
 func (r Role) String() string {
@@ -294,7 +292,7 @@ func (r Role) String() string {
 // RoleValidator is a validator for the "role" field enum values. It is called by the builders before save.
 func RoleValidator(r Role) error {
 	switch r {
-	case RoleSuperAdmin, RoleGeneralOverseer, RoleResidentPastor, RoleChurchAdmin, RoleSectorLead, RoleTeamLead, RoleAssistantTeamLead, RoleMembershipTeamLead, RoleMembershipAssistantTeamLead, RoleInfoCenterLead, RoleInfoCenterWorker, RoleTrainingCoordinator, RoleClassTeacher, RoleSteward, RoleMember, RoleFirstTimer, RoleGuest:
+	case RoleSuperAdmin, RoleGeneralOverseer, RoleResidentPastor, RoleChurchAdmin, RoleSectorLead, RoleTeamLead, RoleSteward, RoleMember, RoleFirstTimer, RoleGuest:
 		return nil
 	default:
 		return fmt.Errorf("user: invalid enum value for role field: %q", r)

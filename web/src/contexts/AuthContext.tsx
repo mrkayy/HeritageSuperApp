@@ -49,6 +49,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         first_name: data.first_name || data.firstName || '',
         last_name: data.last_name || data.lastName || '',
         role: primaryRole,
+        roles: roles,
         team_id: data.teamId || data.team_id || '',
         team_name: data.teamName || data.team_name || '',
       };

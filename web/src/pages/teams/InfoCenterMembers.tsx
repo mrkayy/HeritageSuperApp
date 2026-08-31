@@ -3,7 +3,7 @@ import { MembershipService, Member, SaveMemberPayload } from '@/services/members
 import { useAuth } from '@/contexts/AuthContext';
 import { useZodForm, FieldError } from '@/hooks/useZodForm';
 import { memberInfoCenterSchema, type MemberInfoCenterFormValues } from '@/lib/schemas/member';
-import { MEMBERSHIP_STAGES, GENDER_OPTIONS } from '@/lib/constants';
+import { MEMBERSHIP_STAGES, GENDER_OPTIONS, USER_ROLES } from '@/lib/constants';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,6 +47,9 @@ const defaultFormValues: MemberInfoCenterFormValues = {
 
 export default function InfoCenterMembers() {
   const { user } = useAuth();
+  const userRoles = user?.roles || (user?.role ? [user.role] : []);
+  const canDelete = ['super_admin', 'church_admin', 'resident_pastor', 'team_lead'].some(r => userRoles.includes(r));
+
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -118,6 +121,7 @@ export default function InfoCenterMembers() {
     const payload: SaveMemberPayload = {
       firstName: data.firstName as string,
       surname: data.surname as string,
+      role: data.role || 'member',
       email: data.email,
       phoneNumber: data.phoneNumber,
       currentStage: data.currentStage,
@@ -338,9 +342,11 @@ export default function InfoCenterMembers() {
                           <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleOpenEdit(m)}>
                             <Pencil className="w-4 h-4 text-muted-foreground hover:text-foreground" />
                           </Button>
-                          <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => handleDelete(m)}>
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                          {canDelete && (
+                            <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => handleDelete(m)}>
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -437,12 +443,30 @@ export default function InfoCenterMembers() {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="homeAddress">Address</Label>
-              <Input
-                id="homeAddress"
-                {...form.getInputProps('homeAddress')}
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="role">User Role</Label>
+                <Select
+                  {...form.getSelectProps('role')}
+                >
+                  <SelectTrigger id="role">
+                    <SelectValue placeholder="Select role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {USER_ROLES.map(r => (
+                      <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="homeAddress">Address</Label>
+                <Input
+                  id="homeAddress"
+                  {...form.getInputProps('homeAddress')}
+                />
+              </div>
             </div>
 
             <DialogFooter className="pt-4 border-t border-border/50">

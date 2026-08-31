@@ -10,6 +10,7 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
 	"github.com/hofchurchng/church-backend/internal/ent/attendancerecord"
@@ -291,6 +292,24 @@ func (_u *UserUpdate) SetNillableRole(v *user.Role) *UserUpdate {
 	if v != nil {
 		_u.SetRole(*v)
 	}
+	return _u
+}
+
+// SetRoles sets the "roles" field.
+func (_u *UserUpdate) SetRoles(v []string) *UserUpdate {
+	_u.mutation.SetRoles(v)
+	return _u
+}
+
+// AppendRoles appends value to the "roles" field.
+func (_u *UserUpdate) AppendRoles(v []string) *UserUpdate {
+	_u.mutation.AppendRoles(v)
+	return _u
+}
+
+// ClearRoles clears the value of the "roles" field.
+func (_u *UserUpdate) ClearRoles() *UserUpdate {
+	_u.mutation.ClearRoles()
 	return _u
 }
 
@@ -910,6 +929,17 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.Role(); ok {
 		_spec.SetField(user.FieldRole, field.TypeEnum, value)
+	}
+	if value, ok := _u.mutation.Roles(); ok {
+		_spec.SetField(user.FieldRoles, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedRoles(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, user.FieldRoles, value)
+		})
+	}
+	if _u.mutation.RolesCleared() {
+		_spec.ClearField(user.FieldRoles, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.AccountStatus(); ok {
 		_spec.SetField(user.FieldAccountStatus, field.TypeEnum, value)
@@ -1817,6 +1847,24 @@ func (_u *UserUpdateOne) SetNillableRole(v *user.Role) *UserUpdateOne {
 	return _u
 }
 
+// SetRoles sets the "roles" field.
+func (_u *UserUpdateOne) SetRoles(v []string) *UserUpdateOne {
+	_u.mutation.SetRoles(v)
+	return _u
+}
+
+// AppendRoles appends value to the "roles" field.
+func (_u *UserUpdateOne) AppendRoles(v []string) *UserUpdateOne {
+	_u.mutation.AppendRoles(v)
+	return _u
+}
+
+// ClearRoles clears the value of the "roles" field.
+func (_u *UserUpdateOne) ClearRoles() *UserUpdateOne {
+	_u.mutation.ClearRoles()
+	return _u
+}
+
 // SetAccountStatus sets the "account_status" field.
 func (_u *UserUpdateOne) SetAccountStatus(v user.AccountStatus) *UserUpdateOne {
 	_u.mutation.SetAccountStatus(v)
@@ -2463,6 +2511,17 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 	}
 	if value, ok := _u.mutation.Role(); ok {
 		_spec.SetField(user.FieldRole, field.TypeEnum, value)
+	}
+	if value, ok := _u.mutation.Roles(); ok {
+		_spec.SetField(user.FieldRoles, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedRoles(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, user.FieldRoles, value)
+		})
+	}
+	if _u.mutation.RolesCleared() {
+		_spec.ClearField(user.FieldRoles, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.AccountStatus(); ok {
 		_spec.SetField(user.FieldAccountStatus, field.TypeEnum, value)

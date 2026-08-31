@@ -29,7 +29,8 @@ import {
   KeyRound,
   ShieldAlert,
   Sparkles,
-  BarChart3
+  BarChart3,
+  BookOpen
 } from 'lucide-react';
 import {
   Sidebar,
@@ -102,6 +103,11 @@ const adminItems = [
 
 const superAdminItems = [
   {
+    title: "Platform Guide",
+    url: "/super-admin/guide",
+    icon: BookOpen,
+  },
+  {
     title: "Local Churches",
     url: "/super-admin/churches",
     icon: Building2,
@@ -152,6 +158,23 @@ export function AppSidebar() {
     return isFeatureEnabled(item.flagKey, true);
   });
 
+  const userRoles = user?.roles || (user?.role ? [user.role] : []);
+  const isExecutive = ['super_admin', 'church_admin', 'resident_pastor', 'general_overseer'].some(r => userRoles.includes(r));
+  const userTeamName = ((user as any)?.team_name || user?.teamName || '').toLowerCase();
+
+  const isMembershipMember = isExecutive || 
+    userTeamName.includes('membership') || 
+    userRoles.includes('team_lead') || 
+    userRoles.includes('steward');
+
+  const isInfoCenterMember = isExecutive || 
+    userTeamName.includes('info') || 
+    userTeamName.includes('information') || 
+    userRoles.includes('team_lead') || 
+    userRoles.includes('steward');
+
+  const isAdminPanelVisible = adminPanelEnabled && (isExecutive || ['super_admin', 'church_admin'].some(r => userRoles.includes(r)));
+
   return (
     <Sidebar className="border-r glass-card">
       <SidebarHeader className={`p-2 md:p-4 ${isCollapsed ? 'px-2' : 'px-4 md:px-6'}`}>
@@ -193,7 +216,7 @@ export function AppSidebar() {
           </SidebarGroup>
         )}
 
-        {adminPanelEnabled && (user?.role === 'church_admin' || user?.role === 'super_admin') && (
+        {isAdminPanelVisible && (
           <Collapsible defaultOpen className="group/collapsible">
             <SidebarGroup className="border-[0.75px] border-primary/30 rounded-xl p-1.5 mb-3 bg-card/30">
               <SidebarGroupLabel asChild className={isCollapsed ? "sr-only" : "cursor-pointer"}>
@@ -222,9 +245,8 @@ export function AppSidebar() {
           </Collapsible>
         )}
 
-        {/* Membership Team Capabilities (Visible to Church Admin, Resident Pastor, Super Admin, or Membership Team Leads) */}
-        {membershipEnabled && (['super_admin', 'church_admin', 'resident_pastor'].includes(user?.role || '') ||
-          (user?.role === 'team_lead' && user?.teamName?.toLowerCase().includes('membership'))) && (
+        {/* Membership Team Capabilities */}
+        {membershipEnabled && isMembershipMember && (
           <Collapsible defaultOpen className="group/collapsible">
             <SidebarGroup className="border-[0.75px] border-primary/30 rounded-xl p-1.5 mb-3 bg-card/30">
               <SidebarGroupLabel asChild className={isCollapsed ? "sr-only" : "cursor-pointer"}>
@@ -236,6 +258,14 @@ export function AppSidebar() {
               <CollapsibleContent>
                 <SidebarGroupContent>
                   <SidebarMenu>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton asChild isActive={location.pathname === "/teams/membership/guide"}>
+                        <Link to="/teams/membership/guide" className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
+                          <BookOpen className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
+                          {!isCollapsed && <span className="text-xs">Team Guide</span>}
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
                     <SidebarMenuItem>
                       <SidebarMenuButton asChild isActive={location.pathname === "/teams/membership"}>
                         <Link to="/teams/membership" className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
@@ -291,9 +321,8 @@ export function AppSidebar() {
           </Collapsible>
         )}
 
-        {/* Information Center Capabilities (Visible to Church Admin, Resident Pastor, Super Admin, or Info Center Team Leads) */}
-        {infoCenterEnabled && (['super_admin', 'church_admin', 'resident_pastor'].includes(user?.role || '') ||
-          (user?.role === 'team_lead' && user?.teamName?.toLowerCase().includes('information'))) && (
+        {/* Information Center Capabilities */}
+        {infoCenterEnabled && isInfoCenterMember && (
           <Collapsible defaultOpen className="group/collapsible">
             <SidebarGroup className="border-[0.75px] border-primary/30 rounded-xl p-1.5 mb-3 bg-card/30">
               <SidebarGroupLabel asChild className={isCollapsed ? "sr-only" : "cursor-pointer"}>
@@ -305,6 +334,14 @@ export function AppSidebar() {
               <CollapsibleContent>
                 <SidebarGroupContent>
                   <SidebarMenu>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton asChild isActive={location.pathname === "/teams/info-center/guide"}>
+                        <Link to="/teams/info-center/guide" className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
+                          <BookOpen className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
+                          {!isCollapsed && <span className="text-xs">Team Guide</span>}
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
                     <SidebarMenuItem>
                       <SidebarMenuButton asChild isActive={location.pathname === "/teams/info-center"}>
                         <Link to="/teams/info-center" className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">

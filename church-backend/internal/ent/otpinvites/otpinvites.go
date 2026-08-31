@@ -122,23 +122,16 @@ type Role string
 
 // Role values.
 const (
-	RoleSuperAdmin                  Role = "super_admin"
-	RoleGeneralOverseer             Role = "general_overseer"
-	RoleResidentPastor              Role = "resident_pastor"
-	RoleChurchAdmin                 Role = "church_admin"
-	RoleSectorLead                  Role = "sector_lead"
-	RoleTeamLead                    Role = "team_lead"
-	RoleAssistantTeamLead           Role = "assistant_team_lead"
-	RoleMembershipTeamLead          Role = "membership_team_lead"
-	RoleMembershipAssistantTeamLead Role = "membership_assistant_team_lead"
-	RoleInfoCenterLead              Role = "info_center_lead"
-	RoleInfoCenterWorker            Role = "info_center_worker"
-	RoleTrainingCoordinator         Role = "training_coordinator"
-	RoleClassTeacher                Role = "class_teacher"
-	RoleSteward                     Role = "steward"
-	RoleMember                      Role = "member"
-	RoleFirstTimer                  Role = "first_timer"
-	RoleGuest                       Role = "guest"
+	RoleSuperAdmin      Role = "super_admin"
+	RoleGeneralOverseer Role = "general_overseer"
+	RoleResidentPastor  Role = "resident_pastor"
+	RoleChurchAdmin     Role = "church_admin"
+	RoleSectorLead      Role = "sector_lead"
+	RoleTeamLead        Role = "team_lead"
+	RoleSteward         Role = "steward"
+	RoleMember          Role = "member"
+	RoleFirstTimer      Role = "first_timer"
+	RoleGuest           Role = "guest"
 )
 
 func (r Role) String() string {
@@ -148,7 +141,7 @@ func (r Role) String() string {
 // RoleValidator is a validator for the "role" field enum values. It is called by the builders before save.
 func RoleValidator(r Role) error {
 	switch r {
-	case RoleSuperAdmin, RoleGeneralOverseer, RoleResidentPastor, RoleChurchAdmin, RoleSectorLead, RoleTeamLead, RoleAssistantTeamLead, RoleMembershipTeamLead, RoleMembershipAssistantTeamLead, RoleInfoCenterLead, RoleInfoCenterWorker, RoleTrainingCoordinator, RoleClassTeacher, RoleSteward, RoleMember, RoleFirstTimer, RoleGuest:
+	case RoleSuperAdmin, RoleGeneralOverseer, RoleResidentPastor, RoleChurchAdmin, RoleSectorLead, RoleTeamLead, RoleSteward, RoleMember, RoleFirstTimer, RoleGuest:
 		return nil
 	default:
 		return fmt.Errorf("otpinvites: invalid enum value for role field: %q", r)

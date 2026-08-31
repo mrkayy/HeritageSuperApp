@@ -44,6 +44,7 @@ export interface SystemUser {
   last_name: string;
   email: string;
   role: string;
+  roles?: string[];
   user_team: {
     team: {
       team_id: string;
@@ -80,6 +81,7 @@ export function useMemberDirectory({ userChurchId }: UseMemberDirectoryOptions =
   const [roleModalOpen, setRoleModalOpen] = useState(false);
   const [selectedUserForRole, setSelectedUserForRole] = useState<SystemUser | null>(null);
   const [selectedRole, setSelectedRole] = useState<string>('member');
+  const [selectedRoles, setSelectedRoles] = useState<string[]>(['member']);
   const [roleUpdating, setRoleUpdating] = useState(false);
 
   // Filters for User Roles tab
@@ -264,30 +266,42 @@ export function useMemberDirectory({ userChurchId }: UseMemberDirectoryOptions =
   const handleOpenRoleModal = (u: SystemUser) => {
     setSelectedUserForRole(u);
     setSelectedRole(u.role || 'member');
+    const initialRoles = u.roles && u.roles.length > 0 ? u.roles : [u.role || 'member'];
+    setSelectedRoles(initialRoles);
     setRoleModalOpen(true);
+  };
+
+  const handleToggleRole = (role: string) => {
+    setSelectedRoles((prev) => {
+      if (prev.includes(role)) {
+        const filtered = prev.filter((r) => r !== role);
+        return filtered.length > 0 ? filtered : ['member'];
+      }
+      return [...prev, role];
+    });
   };
 
   const handleUpdateRole = async () => {
     if (!selectedUserForRole) return;
     try {
       setRoleUpdating(true);
-      await api.put(`/users/${selectedUserForRole.user_id}/role`, {
-        role: selectedRole,
+      await api.put(`/users/${selectedUserForRole.user_id}/roles`, {
+        roles: selectedRoles,
       });
 
       toast({
         title: 'Success',
-        description: `Role updated to ${selectedRole.replace(/_/g, ' ')} successfully`,
+        description: 'User roles updated successfully',
       });
 
       setRoleModalOpen(false);
       setSelectedUserForRole(null);
       fetchUsers();
     } catch (error: any) {
-      console.error('Error updating user role:', error);
+      console.error('Error updating user roles:', error);
       toast({
         title: 'Error',
-        description: error?.response?.data?.message || 'Failed to update user role',
+        description: error?.response?.data?.message || 'Failed to update user roles',
         variant: 'destructive',
       });
     } finally {
@@ -345,6 +359,9 @@ export function useMemberDirectory({ userChurchId }: UseMemberDirectoryOptions =
     selectedUserForRole,
     selectedRole,
     setSelectedRole,
+    selectedRoles,
+    setSelectedRoles,
+    handleToggleRole,
     roleUpdating,
     handleOpenRoleModal,
     handleUpdateRole,

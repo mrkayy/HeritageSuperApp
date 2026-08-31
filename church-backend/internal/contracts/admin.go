@@ -172,3 +172,89 @@ type AuditLogDTO struct {
 	UserAgent    string    `json:"user_agent"`
 	CreatedAt    time.Time `json:"created_at"`
 }
+
+// ---------------------------------------------------------------------------
+// System Settings & Governance DTOs
+// ---------------------------------------------------------------------------
+
+type SystemSettingsDTO struct {
+	// Organization Profile
+	MinistryName string `json:"ministry_name"`
+	SupportEmail string `json:"support_email"`
+	SupportPhone string `json:"support_phone"`
+	WebsiteURL   string `json:"website_url"`
+
+	// Localization
+	Timezone        string `json:"timezone"`
+	DateFormat      string `json:"date_format"`
+	DefaultLanguage string `json:"default_language"`
+
+	// Security & Auth Policies
+	SessionTimeoutMinutes int    `json:"session_timeout_minutes"`
+	MaxPinAttempts        int    `json:"max_pin_attempts"`
+	PinLockoutMinutes     int    `json:"pin_lockout_minutes"`
+	MagicLinkExpiryHours  int    `json:"magic_link_expiry_hours"`
+	EnforcePinLogin       bool   `json:"enforce_pin_login"`
+	MaintenanceMode       bool   `json:"maintenance_mode"`
+	MaintenanceMessage    string `json:"maintenance_message"`
+
+	// Membership & Discipleship Defaults
+	FoundationClassMinAttendance int `json:"foundation_class_min_attendance"`
+	FollowupSlaDays              int `json:"followup_sla_days"`
+	AutoArchiveInactiveMonths    int `json:"auto_archive_inactive_months"`
+
+	// Notification Channels
+	EmailSenderName    string `json:"email_sender_name"`
+	EmailSenderAddress string `json:"email_sender_address"`
+	SmsEnabled         bool   `json:"sms_enabled"`
+	SmsSenderID        string `json:"sms_sender_id"`
+
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+type UpdateSystemSettingsDTO struct {
+	MinistryName                 *string `json:"ministry_name,omitempty"`
+	SupportEmail                 *string `json:"support_email,omitempty"`
+	SupportPhone                 *string `json:"support_phone,omitempty"`
+	WebsiteURL                   *string `json:"website_url,omitempty"`
+	Timezone                     *string `json:"timezone,omitempty"`
+	DateFormat                   *string `json:"date_format,omitempty"`
+	DefaultLanguage              *string `json:"default_language,omitempty"`
+	SessionTimeoutMinutes        *int    `json:"session_timeout_minutes,omitempty"`
+	MaxPinAttempts               *int    `json:"max_pin_attempts,omitempty"`
+	PinLockoutMinutes            *int    `json:"pin_lockout_minutes,omitempty"`
+	MagicLinkExpiryHours         *int    `json:"magic_link_expiry_hours,omitempty"`
+	EnforcePinLogin              *bool   `json:"enforce_pin_login,omitempty"`
+	MaintenanceMode              *bool   `json:"maintenance_mode,omitempty"`
+	MaintenanceMessage           *string `json:"maintenance_message,omitempty"`
+	FoundationClassMinAttendance *int    `json:"foundation_class_min_attendance,omitempty"`
+	FollowupSlaDays              *int    `json:"followup_sla_days,omitempty"`
+	AutoArchiveInactiveMonths    *int    `json:"auto_archive_inactive_months,omitempty"`
+	EmailSenderName              *string `json:"email_sender_name,omitempty"`
+	EmailSenderAddress           *string `json:"email_sender_address,omitempty"`
+	SmsEnabled                   *bool   `json:"sms_enabled,omitempty"`
+	SmsSenderID                  *string `json:"sms_sender_id,omitempty"`
+}
+
+type RolePermissionsMatrixDTO struct {
+	Permissions map[string]map[string]map[string]bool `json:"permissions"`
+	UpdatedAt   time.Time                             `json:"updated_at"`
+}
+
+type UpdateRolePermissionsDTO struct {
+	Permissions map[string]map[string]map[string]bool `json:"permissions"`
+}
+
+type SystemDiagnosticsDTO struct {
+	Status             string    `json:"status"`
+	DatabaseStatus     string    `json:"database_status"`
+	ServerTime         time.Time `json:"server_time"`
+	UptimeSeconds      int64     `json:"uptime_seconds"`
+	Environment        string    `json:"environment"`
+	Version            string    `json:"version"`
+	TotalUsers         int       `json:"total_users"`
+	TotalChurches      int       `json:"total_churches"`
+	TotalMembers       int       `json:"total_members"`
+	ActiveFeatureFlags int       `json:"active_feature_flags"`
+}
+

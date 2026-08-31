@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/hofchurchng/church-backend/internal/contracts"
@@ -249,3 +250,105 @@ func (s *Service) GetExecutiveAnalytics(ctx context.Context, actorUser contracts
 func (s *Service) ListAuditLogs(ctx context.Context, limit int) ([]contracts.AuditLogDTO, error) {
 	return s.repo.ListAuditLogs(ctx, limit)
 }
+
+// ---------------------------------------------------------------------------
+// System Settings & Governance Service Methods
+// ---------------------------------------------------------------------------
+
+var serverStartTime = time.Now()
+
+func (s *Service) GetSystemSettings(ctx context.Context) (contracts.SystemSettingsDTO, error) {
+	return s.repo.GetSystemSettings(ctx)
+}
+
+func (s *Service) UpdateSystemSettings(ctx context.Context, input contracts.UpdateSystemSettingsDTO, actorUser contracts.AuthedUser) (contracts.SystemSettingsDTO, error) {
+	dto, err := s.repo.UpdateSystemSettings(ctx, input)
+	if err != nil {
+		return contracts.SystemSettingsDTO{}, err
+	}
+
+	uid := actorUser.ID
+	_ = s.repo.CreateAuditLog(ctx, contracts.AuditLogDTO{
+		ActorUserID:  &uid,
+		ActorName:    actorUser.Email,
+		ActorEmail:   actorUser.Email,
+		ActorRole:    actorUser.CurrentRole,
+		Action:       "update_system_settings",
+		ResourceType: "system_settings",
+		ResourceID:   "global",
+		Details:      "Updated platform governance & system configuration parameters",
+	})
+
+	return dto, nil
+}
+
+func (s *Service) GetRolePermissions(ctx context.Context) (contracts.RolePermissionsMatrixDTO, error) {
+	return s.repo.GetRolePermissions(ctx)
+}
+
+func (s *Service) UpdateRolePermissions(ctx context.Context, input contracts.UpdateRolePermissionsDTO, actorUser contracts.AuthedUser) (contracts.RolePermissionsMatrixDTO, error) {
+	dto, err := s.repo.UpdateRolePermissions(ctx, input)
+	if err != nil {
+		return contracts.RolePermissionsMatrixDTO{}, err
+	}
+
+	uid := actorUser.ID
+	_ = s.repo.CreateAuditLog(ctx, contracts.AuditLogDTO{
+		ActorUserID:  &uid,
+		ActorName:    actorUser.Email,
+		ActorEmail:   actorUser.Email,
+		ActorRole:    actorUser.CurrentRole,
+		Action:       "update_role_permissions",
+		ResourceType: "role_permissions",
+		ResourceID:   "matrix",
+		Details:      "Updated dynamic role and module permission matrix",
+	})
+
+	return dto, nil
+}
+
+func (s *Service) GetSystemDiagnostics(ctx context.Context) (contracts.SystemDiagnosticsDTO, error) {
+	uptime := int64(time.Since(serverStartTime).Seconds())
+	return s.repo.GetSystemDiagnostics(ctx, uptime)
+}
+
+func (s *Service) GetChurchSettings(ctx context.Context, churchIDStr string) (contracts.ChurchSettingDTO, error) {
+	churchID, err := uuid.Parse(churchIDStr)
+	if err != nil {
+		return contracts.ChurchSettingDTO{}, errors.New("invalid church id")
+	}
+	return s.repo.GetChurchSettings(ctx, churchID)
+}
+
+func (s *Service) UpdateChurchSettings(ctx context.Context, churchIDStr string, minAttendance int, actorUser contracts.AuthedUser) (contracts.ChurchSettingDTO, error) {
+	churchID, err := uuid.Parse(churchIDStr)
+	if err != nil {
+		return contracts.ChurchSettingDTO{}, errors.New("invalid church id")
+	}
+
+	if minAttendance <= 0 {
+		minAttendance = 1
+	}
+
+	dto, err := s.repo.UpdateChurchSettings(ctx, churchID, minAttendance)
+	if err != nil {
+		return contracts.ChurchSettingDTO{}, err
+	}
+
+	uid := actorUser.ID
+	cid := churchIDStr
+	_ = s.repo.CreateAuditLog(ctx, contracts.AuditLogDTO{
+		ActorUserID:  &uid,
+		ActorName:    actorUser.Email,
+		ActorEmail:   actorUser.Email,
+		ActorRole:    actorUser.CurrentRole,
+		ChurchID:     &cid,
+		Action:       "update_church_settings",
+		ResourceType: "church_settings",
+		ResourceID:   churchIDStr,
+		Details:      fmt.Sprintf("Updated minimum foundation class attendance threshold to %d", minAttendance),
+	})
+
+	return dto, nil
+}
+

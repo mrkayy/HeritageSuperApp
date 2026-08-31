@@ -437,12 +437,16 @@ func init() {
 	transportrequest.DefaultID = transportrequestDescID.Default.(func() uuid.UUID)
 	userFields := schema.User{}.Fields()
 	_ = userFields
+	// userDescRoles is the schema descriptor for roles field.
+	userDescRoles := userFields[15].Descriptor()
+	// user.DefaultRoles holds the default value on creation for the roles field.
+	user.DefaultRoles = userDescRoles.Default.([]string)
 	// userDescIsProfileComplete is the schema descriptor for is_profile_complete field.
-	userDescIsProfileComplete := userFields[16].Descriptor()
+	userDescIsProfileComplete := userFields[17].Descriptor()
 	// user.DefaultIsProfileComplete holds the default value on creation for the is_profile_complete field.
 	user.DefaultIsProfileComplete = userDescIsProfileComplete.Default.(bool)
 	// userDescCreatedAt is the schema descriptor for created_at field.
-	userDescCreatedAt := userFields[17].Descriptor()
+	userDescCreatedAt := userFields[18].Descriptor()
 	// user.DefaultCreatedAt holds the default value on creation for the created_at field.
 	user.DefaultCreatedAt = userDescCreatedAt.Default.(func() time.Time)
 	// userDescID is the schema descriptor for id field.

@@ -44,6 +44,9 @@ func (s *Service) UpdateMember(ctx context.Context, id string, in AddMemberInput
 	if in.FirstName == "" || in.Surname == "" {
 		return contracts.Member{}, fmt.Errorf("first name and surname are required")
 	}
+	if in.Role == "" {
+		in.Role = string(contracts.RoleMember)
+	}
 	// Validate role
 	if !contracts.IsValidRole(in.Role) {
 		return contracts.Member{}, fmt.Errorf("invalid role: %s", in.Role)
@@ -69,7 +72,9 @@ func (s *Service) ProfileMember(ctx context.Context, in ProfileMemberInput) (con
 	if (in.FirstName == "" && in.Name == "") || in.Email == "" {
 		return contracts.Member{}, fmt.Errorf("name and email are required")
 	}
-
+	if in.Role == "" {
+		in.Role = string(contracts.RoleMember)
+	}
 	// Validate role
 	if !contracts.IsValidRole(in.Role) {
 		return contracts.Member{}, fmt.Errorf("invalid role: %s", in.Role)

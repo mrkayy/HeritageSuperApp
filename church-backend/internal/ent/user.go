@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -49,6 +50,8 @@ type User struct {
 	Address *string `json:"address,omitempty"`
 	// Role holds the value of the "role" field.
 	Role user.Role `json:"role,omitempty"`
+	// Roles holds the value of the "roles" field.
+	Roles []string `json:"roles,omitempty"`
 	// AccountStatus holds the value of the "account_status" field.
 	AccountStatus user.AccountStatus `json:"account_status,omitempty"`
 	// IsProfileComplete holds the value of the "is_profile_complete" field.
@@ -246,6 +249,8 @@ func (*User) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case user.FieldChurchID, user.FieldSectorID, user.FieldTeamID:
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
+		case user.FieldRoles:
+			values[i] = new([]byte)
 		case user.FieldIsProfileComplete:
 			values[i] = new(sql.NullBool)
 		case user.FieldUsername, user.FieldFirstName, user.FieldLastName, user.FieldEmail, user.FieldPasswordHash, user.FieldPinHash, user.FieldPhoneNumber, user.FieldProfileImageURL, user.FieldAddress, user.FieldRole, user.FieldAccountStatus:
@@ -367,6 +372,14 @@ func (_m *User) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field role", values[i])
 			} else if value.Valid {
 				_m.Role = user.Role(value.String)
+			}
+		case user.FieldRoles:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field roles", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.Roles); err != nil {
+					return fmt.Errorf("unmarshal field roles: %w", err)
+				}
 			}
 		case user.FieldAccountStatus:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -556,6 +569,9 @@ func (_m *User) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("role=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Role))
+	builder.WriteString(", ")
+	builder.WriteString("roles=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Roles))
 	builder.WriteString(", ")
 	builder.WriteString("account_status=")
 	builder.WriteString(fmt.Sprintf("%v", _m.AccountStatus))

@@ -741,11 +741,90 @@ func (r *Repository) ListUsers(ctx context.Context) ([]*ent.User, error) {
 }
 
 func (r *Repository) UpdateUserRole(ctx context.Context, userID string, role string) error {
+	return r.UpdateUserRoles(ctx, userID, []string{role})
+}
+
+func (r *Repository) UpdateUserRoles(ctx context.Context, userID string, roles []string) error {
 	uid, err := uuid.Parse(userID)
 	if err != nil {
 		return err
 	}
+	if len(roles) == 0 {
+		roles = []string{"member"}
+	}
+	primaryRole := roles[0]
+	if !contracts.IsValidRole(primaryRole) {
+		primaryRole = "member"
+	}
 	return r.db.User.UpdateOneID(uid).
-		SetRole(entuser.Role(role)).
+		SetRole(entuser.Role(primaryRole)).
+		SetRoles(roles).
+		Exec(ctx)
+}
+
+func (r *Repository) AppendUserRole(ctx context.Context, userID string, role string) error {
+	uid, err := uuid.Parse(userID)
+	if err != nil {
+		return err
+	}
+	u, err := r.db.User.Get(ctx, uid)
+	if err != nil {
+		return err
+	}
+	currentRoles := u.Roles
+	if len(currentRoles) == 0 {
+		if u.Role != "" {
+			currentRoles = []string{string(u.Role)}
+		} else {
+			currentRoles = []string{"member"}
+		}
+	}
+	exists := false
+	for _, rStr := range currentRoles {
+		if rStr == role {
+			exists = true
+			break
+		}
+	}
+	if !exists {
+		currentRoles = append(currentRoles, role)
+	}
+	primaryRole := currentRoles[0]
+	return r.db.User.UpdateOneID(uid).
+		SetRole(entuser.Role(primaryRole)).
+		SetRoles(currentRoles).
+		Exec(ctx)
+}
+
+func (r *Repository) RemoveUserRole(ctx context.Context, userID string, role string) error {
+	uid, err := uuid.Parse(userID)
+	if err != nil {
+		return err
+	}
+	u, err := r.db.User.Get(ctx, uid)
+	if err != nil {
+		return err
+	}
+	currentRoles := u.Roles
+	if len(currentRoles) == 0 {
+		if u.Role != "" {
+			currentRoles = []string{string(u.Role)}
+		} else {
+			currentRoles = []string{"member"}
+		}
+	}
+	newRoles := make([]string, 0, len(currentRoles))
+	for _, rStr := range currentRoles {
+		if rStr != role {
+			newRoles = append(newRoles, rStr)
+		}
+	}
+	if len(newRoles) == 0 {
+		newRoles = []string{"member"}
+	}
+	primaryRole := newRoles[0]
+	return r.db.User.UpdateOneID(uid).
+		SetRole(entuser.Role(primaryRole)).
+		SetRoles(newRoles).
 		Exec(ctx)
 }

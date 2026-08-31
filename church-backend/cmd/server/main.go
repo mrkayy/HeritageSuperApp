@@ -160,6 +160,7 @@ func main() {
 		string(contracts.RoleResidentPastor),
 		string(contracts.RoleChurchAdmin),
 		string(contracts.RoleSuperAdmin),
+		string(contracts.RoleSteward),
 	)
 
 	membersGroup := api.Group("/members", requireAuth, requireAdminOrPastorOrLead, middleware.RequireFeature(featureflagsSvc, "feature_membership_team"))

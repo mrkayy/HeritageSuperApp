@@ -31,6 +31,15 @@ func (h *Handler) RegisterSuperAdminRoutes(g *echo.Group) {
 
 	// Security Audit Logs
 	g.GET("/audit-logs", h.listAuditLogs)
+
+	// System Settings & Governance
+	g.GET("/settings", h.getSystemSettings)
+	g.PUT("/settings", h.updateSystemSettings)
+	g.GET("/settings/permissions", h.getRolePermissions)
+	g.PUT("/settings/permissions", h.updateRolePermissions)
+	g.GET("/settings/diagnostics", h.getSystemDiagnostics)
+	g.GET("/settings/churches/:id", h.getChurchSettings)
+	g.PUT("/settings/churches/:id", h.updateChurchSettings)
 }
 
 func (h *Handler) RegisterGeneralOverseerRoutes(g *echo.Group) {
@@ -232,3 +241,103 @@ func (h *Handler) listAuditLogs(c echo.Context) error {
 	}
 	return c.JSON(http.StatusOK, logs)
 }
+
+// ---------------------------------------------------------------------------
+// System Settings & Governance Handlers
+// ---------------------------------------------------------------------------
+
+func (h *Handler) getSystemSettings(c echo.Context) error {
+	settings, err := h.svc.GetSystemSettings(c.Request().Context())
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"message": err.Error()})
+	}
+	return c.JSON(http.StatusOK, settings)
+}
+
+func (h *Handler) updateSystemSettings(c echo.Context) error {
+	actor, ok := contracts.UserFromContext(c.Request().Context())
+	if !ok {
+		return c.JSON(http.StatusUnauthorized, map[string]string{"message": "unauthorized"})
+	}
+
+	var req contracts.UpdateSystemSettingsDTO
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"message": "invalid request body"})
+	}
+
+	dto, err := h.svc.UpdateSystemSettings(c.Request().Context(), req, actor)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"message": err.Error()})
+	}
+
+	return c.JSON(http.StatusOK, dto)
+}
+
+func (h *Handler) getRolePermissions(c echo.Context) error {
+	perms, err := h.svc.GetRolePermissions(c.Request().Context())
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"message": err.Error()})
+	}
+	return c.JSON(http.StatusOK, perms)
+}
+
+func (h *Handler) updateRolePermissions(c echo.Context) error {
+	actor, ok := contracts.UserFromContext(c.Request().Context())
+	if !ok {
+		return c.JSON(http.StatusUnauthorized, map[string]string{"message": "unauthorized"})
+	}
+
+	var req contracts.UpdateRolePermissionsDTO
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"message": "invalid request body"})
+	}
+
+	dto, err := h.svc.UpdateRolePermissions(c.Request().Context(), req, actor)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"message": err.Error()})
+	}
+
+	return c.JSON(http.StatusOK, dto)
+}
+
+func (h *Handler) getSystemDiagnostics(c echo.Context) error {
+	diagnostics, err := h.svc.GetSystemDiagnostics(c.Request().Context())
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"message": err.Error()})
+	}
+	return c.JSON(http.StatusOK, diagnostics)
+}
+
+func (h *Handler) getChurchSettings(c echo.Context) error {
+	id := c.Param("id")
+	settings, err := h.svc.GetChurchSettings(c.Request().Context(), id)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"message": err.Error()})
+	}
+	return c.JSON(http.StatusOK, settings)
+}
+
+type updateChurchSettingsInput struct {
+	FoundationClassMinAttendance int `json:"foundation_class_min_attendance"`
+}
+
+func (h *Handler) updateChurchSettings(c echo.Context) error {
+	actor, ok := contracts.UserFromContext(c.Request().Context())
+	if !ok {
+		return c.JSON(http.StatusUnauthorized, map[string]string{"message": "unauthorized"})
+	}
+
+	id := c.Param("id")
+	var req updateChurchSettingsInput
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"message": "invalid request body"})
+	}
+
+	dto, err := h.svc.UpdateChurchSettings(c.Request().Context(), id, req.FoundationClassMinAttendance, actor)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"message": err.Error()})
+	}
+
+	return c.JSON(http.StatusOK, dto)
+}
+

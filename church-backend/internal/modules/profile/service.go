@@ -253,3 +253,26 @@ func (s *Service) UpdateUserRole(ctx context.Context, userID string, role string
 	}
 	return s.repo.UpdateUserRole(ctx, userID, role)
 }
+
+func (s *Service) UpdateUserRoles(ctx context.Context, userID string, roles []string) error {
+	for _, r := range roles {
+		if !contracts.IsValidRole(r) {
+			return errors.New("invalid role: " + r)
+		}
+	}
+	return s.repo.UpdateUserRoles(ctx, userID, roles)
+}
+
+func (s *Service) AppendUserRole(ctx context.Context, userID string, role string) error {
+	if !contracts.IsValidRole(role) {
+		return errors.New("invalid role: " + role)
+	}
+	return s.repo.AppendUserRole(ctx, userID, role)
+}
+
+func (s *Service) RemoveUserRole(ctx context.Context, userID string, role string) error {
+	if !contracts.IsValidRole(role) {
+		return errors.New("invalid role: " + role)
+	}
+	return s.repo.RemoveUserRole(ctx, userID, role)
+}

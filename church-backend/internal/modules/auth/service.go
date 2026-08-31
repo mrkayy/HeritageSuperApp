@@ -102,3 +102,63 @@ func (s *Service) CheckMemberExists(ctx context.Context, email string) (bool, er
 	return s.repo.CheckMemberExists(ctx, email)
 }
 
+type VerifyMagicLinkResult struct {
+	Email     string `json:"email"`
+	Role      string `json:"role"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+	Valid     bool   `json:"valid"`
+}
+
+func (s *Service) VerifyMagicLink(ctx context.Context, code, email string) (VerifyMagicLinkResult, error) {
+	invite, err := s.repo.VerifyMagicLink(ctx, code, email)
+	if err != nil {
+		return VerifyMagicLinkResult{Valid: false}, err
+	}
+
+	firstName := invite.FirstName
+	lastName := invite.LastName
+
+	return VerifyMagicLinkResult{
+		Email:     email,
+		Role:      string(invite.Role),
+		FirstName: firstName,
+		LastName:  lastName,
+		Valid:     true,
+	}, nil
+}
+
+func (s *Service) CompleteMagicLinkOnboarding(ctx context.Context, code, email, firstName, lastName, password string) (LoginResult, error) {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return LoginResult{}, err
+	}
+
+	u, err := s.repo.CompleteMagicLinkOnboarding(ctx, code, email, firstName, lastName, string(hashedPassword))
+	if err != nil {
+		return LoginResult{}, err
+	}
+
+	token, err := issueToken(s.jwtSecret, u.ID, u.Email, u.Roles, u.TeamID, u.TeamName)
+	if err != nil {
+		return LoginResult{}, err
+	}
+
+	currentRole := ""
+	if len(u.Roles) > 0 {
+		currentRole = u.Roles[0]
+	}
+
+	return LoginResult{
+		Token:       token,
+		ID:          u.ID,
+		Email:       u.Email,
+		FirstName:   u.FirstName,
+		LastName:    u.LastName,
+		Roles:       u.Roles,
+		CurrentRole: currentRole,
+		TeamID:      u.TeamID,
+		TeamName:    u.TeamName,
+	}, nil
+}
+

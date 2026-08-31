@@ -27,9 +27,7 @@ const LEADERSHIP_ROLES = [
   { value: 'resident_pastor', label: 'Resident Pastor (Branch Super-Admin)' },
   { value: 'church_admin', label: 'Church Admin' },
   { value: 'super_admin', label: 'Super Admin (Global Platform)' },
-  { value: 'general_overseer', label: 'General Overseer' },
-  { value: 'membership_team_lead', label: 'Membership Team Lead' },
-  { value: 'info_center_lead', label: 'Information Center Lead' },
+  { value: 'general_overseer', label: 'General Overseer' }
 ];
 
 export default function SuperAdminInvites() {

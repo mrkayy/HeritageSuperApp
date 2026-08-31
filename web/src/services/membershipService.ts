@@ -40,6 +40,7 @@ export interface Member {
 export interface SaveMemberPayload {
   firstName: string;
   surname: string;
+  role?: string;
   email?: string;
   phoneNumber?: string;
   homeAddress?: string;

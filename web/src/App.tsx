@@ -10,6 +10,8 @@ import AppLayout from "./components/layout/AppLayout";
 import Login from "./pages/auth/Login";
 import AdminLogin from "./pages/auth/AdminLogin";
 import Register from "./pages/auth/Register";
+import ClaimAccount from "./pages/auth/ClaimAccount";
+import MagicLogin from "./pages/auth/MagicLogin";
 import Dashboard from "./pages/Dashboard";
 import SoulRegistration from "./pages/SoulRegistration";
 import SoulJournal from "./pages/SoulJournal";
@@ -24,6 +26,7 @@ import SuperAdminChurches from "./pages/admin/SuperAdminChurches";
 import SuperAdminInvites from "./pages/admin/SuperAdminInvites";
 import SuperAdminSettings from "./pages/admin/SuperAdminSettings";
 import SuperAdminAuditLogs from "./pages/admin/SuperAdminAuditLogs";
+import SuperAdminGuide from "./pages/admin/SuperAdminGuide";
 import GeneralOverseerDossier from "./pages/admin/GeneralOverseerDossier";
 import ExecutiveAnalytics from "./pages/admin/ExecutiveAnalytics";
 import MemberInvites from "./pages/admin/MemberInvites";
@@ -42,6 +45,8 @@ import VisitorIntake from "./pages/teams/VisitorIntake";
 import AttendanceTracking from "./pages/teams/AttendanceTracking";
 import FoundationCandidates from "./pages/teams/FoundationCandidates";
 import ProfilingQueue from "./pages/teams/ProfilingQueue";
+import MembershipTeamGuide from "./pages/teams/MembershipTeamGuide";
+import InfoCenterGuide from "./pages/teams/InfoCenterGuide";
 
 import { FeatureFlagProvider } from "./contexts/FeatureFlagContext";
 import FeatureFlagGate from "./components/auth/FeatureFlagGate";
@@ -68,6 +73,16 @@ const App = () => (
               <Route path="/register" element={
                 <PublicRoute>
                   <Register />
+                </PublicRoute>
+              } />
+              <Route path="/claim-account" element={
+                <PublicRoute>
+                  <ClaimAccount />
+                </PublicRoute>
+              } />
+              <Route path="/auth/magic-login" element={
+                <PublicRoute>
+                  <MagicLogin />
                 </PublicRoute>
               } />
               <Route path="/public-map" element={<PublicMap />} />
@@ -138,6 +153,7 @@ const App = () => (
                 <Route path="super-admin/leadership-invites" element={<SuperAdminInvites />} />
                 <Route path="super-admin/audit-logs" element={<SuperAdminAuditLogs />} />
                 <Route path="super-admin/settings" element={<SuperAdminSettings />} />
+                <Route path="super-admin/guide" element={<SuperAdminGuide />} />
                 <Route path="general-overseer/dossier" element={<GeneralOverseerDossier />} />
                 <Route path="analytics/executive" element={<ExecutiveAnalytics />} />
 
@@ -172,6 +188,11 @@ const App = () => (
                     <ProfilingQueue />
                   </FeatureFlagGate>
                 } />
+                <Route path="teams/membership/guide" element={
+                  <FeatureFlagGate flagKey="feature_membership_team">
+                    <MembershipTeamGuide />
+                  </FeatureFlagGate>
+                } />
 
                 {/* Information Center routes */}
                 <Route path="teams/info-center" element={
@@ -202,6 +223,11 @@ const App = () => (
                 <Route path="teams/info-center/foundation-class" element={
                   <FeatureFlagGate flagKey="feature_info_center">
                     <FoundationCandidates />
+                  </FeatureFlagGate>
+                } />
+                <Route path="teams/info-center/guide" element={
+                  <FeatureFlagGate flagKey="feature_info_center">
+                    <InfoCenterGuide />
                   </FeatureFlagGate>
                 } />
               </Route>

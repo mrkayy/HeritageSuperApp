@@ -24007,6 +24007,8 @@ type UserMutation struct {
 	date_of_birth               *time.Time
 	address                     *string
 	role                        *user.Role
+	roles                       *[]string
+	appendroles                 []string
 	account_status              *user.AccountStatus
 	is_profile_complete         *bool
 	created_at                  *time.Time
@@ -24781,6 +24783,71 @@ func (m *UserMutation) OldRole(ctx context.Context) (v user.Role, err error) {
 // ResetRole resets all changes to the "role" field.
 func (m *UserMutation) ResetRole() {
 	m.role = nil
+}
+
+// SetRoles sets the "roles" field.
+func (m *UserMutation) SetRoles(s []string) {
+	m.roles = &s
+	m.appendroles = nil
+}
+
+// Roles returns the value of the "roles" field in the mutation.
+func (m *UserMutation) Roles() (r []string, exists bool) {
+	v := m.roles
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRoles returns the old "roles" field's value of the User entity.
+// If the User object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserMutation) OldRoles(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRoles is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRoles requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRoles: %w", err)
+	}
+	return oldValue.Roles, nil
+}
+
+// AppendRoles adds s to the "roles" field.
+func (m *UserMutation) AppendRoles(s []string) {
+	m.appendroles = append(m.appendroles, s...)
+}
+
+// AppendedRoles returns the list of values that were appended to the "roles" field in this mutation.
+func (m *UserMutation) AppendedRoles() ([]string, bool) {
+	if len(m.appendroles) == 0 {
+		return nil, false
+	}
+	return m.appendroles, true
+}
+
+// ClearRoles clears the value of the "roles" field.
+func (m *UserMutation) ClearRoles() {
+	m.roles = nil
+	m.appendroles = nil
+	m.clearedFields[user.FieldRoles] = struct{}{}
+}
+
+// RolesCleared returns if the "roles" field was cleared in this mutation.
+func (m *UserMutation) RolesCleared() bool {
+	_, ok := m.clearedFields[user.FieldRoles]
+	return ok
+}
+
+// ResetRoles resets all changes to the "roles" field.
+func (m *UserMutation) ResetRoles() {
+	m.roles = nil
+	m.appendroles = nil
+	delete(m.clearedFields, user.FieldRoles)
 }
 
 // SetAccountStatus sets the "account_status" field.
@@ -25654,7 +25721,7 @@ func (m *UserMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *UserMutation) Fields() []string {
-	fields := make([]string, 0, 17)
+	fields := make([]string, 0, 18)
 	if m.church != nil {
 		fields = append(fields, user.FieldChurchID)
 	}
@@ -25696,6 +25763,9 @@ func (m *UserMutation) Fields() []string {
 	}
 	if m.role != nil {
 		fields = append(fields, user.FieldRole)
+	}
+	if m.roles != nil {
+		fields = append(fields, user.FieldRoles)
 	}
 	if m.account_status != nil {
 		fields = append(fields, user.FieldAccountStatus)
@@ -25742,6 +25812,8 @@ func (m *UserMutation) Field(name string) (ent.Value, bool) {
 		return m.Address()
 	case user.FieldRole:
 		return m.Role()
+	case user.FieldRoles:
+		return m.Roles()
 	case user.FieldAccountStatus:
 		return m.AccountStatus()
 	case user.FieldIsProfileComplete:
@@ -25785,6 +25857,8 @@ func (m *UserMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldAddress(ctx)
 	case user.FieldRole:
 		return m.OldRole(ctx)
+	case user.FieldRoles:
+		return m.OldRoles(ctx)
 	case user.FieldAccountStatus:
 		return m.OldAccountStatus(ctx)
 	case user.FieldIsProfileComplete:
@@ -25898,6 +25972,13 @@ func (m *UserMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetRole(v)
 		return nil
+	case user.FieldRoles:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRoles(v)
+		return nil
 	case user.FieldAccountStatus:
 		v, ok := value.(user.AccountStatus)
 		if !ok {
@@ -25976,6 +26057,9 @@ func (m *UserMutation) ClearedFields() []string {
 	if m.FieldCleared(user.FieldAddress) {
 		fields = append(fields, user.FieldAddress)
 	}
+	if m.FieldCleared(user.FieldRoles) {
+		fields = append(fields, user.FieldRoles)
+	}
 	return fields
 }
 
@@ -26016,6 +26100,9 @@ func (m *UserMutation) ClearField(name string) error {
 		return nil
 	case user.FieldAddress:
 		m.ClearAddress()
+		return nil
+	case user.FieldRoles:
+		m.ClearRoles()
 		return nil
 	}
 	return fmt.Errorf("unknown User nullable field %s", name)
@@ -26066,6 +26153,9 @@ func (m *UserMutation) ResetField(name string) error {
 		return nil
 	case user.FieldRole:
 		m.ResetRole()
+		return nil
+	case user.FieldRoles:
+		m.ResetRoles()
 		return nil
 	case user.FieldAccountStatus:
 		m.ResetAccountStatus()

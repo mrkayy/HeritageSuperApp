@@ -62,19 +62,15 @@ func (User) Fields() []ent.Field {
 				"church_admin",
 				"sector_lead",
 				"team_lead",
-				"assistant_team_lead",
-				"membership_team_lead",
-				"membership_assistant_team_lead",
-				"info_center_lead",
-				"info_center_worker",
-				"training_coordinator",
-				"class_teacher",
 				"steward",
 				"member",
 				"first_timer",
 				"guest",
 			).
 			Default("member"),
+		field.JSON("roles", []string{}).
+			Optional().
+			Default([]string{"member"}),
 		field.Enum("account_status").
 			Values("active", "inactive", "suspended", "pending").
 			Default("pending"),

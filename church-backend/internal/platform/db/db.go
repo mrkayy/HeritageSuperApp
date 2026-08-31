@@ -12,6 +12,7 @@ import (
 	"github.com/hofchurchng/church-backend/internal/ent"
 	"github.com/hofchurchng/church-backend/internal/ent/featureflag"
 	"github.com/hofchurchng/church-backend/internal/ent/localchurch"
+	"github.com/hofchurchng/church-backend/internal/ent/member"
 	"github.com/hofchurchng/church-backend/internal/ent/sector"
 	"github.com/hofchurchng/church-backend/internal/ent/team"
 	entuser "github.com/hofchurchng/church-backend/internal/ent/user"
@@ -58,10 +59,9 @@ func Connect(ctx context.Context, url string) (*ent.Client, error) {
 		return nil, fmt.Errorf("seed feature flags: %w", err)
 	}
 
-	// Seed dummy users for testing
-	if err := seedDummyUsers(ctx, client); err != nil {
-		client.Close()
-		return nil, fmt.Errorf("seed dummy users: %w", err)
+	// Sync all leadership invites into Member and User directory tables
+	if err := syncAllInvitesToMembersAndUsers(ctx, client); err != nil {
+		log.Printf("[db] warning: syncAllInvitesToMembersAndUsers: %v", err)
 	}
 
 	return client, nil
@@ -342,9 +342,9 @@ func seedDummyUsers(ctx context.Context, client *ent.Client) error {
 		Phone     string
 	}{
 		{"Olayinka", "Adekunle", "josepholukayode05+olayinka@gmail.com", entuser.RoleChurchAdmin, "+2348101000001"},
-		{"Chidinma", "Okafor", "josepholukayode05+chidinma@gmail.com", entuser.RoleInfoCenterLead, "+2348101000002"},
-		{"Emeka", "Nwosu", "josepholukayode05+emeka@gmail.com", entuser.RoleInfoCenterWorker, "+2348101000003"},
-		{"Funke", "Adeyemi", "josepholukayode05+funke@gmail.com", entuser.RoleMembershipTeamLead, "+2348101000004"},
+		{"Chidinma", "Okafor", "josepholukayode05+chidinma@gmail.com", entuser.RoleTeamLead, "+2348101000002"},
+		{"Emeka", "Nwosu", "josepholukayode05+emeka@gmail.com", entuser.RoleSteward, "+2348101000003"},
+		{"Funke", "Adeyemi", "josepholukayode05+funke@gmail.com", entuser.RoleTeamLead, "+2348101000004"},
 		{"Tunde", "Bakare", "josepholukayode05+tunde@gmail.com", entuser.RoleTeamLead, "+2348101000005"},
 		{"Amara", "Eze", "josepholukayode05+amara@gmail.com", entuser.RoleSteward, "+2348101000006"},
 		{"Biodun", "Salami", "josepholukayode05+biodun@gmail.com", entuser.RoleMember, "+2348101000007"},
@@ -379,6 +379,85 @@ func seedDummyUsers(ctx context.Context, client *ent.Client) error {
 		log.Printf("[db] Seeded user: %s %s (%s)", u.FirstName, u.LastName, u.Role)
 	}
 
+	return nil
+}
+
+func syncAllInvitesToMembersAndUsers(ctx context.Context, client *ent.Client) error {
+	invites, err := client.OtpInvites.Query().All(ctx)
+	if err != nil {
+		return err
+	}
+
+	for _, inv := range invites {
+		if inv.Email == "" {
+			continue
+		}
+		roleStr := string(inv.Role)
+		if roleStr == "" {
+			roleStr = "member"
+		}
+
+		// 1. Sync Member record
+		_, err = client.Member.Query().
+			Where(member.EmailEqualFold(inv.Email)).
+			Only(ctx)
+
+		if err != nil {
+			cp := client.Member.Create().
+				SetEmail(inv.Email).
+				SetFirstName(inv.FirstName).
+				SetSurname(inv.LastName).
+				SetCurrentStage(member.CurrentStageStewardship)
+
+			if inv.ChurchID != nil {
+				cp.SetLocalChurchID(*inv.ChurchID)
+			}
+			if inv.SectorID != nil {
+				cp.SetSectorID(*inv.SectorID)
+			}
+			_, err = cp.Save(ctx)
+			if err != nil {
+				log.Printf("[db] error syncing member for %s: %v", inv.Email, err)
+			}
+		}
+
+		// 2. Sync User record
+		eu, err := client.User.Query().
+			Where(entuser.EmailEqualFold(inv.Email)).
+			Only(ctx)
+
+		if err != nil {
+			status := entuser.AccountStatusPending
+			if inv.Used {
+				status = entuser.AccountStatusActive
+			}
+			cp := client.User.Create().
+				SetEmail(inv.Email).
+				SetPasswordHash("pending-magic-link-activation").
+				SetFirstName(inv.FirstName).
+				SetLastName(inv.LastName).
+				SetRole(entuser.Role(roleStr)).
+				SetRoles([]string{roleStr}).
+				SetAccountStatus(status).
+				SetIsProfileComplete(inv.Used)
+
+			if inv.ChurchID != nil {
+				cp.SetChurchID(*inv.ChurchID)
+			}
+			if inv.SectorID != nil {
+				cp.SetSectorID(*inv.SectorID)
+			}
+			_, err = cp.Save(ctx)
+			if err != nil {
+				log.Printf("[db] error syncing user for %s: %v", inv.Email, err)
+			}
+		} else {
+			up := client.User.UpdateOneID(eu.ID).
+				SetRole(entuser.Role(roleStr)).
+				SetRoles([]string{roleStr})
+			_ = up.Exec(ctx)
+		}
+	}
 	return nil
 }
 
