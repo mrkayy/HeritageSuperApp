@@ -32,6 +32,8 @@ const (
 	FieldEmail = "email"
 	// FieldPasswordHash holds the string denoting the password_hash field in the database.
 	FieldPasswordHash = "password_hash"
+	// FieldPinHash holds the string denoting the pin_hash field in the database.
+	FieldPinHash = "pin_hash"
 	// FieldPhoneNumber holds the string denoting the phone_number field in the database.
 	FieldPhoneNumber = "phone_number"
 	// FieldProfileImageURL holds the string denoting the profile_image_url field in the database.
@@ -42,6 +44,8 @@ const (
 	FieldAddress = "address"
 	// FieldRole holds the string denoting the role field in the database.
 	FieldRole = "role"
+	// FieldRoles holds the string denoting the roles field in the database.
+	FieldRoles = "roles"
 	// FieldAccountStatus holds the string denoting the account_status field in the database.
 	FieldAccountStatus = "account_status"
 	// FieldIsProfileComplete holds the string denoting the is_profile_complete field in the database.
@@ -72,6 +76,12 @@ const (
 	EdgeOutreachTargets = "outreach_targets"
 	// EdgeUsedInvites holds the string denoting the used_invites edge name in mutations.
 	EdgeUsedInvites = "used_invites"
+	// EdgeCreatedVisitors holds the string denoting the created_visitors edge name in mutations.
+	EdgeCreatedVisitors = "created_visitors"
+	// EdgeRecordedAttendances holds the string denoting the recorded_attendances edge name in mutations.
+	EdgeRecordedAttendances = "recorded_attendances"
+	// EdgeCreatedTodos holds the string denoting the created_todos edge name in mutations.
+	EdgeCreatedTodos = "created_todos"
 	// LocalChurchFieldID holds the string denoting the ID field of the LocalChurch.
 	LocalChurchFieldID = "church_id"
 	// SectorFieldID holds the string denoting the ID field of the Sector.
@@ -96,6 +106,12 @@ const (
 	OutreachTargetsFieldID = "target_id"
 	// OtpInvitesFieldID holds the string denoting the ID field of the OtpInvites.
 	OtpInvitesFieldID = "id"
+	// VisitorFieldID holds the string denoting the ID field of the Visitor.
+	VisitorFieldID = "visitor_id"
+	// AttendanceRecordFieldID holds the string denoting the ID field of the AttendanceRecord.
+	AttendanceRecordFieldID = "attendance_id"
+	// TeamTodoFieldID holds the string denoting the ID field of the TeamTodo.
+	TeamTodoFieldID = "id"
 	// Table holds the table name of the user in the database.
 	Table = "users"
 	// ChurchTable is the table that holds the church relation/edge.
@@ -182,6 +198,27 @@ const (
 	UsedInvitesInverseTable = "otp_invites"
 	// UsedInvitesColumn is the table column denoting the used_invites relation/edge.
 	UsedInvitesColumn = "used_by_user_id"
+	// CreatedVisitorsTable is the table that holds the created_visitors relation/edge.
+	CreatedVisitorsTable = "visitors"
+	// CreatedVisitorsInverseTable is the table name for the Visitor entity.
+	// It exists in this package in order to avoid circular dependency with the "visitor" package.
+	CreatedVisitorsInverseTable = "visitors"
+	// CreatedVisitorsColumn is the table column denoting the created_visitors relation/edge.
+	CreatedVisitorsColumn = "created_by"
+	// RecordedAttendancesTable is the table that holds the recorded_attendances relation/edge.
+	RecordedAttendancesTable = "attendance_records"
+	// RecordedAttendancesInverseTable is the table name for the AttendanceRecord entity.
+	// It exists in this package in order to avoid circular dependency with the "attendancerecord" package.
+	RecordedAttendancesInverseTable = "attendance_records"
+	// RecordedAttendancesColumn is the table column denoting the recorded_attendances relation/edge.
+	RecordedAttendancesColumn = "recorded_by"
+	// CreatedTodosTable is the table that holds the created_todos relation/edge.
+	CreatedTodosTable = "team_todos"
+	// CreatedTodosInverseTable is the table name for the TeamTodo entity.
+	// It exists in this package in order to avoid circular dependency with the "teamtodo" package.
+	CreatedTodosInverseTable = "team_todos"
+	// CreatedTodosColumn is the table column denoting the created_todos relation/edge.
+	CreatedTodosColumn = "created_by"
 )
 
 // Columns holds all SQL columns for user fields.
@@ -195,11 +232,13 @@ var Columns = []string{
 	FieldLastName,
 	FieldEmail,
 	FieldPasswordHash,
+	FieldPinHash,
 	FieldPhoneNumber,
 	FieldProfileImageURL,
 	FieldDateOfBirth,
 	FieldAddress,
 	FieldRole,
+	FieldRoles,
 	FieldAccountStatus,
 	FieldIsProfileComplete,
 	FieldCreatedAt,
@@ -216,6 +255,8 @@ func ValidColumn(column string) bool {
 }
 
 var (
+	// DefaultRoles holds the default value on creation for the "roles" field.
+	DefaultRoles []string
 	// DefaultIsProfileComplete holds the default value on creation for the "is_profile_complete" field.
 	DefaultIsProfileComplete bool
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
@@ -232,13 +273,16 @@ const DefaultRole = RoleMember
 
 // Role values.
 const (
-	RoleChurchAdmin    Role = "church_admin"
-	RoleTeamLead       Role = "team_lead"
-	RoleResidentPastor Role = "resident_pastor"
-	RoleSteward        Role = "steward"
-	RoleMember         Role = "member"
-	RoleFirstTimer     Role = "first_timer"
-	RoleGuest          Role = "guest"
+	RoleSuperAdmin      Role = "super_admin"
+	RoleGeneralOverseer Role = "general_overseer"
+	RoleResidentPastor  Role = "resident_pastor"
+	RoleChurchAdmin     Role = "church_admin"
+	RoleSectorLead      Role = "sector_lead"
+	RoleTeamLead        Role = "team_lead"
+	RoleSteward         Role = "steward"
+	RoleMember          Role = "member"
+	RoleFirstTimer      Role = "first_timer"
+	RoleGuest           Role = "guest"
 )
 
 func (r Role) String() string {
@@ -248,7 +292,7 @@ func (r Role) String() string {
 // RoleValidator is a validator for the "role" field enum values. It is called by the builders before save.
 func RoleValidator(r Role) error {
 	switch r {
-	case RoleChurchAdmin, RoleTeamLead, RoleResidentPastor, RoleSteward, RoleMember, RoleFirstTimer, RoleGuest:
+	case RoleSuperAdmin, RoleGeneralOverseer, RoleResidentPastor, RoleChurchAdmin, RoleSectorLead, RoleTeamLead, RoleSteward, RoleMember, RoleFirstTimer, RoleGuest:
 		return nil
 	default:
 		return fmt.Errorf("user: invalid enum value for role field: %q", r)
@@ -329,6 +373,11 @@ func ByEmail(opts ...sql.OrderTermOption) OrderOption {
 // ByPasswordHash orders the results by the password_hash field.
 func ByPasswordHash(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPasswordHash, opts...).ToFunc()
+}
+
+// ByPinHash orders the results by the pin_hash field.
+func ByPinHash(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPinHash, opts...).ToFunc()
 }
 
 // ByPhoneNumber orders the results by the phone_number field.
@@ -517,6 +566,48 @@ func ByUsedInvites(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newUsedInvitesStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByCreatedVisitorsCount orders the results by created_visitors count.
+func ByCreatedVisitorsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newCreatedVisitorsStep(), opts...)
+	}
+}
+
+// ByCreatedVisitors orders the results by created_visitors terms.
+func ByCreatedVisitors(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newCreatedVisitorsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByRecordedAttendancesCount orders the results by recorded_attendances count.
+func ByRecordedAttendancesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newRecordedAttendancesStep(), opts...)
+	}
+}
+
+// ByRecordedAttendances orders the results by recorded_attendances terms.
+func ByRecordedAttendances(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newRecordedAttendancesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByCreatedTodosCount orders the results by created_todos count.
+func ByCreatedTodosCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newCreatedTodosStep(), opts...)
+	}
+}
+
+// ByCreatedTodos orders the results by created_todos terms.
+func ByCreatedTodos(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newCreatedTodosStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newChurchStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -599,5 +690,26 @@ func newUsedInvitesStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(UsedInvitesInverseTable, OtpInvitesFieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, UsedInvitesTable, UsedInvitesColumn),
+	)
+}
+func newCreatedVisitorsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(CreatedVisitorsInverseTable, VisitorFieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, CreatedVisitorsTable, CreatedVisitorsColumn),
+	)
+}
+func newRecordedAttendancesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(RecordedAttendancesInverseTable, AttendanceRecordFieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, RecordedAttendancesTable, RecordedAttendancesColumn),
+	)
+}
+func newCreatedTodosStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(CreatedTodosInverseTable, TeamTodoFieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, CreatedTodosTable, CreatedTodosColumn),
 	)
 }

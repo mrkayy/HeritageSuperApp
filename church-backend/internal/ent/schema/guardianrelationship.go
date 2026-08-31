@@ -39,12 +39,14 @@ func (GuardianRelationship) Edges() []ent.Edge {
 			Ref("guardian_relationships_as_child").
 			Unique().
 			Field("child_member_id").
-			Required(),
+			Required().
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.From("guardian", Member.Type).
 			Ref("guardian_relationships_as_guardian").
 			Unique().
 			Field("guardian_member_id").
-			Required(),
+			Required().
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 	}
 }
 

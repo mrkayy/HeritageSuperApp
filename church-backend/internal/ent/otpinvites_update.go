@@ -60,6 +60,46 @@ func (_u *OtpInvitesUpdate) SetNillableOtpCode(v *string) *OtpInvitesUpdate {
 	return _u
 }
 
+// SetFirstName sets the "first_name" field.
+func (_u *OtpInvitesUpdate) SetFirstName(v string) *OtpInvitesUpdate {
+	_u.mutation.SetFirstName(v)
+	return _u
+}
+
+// SetNillableFirstName sets the "first_name" field if the given value is not nil.
+func (_u *OtpInvitesUpdate) SetNillableFirstName(v *string) *OtpInvitesUpdate {
+	if v != nil {
+		_u.SetFirstName(*v)
+	}
+	return _u
+}
+
+// ClearFirstName clears the value of the "first_name" field.
+func (_u *OtpInvitesUpdate) ClearFirstName() *OtpInvitesUpdate {
+	_u.mutation.ClearFirstName()
+	return _u
+}
+
+// SetLastName sets the "last_name" field.
+func (_u *OtpInvitesUpdate) SetLastName(v string) *OtpInvitesUpdate {
+	_u.mutation.SetLastName(v)
+	return _u
+}
+
+// SetNillableLastName sets the "last_name" field if the given value is not nil.
+func (_u *OtpInvitesUpdate) SetNillableLastName(v *string) *OtpInvitesUpdate {
+	if v != nil {
+		_u.SetLastName(*v)
+	}
+	return _u
+}
+
+// ClearLastName clears the value of the "last_name" field.
+func (_u *OtpInvitesUpdate) ClearLastName() *OtpInvitesUpdate {
+	_u.mutation.ClearLastName()
+	return _u
+}
+
 // SetSectorID sets the "sector_id" field.
 func (_u *OtpInvitesUpdate) SetSectorID(v uuid.UUID) *OtpInvitesUpdate {
 	_u.mutation.SetSectorID(v)
@@ -74,6 +114,12 @@ func (_u *OtpInvitesUpdate) SetNillableSectorID(v *uuid.UUID) *OtpInvitesUpdate 
 	return _u
 }
 
+// ClearSectorID clears the value of the "sector_id" field.
+func (_u *OtpInvitesUpdate) ClearSectorID() *OtpInvitesUpdate {
+	_u.mutation.ClearSectorID()
+	return _u
+}
+
 // SetChurchID sets the "church_id" field.
 func (_u *OtpInvitesUpdate) SetChurchID(v uuid.UUID) *OtpInvitesUpdate {
 	_u.mutation.SetChurchID(v)
@@ -85,6 +131,12 @@ func (_u *OtpInvitesUpdate) SetNillableChurchID(v *uuid.UUID) *OtpInvitesUpdate 
 	if v != nil {
 		_u.SetChurchID(*v)
 	}
+	return _u
+}
+
+// ClearChurchID clears the value of the "church_id" field.
+func (_u *OtpInvitesUpdate) ClearChurchID() *OtpInvitesUpdate {
+	_u.mutation.ClearChurchID()
 	return _u
 }
 
@@ -250,12 +302,6 @@ func (_u *OtpInvitesUpdate) check() error {
 			return &ValidationError{Name: "role", err: fmt.Errorf(`ent: validator failed for field "OtpInvites.role": %w`, err)}
 		}
 	}
-	if _u.mutation.SectorCleared() && len(_u.mutation.SectorIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "OtpInvites.sector"`)
-	}
-	if _u.mutation.ChurchCleared() && len(_u.mutation.ChurchIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "OtpInvites.church"`)
-	}
 	return nil
 }
 
@@ -276,6 +322,18 @@ func (_u *OtpInvitesUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 	}
 	if value, ok := _u.mutation.OtpCode(); ok {
 		_spec.SetField(otpinvites.FieldOtpCode, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.FirstName(); ok {
+		_spec.SetField(otpinvites.FieldFirstName, field.TypeString, value)
+	}
+	if _u.mutation.FirstNameCleared() {
+		_spec.ClearField(otpinvites.FieldFirstName, field.TypeString)
+	}
+	if value, ok := _u.mutation.LastName(); ok {
+		_spec.SetField(otpinvites.FieldLastName, field.TypeString, value)
+	}
+	if _u.mutation.LastNameCleared() {
+		_spec.ClearField(otpinvites.FieldLastName, field.TypeString)
 	}
 	if value, ok := _u.mutation.Role(); ok {
 		_spec.SetField(otpinvites.FieldRole, field.TypeEnum, value)
@@ -427,6 +485,46 @@ func (_u *OtpInvitesUpdateOne) SetNillableOtpCode(v *string) *OtpInvitesUpdateOn
 	return _u
 }
 
+// SetFirstName sets the "first_name" field.
+func (_u *OtpInvitesUpdateOne) SetFirstName(v string) *OtpInvitesUpdateOne {
+	_u.mutation.SetFirstName(v)
+	return _u
+}
+
+// SetNillableFirstName sets the "first_name" field if the given value is not nil.
+func (_u *OtpInvitesUpdateOne) SetNillableFirstName(v *string) *OtpInvitesUpdateOne {
+	if v != nil {
+		_u.SetFirstName(*v)
+	}
+	return _u
+}
+
+// ClearFirstName clears the value of the "first_name" field.
+func (_u *OtpInvitesUpdateOne) ClearFirstName() *OtpInvitesUpdateOne {
+	_u.mutation.ClearFirstName()
+	return _u
+}
+
+// SetLastName sets the "last_name" field.
+func (_u *OtpInvitesUpdateOne) SetLastName(v string) *OtpInvitesUpdateOne {
+	_u.mutation.SetLastName(v)
+	return _u
+}
+
+// SetNillableLastName sets the "last_name" field if the given value is not nil.
+func (_u *OtpInvitesUpdateOne) SetNillableLastName(v *string) *OtpInvitesUpdateOne {
+	if v != nil {
+		_u.SetLastName(*v)
+	}
+	return _u
+}
+
+// ClearLastName clears the value of the "last_name" field.
+func (_u *OtpInvitesUpdateOne) ClearLastName() *OtpInvitesUpdateOne {
+	_u.mutation.ClearLastName()
+	return _u
+}
+
 // SetSectorID sets the "sector_id" field.
 func (_u *OtpInvitesUpdateOne) SetSectorID(v uuid.UUID) *OtpInvitesUpdateOne {
 	_u.mutation.SetSectorID(v)
@@ -441,6 +539,12 @@ func (_u *OtpInvitesUpdateOne) SetNillableSectorID(v *uuid.UUID) *OtpInvitesUpda
 	return _u
 }
 
+// ClearSectorID clears the value of the "sector_id" field.
+func (_u *OtpInvitesUpdateOne) ClearSectorID() *OtpInvitesUpdateOne {
+	_u.mutation.ClearSectorID()
+	return _u
+}
+
 // SetChurchID sets the "church_id" field.
 func (_u *OtpInvitesUpdateOne) SetChurchID(v uuid.UUID) *OtpInvitesUpdateOne {
 	_u.mutation.SetChurchID(v)
@@ -452,6 +556,12 @@ func (_u *OtpInvitesUpdateOne) SetNillableChurchID(v *uuid.UUID) *OtpInvitesUpda
 	if v != nil {
 		_u.SetChurchID(*v)
 	}
+	return _u
+}
+
+// ClearChurchID clears the value of the "church_id" field.
+func (_u *OtpInvitesUpdateOne) ClearChurchID() *OtpInvitesUpdateOne {
+	_u.mutation.ClearChurchID()
 	return _u
 }
 
@@ -630,12 +740,6 @@ func (_u *OtpInvitesUpdateOne) check() error {
 			return &ValidationError{Name: "role", err: fmt.Errorf(`ent: validator failed for field "OtpInvites.role": %w`, err)}
 		}
 	}
-	if _u.mutation.SectorCleared() && len(_u.mutation.SectorIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "OtpInvites.sector"`)
-	}
-	if _u.mutation.ChurchCleared() && len(_u.mutation.ChurchIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "OtpInvites.church"`)
-	}
 	return nil
 }
 
@@ -673,6 +777,18 @@ func (_u *OtpInvitesUpdateOne) sqlSave(ctx context.Context) (_node *OtpInvites, 
 	}
 	if value, ok := _u.mutation.OtpCode(); ok {
 		_spec.SetField(otpinvites.FieldOtpCode, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.FirstName(); ok {
+		_spec.SetField(otpinvites.FieldFirstName, field.TypeString, value)
+	}
+	if _u.mutation.FirstNameCleared() {
+		_spec.ClearField(otpinvites.FieldFirstName, field.TypeString)
+	}
+	if value, ok := _u.mutation.LastName(); ok {
+		_spec.SetField(otpinvites.FieldLastName, field.TypeString, value)
+	}
+	if _u.mutation.LastNameCleared() {
+		_spec.ClearField(otpinvites.FieldLastName, field.TypeString)
 	}
 	if value, ok := _u.mutation.Role(); ok {
 		_spec.SetField(otpinvites.FieldRole, field.TypeEnum, value)

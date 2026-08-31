@@ -51,7 +51,8 @@ func (KidsMinistryProfile) Edges() []ent.Edge {
 			Ref("kids_ministry_profile").
 			Unique().
 			Field("member_id").
-			Required(),
+			Required().
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 	}
 }
 

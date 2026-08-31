@@ -10,6 +10,9 @@ export interface User {
   lastName: string;
   name: string;
   role: string;
+  roles?: string[];
+  teamId?: string;
+  teamName?: string;
   sector?: null;
   team?: null;
   church?: null;
@@ -37,16 +40,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       const res = await api.get('/auth/me');
       const data = res.data;
-      console.log(data)
       const roles: string[] = data.roles || (data.role ? [data.role] : []);
-      const primaryRole = roles.length > 0 ? roles[0] : 'member';
+      const primaryRole = data.currentRole || (roles.length > 0 ? roles[0] : 'member');
       
       const fetchedUser: StoreUser = {
         user_id: data.id || data.user_id || '',
-        email: data.email || data.email || '',
+        email: data.email || '',
         first_name: data.first_name || data.firstName || '',
         last_name: data.last_name || data.lastName || '',
         role: primaryRole,
+        roles: roles,
+        team_id: data.teamId || data.team_id || '',
+        team_name: data.teamName || data.team_name || '',
       };
 
       storeLogin(fetchedUser, currentToken);
@@ -106,6 +111,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         lastName: storeUser.last_name || '',
         name: `${storeUser.first_name || ''} ${storeUser.last_name || ''}`.trim() || storeUser.email,
         role: storeUser.role,
+        teamId: storeUser.team_id || '',
+        teamName: storeUser.team_name || '',
       }
     : null;
 

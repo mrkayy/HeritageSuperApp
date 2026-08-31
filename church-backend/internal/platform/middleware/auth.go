@@ -11,9 +11,11 @@ import (
 )
 
 type Claims struct {
-	UserID string   `json:"sub"`
-	Email  string   `json:"email"`
-	Roles  []string `json:"roles"`
+	UserID   string   `json:"sub"`
+	Email    string   `json:"email"`
+	Roles    []string `json:"roles"`
+	TeamID   string   `json:"teamId"`
+	TeamName string   `json:"teamName"`
 	jwt.RegisteredClaims
 }
 
@@ -38,12 +40,20 @@ func RequireAuth(jwtSecret string) echo.MiddlewareFunc {
 				return echo.NewHTTPError(http.StatusUnauthorized, "invalid or expired token")
 			}
 
-			log.Printf("[RequireAuth] Claims verified - UserID: %s, Email: %s, Roles: %v", claims.UserID, claims.Email, claims.Roles)
+			log.Printf("[RequireAuth] Claims verified - UserID: %s, Email: %s, Roles: %v, TeamID: %s", claims.UserID, claims.Email, claims.Roles, claims.TeamID)
+
+			currentRole := ""
+			if len(claims.Roles) > 0 {
+				currentRole = claims.Roles[0]
+			}
 
 			ctx := contracts.WithUser(c.Request().Context(), contracts.AuthedUser{
-				ID:    claims.UserID,
-				Email: claims.Email,
-				Roles: claims.Roles,
+				ID:          claims.UserID,
+				Email:       claims.Email,
+				Roles:       claims.Roles,
+				CurrentRole: currentRole,
+				TeamID:      claims.TeamID,
+				TeamName:    claims.TeamName,
 			})
 			c.SetRequest(c.Request().WithContext(ctx))
 			return next(c)

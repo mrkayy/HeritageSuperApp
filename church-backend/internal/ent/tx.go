@@ -12,12 +12,20 @@ import (
 // Tx is a transactional client that is created by calling Client.Tx().
 type Tx struct {
 	config
+	// AttendanceRecord is the client for interacting with the AttendanceRecord builders.
+	AttendanceRecord *AttendanceRecordClient
+	// AuditLog is the client for interacting with the AuditLog builders.
+	AuditLog *AuditLogClient
 	// ChurchEvent is the client for interacting with the ChurchEvent builders.
 	ChurchEvent *ChurchEventClient
+	// ChurchSetting is the client for interacting with the ChurchSetting builders.
+	ChurchSetting *ChurchSettingClient
 	// ChurchTeams is the client for interacting with the ChurchTeams builders.
 	ChurchTeams *ChurchTeamsClient
 	// Districts is the client for interacting with the Districts builders.
 	Districts *DistrictsClient
+	// FeatureFlag is the client for interacting with the FeatureFlag builders.
+	FeatureFlag *FeatureFlagClient
 	// FollowUp is the client for interacting with the FollowUp builders.
 	FollowUp *FollowUpClient
 	// GuardianRelationship is the client for interacting with the GuardianRelationship builders.
@@ -46,6 +54,8 @@ type Tx struct {
 	SoulJournal *SoulJournalClient
 	// Team is the client for interacting with the Team builders.
 	Team *TeamClient
+	// TeamTodo is the client for interacting with the TeamTodo builders.
+	TeamTodo *TeamTodoClient
 	// TeamVolunteers is the client for interacting with the TeamVolunteers builders.
 	TeamVolunteers *TeamVolunteersClient
 	// TransportRequest is the client for interacting with the TransportRequest builders.
@@ -56,6 +66,8 @@ type Tx struct {
 	UserSector *UserSectorClient
 	// UserTeam is the client for interacting with the UserTeam builders.
 	UserTeam *UserTeamClient
+	// Visitor is the client for interacting with the Visitor builders.
+	Visitor *VisitorClient
 
 	// lazily loaded.
 	client     *Client
@@ -187,9 +199,13 @@ func (tx *Tx) Client() *Client {
 }
 
 func (tx *Tx) init() {
+	tx.AttendanceRecord = NewAttendanceRecordClient(tx.config)
+	tx.AuditLog = NewAuditLogClient(tx.config)
 	tx.ChurchEvent = NewChurchEventClient(tx.config)
+	tx.ChurchSetting = NewChurchSettingClient(tx.config)
 	tx.ChurchTeams = NewChurchTeamsClient(tx.config)
 	tx.Districts = NewDistrictsClient(tx.config)
+	tx.FeatureFlag = NewFeatureFlagClient(tx.config)
 	tx.FollowUp = NewFollowUpClient(tx.config)
 	tx.GuardianRelationship = NewGuardianRelationshipClient(tx.config)
 	tx.KidsMinistryProfile = NewKidsMinistryProfileClient(tx.config)
@@ -204,11 +220,13 @@ func (tx *Tx) init() {
 	tx.Soul = NewSoulClient(tx.config)
 	tx.SoulJournal = NewSoulJournalClient(tx.config)
 	tx.Team = NewTeamClient(tx.config)
+	tx.TeamTodo = NewTeamTodoClient(tx.config)
 	tx.TeamVolunteers = NewTeamVolunteersClient(tx.config)
 	tx.TransportRequest = NewTransportRequestClient(tx.config)
 	tx.User = NewUserClient(tx.config)
 	tx.UserSector = NewUserSectorClient(tx.config)
 	tx.UserTeam = NewUserTeamClient(tx.config)
+	tx.Visitor = NewVisitorClient(tx.config)
 }
 
 // txDriver wraps the given dialect.Tx with a nop dialect.Driver implementation.
@@ -218,7 +236,7 @@ func (tx *Tx) init() {
 // of them in order to commit or rollback the transaction.
 //
 // If a closed transaction is embedded in one of the generated entities, and the entity
-// applies a query, for example: ChurchEvent.QueryXXX(), the query will be executed
+// applies a query, for example: AttendanceRecord.QueryXXX(), the query will be executed
 // through the driver which created this transaction.
 //
 // Note that txDriver is not goroutine safe.

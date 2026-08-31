@@ -13,7 +13,9 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
+	"github.com/hofchurchng/church-backend/internal/ent/attendancerecord"
 	"github.com/hofchurchng/church-backend/internal/ent/churchevent"
+	"github.com/hofchurchng/church-backend/internal/ent/churchsetting"
 	"github.com/hofchurchng/church-backend/internal/ent/churchteams"
 	"github.com/hofchurchng/church-backend/internal/ent/localchurch"
 	"github.com/hofchurchng/church-backend/internal/ent/member"
@@ -21,23 +23,29 @@ import (
 	"github.com/hofchurchng/church-backend/internal/ent/predicate"
 	"github.com/hofchurchng/church-backend/internal/ent/sector"
 	"github.com/hofchurchng/church-backend/internal/ent/team"
+	"github.com/hofchurchng/church-backend/internal/ent/teamtodo"
 	"github.com/hofchurchng/church-backend/internal/ent/user"
+	"github.com/hofchurchng/church-backend/internal/ent/visitor"
 )
 
 // LocalChurchQuery is the builder for querying LocalChurch entities.
 type LocalChurchQuery struct {
 	config
-	ctx              *QueryContext
-	order            []localchurch.OrderOption
-	inters           []Interceptor
-	predicates       []predicate.LocalChurch
-	withMembers      *MemberQuery
-	withSectors      *SectorQuery
-	withTeams        *TeamQuery
-	withUsers        *UserQuery
-	withOtpInvites   *OtpInvitesQuery
-	withChurchTeams  *ChurchTeamsQuery
-	withChurchEvents *ChurchEventQuery
+	ctx                   *QueryContext
+	order                 []localchurch.OrderOption
+	inters                []Interceptor
+	predicates            []predicate.LocalChurch
+	withMembers           *MemberQuery
+	withSectors           *SectorQuery
+	withTeams             *TeamQuery
+	withUsers             *UserQuery
+	withOtpInvites        *OtpInvitesQuery
+	withChurchTeams       *ChurchTeamsQuery
+	withChurchEvents      *ChurchEventQuery
+	withVisitors          *VisitorQuery
+	withAttendanceRecords *AttendanceRecordQuery
+	withSettings          *ChurchSettingQuery
+	withTeamTodos         *TeamTodoQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -221,6 +229,94 @@ func (_q *LocalChurchQuery) QueryChurchEvents() *ChurchEventQuery {
 			sqlgraph.From(localchurch.Table, localchurch.FieldID, selector),
 			sqlgraph.To(churchevent.Table, churchevent.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, localchurch.ChurchEventsTable, localchurch.ChurchEventsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryVisitors chains the current query on the "visitors" edge.
+func (_q *LocalChurchQuery) QueryVisitors() *VisitorQuery {
+	query := (&VisitorClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(localchurch.Table, localchurch.FieldID, selector),
+			sqlgraph.To(visitor.Table, visitor.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, localchurch.VisitorsTable, localchurch.VisitorsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryAttendanceRecords chains the current query on the "attendance_records" edge.
+func (_q *LocalChurchQuery) QueryAttendanceRecords() *AttendanceRecordQuery {
+	query := (&AttendanceRecordClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(localchurch.Table, localchurch.FieldID, selector),
+			sqlgraph.To(attendancerecord.Table, attendancerecord.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, localchurch.AttendanceRecordsTable, localchurch.AttendanceRecordsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QuerySettings chains the current query on the "settings" edge.
+func (_q *LocalChurchQuery) QuerySettings() *ChurchSettingQuery {
+	query := (&ChurchSettingClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(localchurch.Table, localchurch.FieldID, selector),
+			sqlgraph.To(churchsetting.Table, churchsetting.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, localchurch.SettingsTable, localchurch.SettingsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryTeamTodos chains the current query on the "team_todos" edge.
+func (_q *LocalChurchQuery) QueryTeamTodos() *TeamTodoQuery {
+	query := (&TeamTodoClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(localchurch.Table, localchurch.FieldID, selector),
+			sqlgraph.To(teamtodo.Table, teamtodo.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, localchurch.TeamTodosTable, localchurch.TeamTodosColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -415,18 +511,22 @@ func (_q *LocalChurchQuery) Clone() *LocalChurchQuery {
 		return nil
 	}
 	return &LocalChurchQuery{
-		config:           _q.config,
-		ctx:              _q.ctx.Clone(),
-		order:            append([]localchurch.OrderOption{}, _q.order...),
-		inters:           append([]Interceptor{}, _q.inters...),
-		predicates:       append([]predicate.LocalChurch{}, _q.predicates...),
-		withMembers:      _q.withMembers.Clone(),
-		withSectors:      _q.withSectors.Clone(),
-		withTeams:        _q.withTeams.Clone(),
-		withUsers:        _q.withUsers.Clone(),
-		withOtpInvites:   _q.withOtpInvites.Clone(),
-		withChurchTeams:  _q.withChurchTeams.Clone(),
-		withChurchEvents: _q.withChurchEvents.Clone(),
+		config:                _q.config,
+		ctx:                   _q.ctx.Clone(),
+		order:                 append([]localchurch.OrderOption{}, _q.order...),
+		inters:                append([]Interceptor{}, _q.inters...),
+		predicates:            append([]predicate.LocalChurch{}, _q.predicates...),
+		withMembers:           _q.withMembers.Clone(),
+		withSectors:           _q.withSectors.Clone(),
+		withTeams:             _q.withTeams.Clone(),
+		withUsers:             _q.withUsers.Clone(),
+		withOtpInvites:        _q.withOtpInvites.Clone(),
+		withChurchTeams:       _q.withChurchTeams.Clone(),
+		withChurchEvents:      _q.withChurchEvents.Clone(),
+		withVisitors:          _q.withVisitors.Clone(),
+		withAttendanceRecords: _q.withAttendanceRecords.Clone(),
+		withSettings:          _q.withSettings.Clone(),
+		withTeamTodos:         _q.withTeamTodos.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -510,6 +610,50 @@ func (_q *LocalChurchQuery) WithChurchEvents(opts ...func(*ChurchEventQuery)) *L
 	return _q
 }
 
+// WithVisitors tells the query-builder to eager-load the nodes that are connected to
+// the "visitors" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *LocalChurchQuery) WithVisitors(opts ...func(*VisitorQuery)) *LocalChurchQuery {
+	query := (&VisitorClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withVisitors = query
+	return _q
+}
+
+// WithAttendanceRecords tells the query-builder to eager-load the nodes that are connected to
+// the "attendance_records" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *LocalChurchQuery) WithAttendanceRecords(opts ...func(*AttendanceRecordQuery)) *LocalChurchQuery {
+	query := (&AttendanceRecordClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withAttendanceRecords = query
+	return _q
+}
+
+// WithSettings tells the query-builder to eager-load the nodes that are connected to
+// the "settings" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *LocalChurchQuery) WithSettings(opts ...func(*ChurchSettingQuery)) *LocalChurchQuery {
+	query := (&ChurchSettingClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withSettings = query
+	return _q
+}
+
+// WithTeamTodos tells the query-builder to eager-load the nodes that are connected to
+// the "team_todos" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *LocalChurchQuery) WithTeamTodos(opts ...func(*TeamTodoQuery)) *LocalChurchQuery {
+	query := (&TeamTodoClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withTeamTodos = query
+	return _q
+}
+
 // GroupBy is used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
 //
@@ -588,7 +732,7 @@ func (_q *LocalChurchQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 	var (
 		nodes       = []*LocalChurch{}
 		_spec       = _q.querySpec()
-		loadedTypes = [7]bool{
+		loadedTypes = [11]bool{
 			_q.withMembers != nil,
 			_q.withSectors != nil,
 			_q.withTeams != nil,
@@ -596,6 +740,10 @@ func (_q *LocalChurchQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 			_q.withOtpInvites != nil,
 			_q.withChurchTeams != nil,
 			_q.withChurchEvents != nil,
+			_q.withVisitors != nil,
+			_q.withAttendanceRecords != nil,
+			_q.withSettings != nil,
+			_q.withTeamTodos != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -662,6 +810,36 @@ func (_q *LocalChurchQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 		if err := _q.loadChurchEvents(ctx, query, nodes,
 			func(n *LocalChurch) { n.Edges.ChurchEvents = []*ChurchEvent{} },
 			func(n *LocalChurch, e *ChurchEvent) { n.Edges.ChurchEvents = append(n.Edges.ChurchEvents, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withVisitors; query != nil {
+		if err := _q.loadVisitors(ctx, query, nodes,
+			func(n *LocalChurch) { n.Edges.Visitors = []*Visitor{} },
+			func(n *LocalChurch, e *Visitor) { n.Edges.Visitors = append(n.Edges.Visitors, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withAttendanceRecords; query != nil {
+		if err := _q.loadAttendanceRecords(ctx, query, nodes,
+			func(n *LocalChurch) { n.Edges.AttendanceRecords = []*AttendanceRecord{} },
+			func(n *LocalChurch, e *AttendanceRecord) {
+				n.Edges.AttendanceRecords = append(n.Edges.AttendanceRecords, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withSettings; query != nil {
+		if err := _q.loadSettings(ctx, query, nodes,
+			func(n *LocalChurch) { n.Edges.Settings = []*ChurchSetting{} },
+			func(n *LocalChurch, e *ChurchSetting) { n.Edges.Settings = append(n.Edges.Settings, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withTeamTodos; query != nil {
+		if err := _q.loadTeamTodos(ctx, query, nodes,
+			func(n *LocalChurch) { n.Edges.TeamTodos = []*TeamTodo{} },
+			func(n *LocalChurch, e *TeamTodo) { n.Edges.TeamTodos = append(n.Edges.TeamTodos, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -822,9 +1000,12 @@ func (_q *LocalChurchQuery) loadOtpInvites(ctx context.Context, query *OtpInvite
 	}
 	for _, n := range neighbors {
 		fk := n.ChurchID
-		node, ok := nodeids[fk]
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "church_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "church_id" returned %v for node %v`, fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "church_id" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}
@@ -875,6 +1056,126 @@ func (_q *LocalChurchQuery) loadChurchEvents(ctx context.Context, query *ChurchE
 	}
 	query.Where(predicate.ChurchEvent(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(localchurch.ChurchEventsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.ChurchID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "church_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *LocalChurchQuery) loadVisitors(ctx context.Context, query *VisitorQuery, nodes []*LocalChurch, init func(*LocalChurch), assign func(*LocalChurch, *Visitor)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*LocalChurch)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(visitor.FieldChurchID)
+	}
+	query.Where(predicate.Visitor(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(localchurch.VisitorsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.ChurchID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "church_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *LocalChurchQuery) loadAttendanceRecords(ctx context.Context, query *AttendanceRecordQuery, nodes []*LocalChurch, init func(*LocalChurch), assign func(*LocalChurch, *AttendanceRecord)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*LocalChurch)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(attendancerecord.FieldChurchID)
+	}
+	query.Where(predicate.AttendanceRecord(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(localchurch.AttendanceRecordsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.ChurchID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "church_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *LocalChurchQuery) loadSettings(ctx context.Context, query *ChurchSettingQuery, nodes []*LocalChurch, init func(*LocalChurch), assign func(*LocalChurch, *ChurchSetting)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*LocalChurch)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(churchsetting.FieldChurchID)
+	}
+	query.Where(predicate.ChurchSetting(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(localchurch.SettingsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.ChurchID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "church_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *LocalChurchQuery) loadTeamTodos(ctx context.Context, query *TeamTodoQuery, nodes []*LocalChurch, init func(*LocalChurch), assign func(*LocalChurch, *TeamTodo)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*LocalChurch)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(teamtodo.FieldChurchID)
+	}
+	query.Where(predicate.TeamTodo(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(localchurch.TeamTodosColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {

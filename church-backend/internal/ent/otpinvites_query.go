@@ -492,7 +492,10 @@ func (_q *OtpInvitesQuery) loadSector(ctx context.Context, query *SectorQuery, n
 	ids := make([]uuid.UUID, 0, len(nodes))
 	nodeids := make(map[uuid.UUID][]*OtpInvites)
 	for i := range nodes {
-		fk := nodes[i].SectorID
+		if nodes[i].SectorID == nil {
+			continue
+		}
+		fk := *nodes[i].SectorID
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -521,7 +524,10 @@ func (_q *OtpInvitesQuery) loadChurch(ctx context.Context, query *LocalChurchQue
 	ids := make([]uuid.UUID, 0, len(nodes))
 	nodeids := make(map[uuid.UUID][]*OtpInvites)
 	for i := range nodes {
-		fk := nodes[i].ChurchID
+		if nodes[i].ChurchID == nil {
+			continue
+		}
+		fk := *nodes[i].ChurchID
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}

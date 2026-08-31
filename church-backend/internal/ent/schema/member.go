@@ -78,6 +78,15 @@ func (Member) Fields() []ent.Field {
 		field.Bool("is_placeholder").
 			Default(false).
 			Annotations(entsql.Default("false")),
+		field.Bool("is_profiled").
+			Default(false).
+			Annotations(entsql.Default("false")),
+		field.UUID("profiled_by_user_id", uuid.UUID{}).
+			Optional().
+			Nillable(),
+		field.Time("profiled_at").
+			Optional().
+			Nillable(),
 		field.Text("source_team").
 			Optional().
 			Nillable(),
@@ -93,6 +102,12 @@ func (Member) Fields() []ent.Field {
 		field.UUID("team_id", uuid.UUID{}).
 			Optional().
 			Nillable(),
+		field.UUID("volunteering_team_id", uuid.UUID{}).
+			Optional().
+			Nillable(),
+		field.Time("joined_at").
+			Default(time.Now).
+			Annotations(entsql.Default("CURRENT_TIMESTAMP")),
 		field.Time("created_at").
 			Default(time.Now).
 			Annotations(entsql.Default("CURRENT_TIMESTAMP")),
@@ -109,6 +124,8 @@ func (Member) Fields() []ent.Field {
 				"sunday_school_module_3",
 				"membership_class",
 				"stewardship",
+				"mit",
+				"resident_pastor",
 			).
 			Default("first_time_guest").
 			Annotations(entsql.Default("'first_time_guest'")),

@@ -12,9 +12,12 @@ import (
 	"os"
 
 	"github.com/hofchurchng/church-backend/internal/contracts"
+	"github.com/hofchurchng/church-backend/internal/modules/admin"
 	"github.com/hofchurchng/church-backend/internal/modules/auth"
 	"github.com/hofchurchng/church-backend/internal/modules/dashboard"
+	"github.com/hofchurchng/church-backend/internal/modules/featureflags"
 	"github.com/hofchurchng/church-backend/internal/modules/followup"
+	"github.com/hofchurchng/church-backend/internal/modules/infocenter"
 	"github.com/hofchurchng/church-backend/internal/modules/membership"
 	"github.com/hofchurchng/church-backend/internal/modules/profile"
 	"github.com/hofchurchng/church-backend/internal/modules/souls"
@@ -67,9 +70,14 @@ func main() {
 	profileSvc := profile.NewService(profileRepo, teamsSvc, teamsSvc, teamsSvc)
 	profileHandler := profile.NewHandler(profileSvc)
 
+	// Info Center module handles visitor intake, attendance tracking, and foundation class
+	infocenterRepo := infocenter.NewRepository(client)
+	infocenterSvc := infocenter.NewService(infocenterRepo)
+	infocenterHandler := infocenter.NewHandler(infocenterSvc)
+
 	// Membership module tracks church membership, registration steps, and onboarding status
 	membershipRepo := membership.NewRepository(client)
-	membershipSvc := membership.NewService(membershipRepo)
+	membershipSvc := membership.NewService(membershipRepo, infocenterSvc, infocenterSvc)
 	membershipHandler := membership.NewHandler(membershipSvc)
 
 	// Souls module handles outreach convert tracking and soul journals
@@ -87,8 +95,18 @@ func main() {
 	transportSvc := transport.NewService(transportRepo, soulsSvc)
 	transportHandler := transport.NewHandler(transportSvc)
 
+	// Feature Flags module handles system feature gates and permissions
+	featureflagsRepo := featureflags.NewRepository(client)
+	featureflagsSvc := featureflags.NewService(featureflagsRepo)
+	featureflagsHandler := featureflags.NewHandler(featureflagsSvc)
+
 	// Dashboard module handles admin dashboard aggregations
 	dashboardHandler := dashboard.NewHandler(client)
+
+	// Admin module handles branch management, leadership invites, 360 dossiers, audit logs & analytics
+	adminRepo := admin.NewRepository(client)
+	adminSvc := admin.NewService(adminRepo)
+	adminHandler := admin.NewHandler(adminSvc)
 
 	// Compile-time checks for cross-module contract compliance
 	var _ contracts.MembershipReader = membershipSvc
@@ -99,6 +117,8 @@ func main() {
 	var _ contracts.SoulReader = soulsSvc
 	var _ contracts.FollowUpReader = followupSvc
 	var _ contracts.TransportReader = transportSvc
+	var _ contracts.InfoCenterReader = infocenterSvc
+	var _ contracts.InfoCenterProfiler = infocenterSvc
 
 	// --- Echo router ---
 	e := echo.New()
@@ -130,14 +150,20 @@ func main() {
 	authHandler.RegisterPublic(authGroup)
 	authHandler.RegisterProtected(authGroup.Group("", requireAuth))
 
-	// Protected module routes
+	// Feature Flags routes (authenticated users can read, super_admins can toggle)
+	featureFlagsGroup := api.Group("/feature-flags", requireAuth)
+	featureflagsHandler.Register(featureFlagsGroup)
+
+	// Protected module routes with feature flag guards
 	requireAdminOrPastorOrLead := middleware.RequireAnyRole(
 		string(contracts.RoleTeamLead),
 		string(contracts.RoleResidentPastor),
 		string(contracts.RoleChurchAdmin),
+		string(contracts.RoleSuperAdmin),
+		string(contracts.RoleSteward),
 	)
 
-	membersGroup := api.Group("/members", requireAuth, requireAdminOrPastorOrLead)
+	membersGroup := api.Group("/members", requireAuth, requireAdminOrPastorOrLead, middleware.RequireFeature(featureflagsSvc, "feature_membership_team"))
 	membershipHandler.Register(membersGroup)
 
 	teamsGroup := api.Group("/teams", requireAuth)
@@ -155,17 +181,40 @@ func main() {
 	usersGroup := api.Group("/users", requireAuth)
 	profileHandler.RegisterUsers(usersGroup)
 
-	soulsGroup := api.Group("/souls", requireAuth)
+	soulsGroup := api.Group("/souls", requireAuth, middleware.RequireFeature(featureflagsSvc, "feature_souls"))
 	soulsHandler.Register(soulsGroup)
 
-	followupGroup := api.Group("/follow-up", requireAuth)
+	followupGroup := api.Group("/follow-up", requireAuth, middleware.RequireFeature(featureflagsSvc, "feature_followup"))
 	followupHandler.Register(followupGroup)
 
-	transportGroup := api.Group("/transportation", requireAuth)
+	transportGroup := api.Group("/transportation", requireAuth, middleware.RequireFeature(featureflagsSvc, "feature_transport"))
 	transportHandler.Register(transportGroup)
+
+	infoCenterGroup := api.Group("/info-center", requireAuth, middleware.RequireFeature(featureflagsSvc, "feature_info_center"))
+	infocenterHandler.Register(infoCenterGroup)
 
 	dashboardGroup := api.Group("/dashboard", requireAuth)
 	dashboardHandler.Register(dashboardGroup)
+
+	// Super Admin routes
+	superAdminRole := middleware.RequireAnyRole(string(contracts.RoleSuperAdmin))
+	superAdminGroup := api.Group("/super-admin", requireAuth, superAdminRole)
+	adminHandler.RegisterSuperAdminRoutes(superAdminGroup)
+
+	// General Overseer Universal Member Intelligence routes
+	goRole := middleware.RequireAnyRole(string(contracts.RoleSuperAdmin), string(contracts.RoleGeneralOverseer))
+	goGroup := api.Group("/general-overseer", requireAuth, goRole)
+	adminHandler.RegisterGeneralOverseerRoutes(goGroup)
+
+	// Executive Analytics routes
+	execRole := middleware.RequireAnyRole(
+		string(contracts.RoleSuperAdmin),
+		string(contracts.RoleGeneralOverseer),
+		string(contracts.RoleResidentPastor),
+		string(contracts.RoleChurchAdmin),
+	)
+	analyticsGroup := api.Group("/analytics", requireAuth, execRole)
+	adminHandler.RegisterAnalyticsRoutes(analyticsGroup)
 
 	log.Printf("HOF Church backend listening on :%s", config.Port)
 	log.Fatal(e.Start(":" + config.Port))

@@ -39,6 +39,9 @@ func (User) Fields() []ent.Field {
 		field.Text("email").
 			Unique(),
 		field.Text("password_hash"),
+		field.Text("pin_hash").
+			Optional().
+			Nillable(),
 		field.Text("phone_number").
 			Optional().
 			Nillable(),
@@ -52,8 +55,22 @@ func (User) Fields() []ent.Field {
 			Optional().
 			Nillable(),
 		field.Enum("role").
-			Values("church_admin", "team_lead", "resident_pastor", "steward", "member", "first_timer", "guest").
+			Values(
+				"super_admin",
+				"general_overseer",
+				"resident_pastor",
+				"church_admin",
+				"sector_lead",
+				"team_lead",
+				"steward",
+				"member",
+				"first_timer",
+				"guest",
+			).
 			Default("member"),
+		field.JSON("roles", []string{}).
+			Optional().
+			Default([]string{"member"}),
 		field.Enum("account_status").
 			Values("active", "inactive", "suspended", "pending").
 			Default("pending"),
@@ -89,6 +106,9 @@ func (User) Edges() []ent.Edge {
 		edge.To("soul_journals", SoulJournal.Type),
 		edge.To("outreach_targets", OutreachTargets.Type),
 		edge.To("used_invites", OtpInvites.Type),
+		edge.To("created_visitors", Visitor.Type),
+		edge.To("recorded_attendances", AttendanceRecord.Type),
+		edge.To("created_todos", TeamTodo.Type),
 	}
 }
 

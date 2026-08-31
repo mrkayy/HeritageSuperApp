@@ -23,6 +23,9 @@ type Member struct {
 	Allergies               *string `json:"allergies"`
 	MedicalNotes            *string `json:"medicalNotes"`
 	IsPlaceholder           bool    `json:"isPlaceholder"`
+	IsProfiled              bool    `json:"isProfiled"`
+	ProfiledByUserID        *string `json:"profiledByUserId,omitempty"`
+	ProfiledAt              *string `json:"profiledAt,omitempty"`
 	SourceTeam              *string `json:"sourceTeam"`
 	CreatedBy               *string `json:"createdBy"`
 	LocalChurchID           *string `json:"localChurchId"`
@@ -31,10 +34,15 @@ type Member struct {
 	SectorName              *string `json:"sectorName"`
 	TeamID                  *string `json:"teamId"`
 	TeamName                *string `json:"teamName"`
-	CurrentStage            string  `json:"currentStage"`
-	CreatedAt               string  `json:"createdAt"`
-	UpdatedAt               string  `json:"updatedAt"`
-	Name                    string  `json:"name"` // Computed first_name + surname for compatibility
+	VolunteeringTeamID      *string `json:"volunteeringTeamId,omitempty"`
+	VolunteeringTeamName    *string `json:"volunteeringTeamName,omitempty"`
+	CurrentStage            string   `json:"currentStage"`
+	Role                    string   `json:"role,omitempty"`
+	Roles                   []string `json:"roles,omitempty"`
+	JoinedAt                string   `json:"joinedAt,omitempty"`
+	CreatedAt               string   `json:"createdAt"`
+	UpdatedAt               string   `json:"updatedAt"`
+	Name                    string   `json:"name"` // Computed first_name + surname for compatibility
 }
 
 // MembershipReader is implemented by the membership module and consumed

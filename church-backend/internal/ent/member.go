@@ -58,6 +58,12 @@ type Member struct {
 	MedicalNotes *string `json:"medical_notes,omitempty"`
 	// IsPlaceholder holds the value of the "is_placeholder" field.
 	IsPlaceholder bool `json:"is_placeholder,omitempty"`
+	// IsProfiled holds the value of the "is_profiled" field.
+	IsProfiled bool `json:"is_profiled,omitempty"`
+	// ProfiledByUserID holds the value of the "profiled_by_user_id" field.
+	ProfiledByUserID *uuid.UUID `json:"profiled_by_user_id,omitempty"`
+	// ProfiledAt holds the value of the "profiled_at" field.
+	ProfiledAt *time.Time `json:"profiled_at,omitempty"`
 	// SourceTeam holds the value of the "source_team" field.
 	SourceTeam *string `json:"source_team,omitempty"`
 	// CreatedBy holds the value of the "created_by" field.
@@ -68,6 +74,10 @@ type Member struct {
 	SectorID *uuid.UUID `json:"sector_id,omitempty"`
 	// TeamID holds the value of the "team_id" field.
 	TeamID *uuid.UUID `json:"team_id,omitempty"`
+	// VolunteeringTeamID holds the value of the "volunteering_team_id" field.
+	VolunteeringTeamID *uuid.UUID `json:"volunteering_team_id,omitempty"`
+	// JoinedAt holds the value of the "joined_at" field.
+	JoinedAt time.Time `json:"joined_at,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
@@ -188,15 +198,15 @@ func (*Member) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case member.FieldCreatedBy, member.FieldLocalChurchID, member.FieldSectorID, member.FieldTeamID:
+		case member.FieldProfiledByUserID, member.FieldCreatedBy, member.FieldLocalChurchID, member.FieldSectorID, member.FieldTeamID, member.FieldVolunteeringTeamID:
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
-		case member.FieldIsPlaceholder:
+		case member.FieldIsPlaceholder, member.FieldIsProfiled:
 			values[i] = new(sql.NullBool)
 		case member.FieldDateOfBirthDay, member.FieldDateOfBirthMonth, member.FieldWeddingAnniversaryDay, member.FieldWeddingAnniversaryMonth:
 			values[i] = new(sql.NullInt64)
 		case member.FieldFirstName, member.FieldSurname, member.FieldEmail, member.FieldPhoneNumber, member.FieldHomeAddress, member.FieldGender, member.FieldMaritalStatus, member.FieldJobOccupation, member.FieldPhotoURL, member.FieldEmergencyContactName, member.FieldEmergencyContactPhone, member.FieldAllergies, member.FieldMedicalNotes, member.FieldSourceTeam, member.FieldCurrentStage:
 			values[i] = new(sql.NullString)
-		case member.FieldCreatedAt, member.FieldUpdatedAt:
+		case member.FieldProfiledAt, member.FieldJoinedAt, member.FieldCreatedAt, member.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
 		case member.FieldID:
 			values[i] = new(uuid.UUID)
@@ -344,6 +354,26 @@ func (_m *Member) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.IsPlaceholder = value.Bool
 			}
+		case member.FieldIsProfiled:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field is_profiled", values[i])
+			} else if value.Valid {
+				_m.IsProfiled = value.Bool
+			}
+		case member.FieldProfiledByUserID:
+			if value, ok := values[i].(*sql.NullScanner); !ok {
+				return fmt.Errorf("unexpected type %T for field profiled_by_user_id", values[i])
+			} else if value.Valid {
+				_m.ProfiledByUserID = new(uuid.UUID)
+				*_m.ProfiledByUserID = *value.S.(*uuid.UUID)
+			}
+		case member.FieldProfiledAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field profiled_at", values[i])
+			} else if value.Valid {
+				_m.ProfiledAt = new(time.Time)
+				*_m.ProfiledAt = value.Time
+			}
 		case member.FieldSourceTeam:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field source_team", values[i])
@@ -378,6 +408,19 @@ func (_m *Member) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.TeamID = new(uuid.UUID)
 				*_m.TeamID = *value.S.(*uuid.UUID)
+			}
+		case member.FieldVolunteeringTeamID:
+			if value, ok := values[i].(*sql.NullScanner); !ok {
+				return fmt.Errorf("unexpected type %T for field volunteering_team_id", values[i])
+			} else if value.Valid {
+				_m.VolunteeringTeamID = new(uuid.UUID)
+				*_m.VolunteeringTeamID = *value.S.(*uuid.UUID)
+			}
+		case member.FieldJoinedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field joined_at", values[i])
+			} else if value.Valid {
+				_m.JoinedAt = value.Time
 			}
 		case member.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -557,6 +600,19 @@ func (_m *Member) String() string {
 	builder.WriteString("is_placeholder=")
 	builder.WriteString(fmt.Sprintf("%v", _m.IsPlaceholder))
 	builder.WriteString(", ")
+	builder.WriteString("is_profiled=")
+	builder.WriteString(fmt.Sprintf("%v", _m.IsProfiled))
+	builder.WriteString(", ")
+	if v := _m.ProfiledByUserID; v != nil {
+		builder.WriteString("profiled_by_user_id=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.ProfiledAt; v != nil {
+		builder.WriteString("profiled_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
 	if v := _m.SourceTeam; v != nil {
 		builder.WriteString("source_team=")
 		builder.WriteString(*v)
@@ -581,6 +637,14 @@ func (_m *Member) String() string {
 		builder.WriteString("team_id=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
+	builder.WriteString(", ")
+	if v := _m.VolunteeringTeamID; v != nil {
+		builder.WriteString("volunteering_team_id=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	builder.WriteString("joined_at=")
+	builder.WriteString(_m.JoinedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
 	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))

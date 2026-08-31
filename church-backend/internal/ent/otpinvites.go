@@ -25,10 +25,14 @@ type OtpInvites struct {
 	Email string `json:"email,omitempty"`
 	// OtpCode holds the value of the "otp_code" field.
 	OtpCode string `json:"otp_code,omitempty"`
+	// FirstName holds the value of the "first_name" field.
+	FirstName string `json:"first_name,omitempty"`
+	// LastName holds the value of the "last_name" field.
+	LastName string `json:"last_name,omitempty"`
 	// SectorID holds the value of the "sector_id" field.
-	SectorID uuid.UUID `json:"sector_id,omitempty"`
+	SectorID *uuid.UUID `json:"sector_id,omitempty"`
 	// ChurchID holds the value of the "church_id" field.
-	ChurchID uuid.UUID `json:"church_id,omitempty"`
+	ChurchID *uuid.UUID `json:"church_id,omitempty"`
 	// Role holds the value of the "role" field.
 	Role otpinvites.Role `json:"role,omitempty"`
 	// UsedByUserID holds the value of the "used_by_user_id" field.
@@ -98,15 +102,15 @@ func (*OtpInvites) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case otpinvites.FieldUsedByUserID:
+		case otpinvites.FieldSectorID, otpinvites.FieldChurchID, otpinvites.FieldUsedByUserID:
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		case otpinvites.FieldUsed:
 			values[i] = new(sql.NullBool)
-		case otpinvites.FieldEmail, otpinvites.FieldOtpCode, otpinvites.FieldRole:
+		case otpinvites.FieldEmail, otpinvites.FieldOtpCode, otpinvites.FieldFirstName, otpinvites.FieldLastName, otpinvites.FieldRole:
 			values[i] = new(sql.NullString)
 		case otpinvites.FieldExpiresAt, otpinvites.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
-		case otpinvites.FieldID, otpinvites.FieldSectorID, otpinvites.FieldChurchID, otpinvites.FieldCreatedByUserID:
+		case otpinvites.FieldID, otpinvites.FieldCreatedByUserID:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -141,17 +145,31 @@ func (_m *OtpInvites) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.OtpCode = value.String
 			}
+		case otpinvites.FieldFirstName:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field first_name", values[i])
+			} else if value.Valid {
+				_m.FirstName = value.String
+			}
+		case otpinvites.FieldLastName:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field last_name", values[i])
+			} else if value.Valid {
+				_m.LastName = value.String
+			}
 		case otpinvites.FieldSectorID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field sector_id", values[i])
-			} else if value != nil {
-				_m.SectorID = *value
+			} else if value.Valid {
+				_m.SectorID = new(uuid.UUID)
+				*_m.SectorID = *value.S.(*uuid.UUID)
 			}
 		case otpinvites.FieldChurchID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field church_id", values[i])
-			} else if value != nil {
-				_m.ChurchID = *value
+			} else if value.Valid {
+				_m.ChurchID = new(uuid.UUID)
+				*_m.ChurchID = *value.S.(*uuid.UUID)
 			}
 		case otpinvites.FieldRole:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -247,11 +265,21 @@ func (_m *OtpInvites) String() string {
 	builder.WriteString("otp_code=")
 	builder.WriteString(_m.OtpCode)
 	builder.WriteString(", ")
-	builder.WriteString("sector_id=")
-	builder.WriteString(fmt.Sprintf("%v", _m.SectorID))
+	builder.WriteString("first_name=")
+	builder.WriteString(_m.FirstName)
 	builder.WriteString(", ")
-	builder.WriteString("church_id=")
-	builder.WriteString(fmt.Sprintf("%v", _m.ChurchID))
+	builder.WriteString("last_name=")
+	builder.WriteString(_m.LastName)
+	builder.WriteString(", ")
+	if v := _m.SectorID; v != nil {
+		builder.WriteString("sector_id=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.ChurchID; v != nil {
+		builder.WriteString("church_id=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteString(", ")
 	builder.WriteString("role=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Role))

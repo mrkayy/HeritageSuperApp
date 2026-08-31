@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +10,8 @@ import { Users, Plus, Edit, Trash2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useAuthStore } from '@/store/authStore';
 import api from '@/lib/api';
+import { useZodForm, FieldError } from '@/hooks/useZodForm';
+import { teamSchema, type TeamFormValues } from '@/lib/schemas/admin';
 
 interface Team {
   team_id?: string;
@@ -25,14 +26,14 @@ const CreateTeam = () => {
   const [loading, setLoading] = useState(true);
   const [editingTeam, setEditingTeam] = useState<Team | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-  });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Check if user is admin
   const isAdmin = user?.role === 'super_admin' || user?.role === 'church_admin';
+
+  const form = useZodForm({
+    schema: teamSchema,
+    initialValues: { name: '', description: '' },
+  });
 
   useEffect(() => {
     fetchTeams();
@@ -43,87 +44,39 @@ const CreateTeam = () => {
       const { data } = await api.get('/teams');
       setTeams(data || []);
     } catch (error) {
-      console.error('Error fetching teams:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch teams.",
-        variant: "destructive"
-      });
+      toast({ title: "Error", description: "Failed to fetch teams.", variant: "destructive" });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleSelectChange = (name: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const resetForm = () => {
-    setFormData({
-      name: '',
-      description: '',
-    });
-    setEditingTeam(null);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async (data: TeamFormValues) => {
     if (!isAdmin) {
-      toast({
-        title: "Access Denied",
-        description: "Only admin users can perform this operation.",
-        variant: "destructive"
-      });
+      toast({ title: "Access Denied", description: "Only admin users can perform this operation.", variant: "destructive" });
       return;
     }
 
     setIsSubmitting(true);
-
     try {
       const teamData = {
-        name: formData.name,
-        description: formData.description || null,
+        name: data.name,
+        description: data.description || null,
       };
 
       if (editingTeam) {
-        // Update existing team
         await api.put(`/teams/${editingTeam.team_id}`, teamData);
-
-        toast({
-          title: "Team Updated",
-          description: "Team has been successfully updated.",
-        });
+        toast({ title: "Team Updated", description: "Team has been successfully updated." });
       } else {
-        // Create new team
         await api.post('/teams', teamData);
-
-        toast({
-          title: "Team Created",
-          description: "Team has been successfully created.",
-        });
+        toast({ title: "Team Created", description: "Team has been successfully created." });
       }
 
-      resetForm();
+      form.reset();
+      setEditingTeam(null);
       setIsDialogOpen(false);
       fetchTeams();
     } catch (error) {
-      console.error('Error saving team:', error);
-      toast({
-        title: "Error",
-        description: "Failed to save team. Please try again.",
-        variant: "destructive"
-      });
+      toast({ title: "Error", description: "Failed to save team. Please try again.", variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
@@ -131,7 +84,7 @@ const CreateTeam = () => {
 
   const handleEdit = (team: Team) => {
     setEditingTeam(team);
-    setFormData({
+    form.reset({
       name: team.name,
       description: team.description || '',
     });
@@ -140,39 +93,23 @@ const CreateTeam = () => {
 
   const handleDelete = async (teamId: string) => {
     if (!isAdmin) {
-      toast({
-        title: "Access Denied",
-        description: "Only admin users can perform this operation.",
-        variant: "destructive"
-      });
+      toast({ title: "Access Denied", description: "Only admin users can perform this operation.", variant: "destructive" });
       return;
     }
-
-    if (!confirm('Are you sure you want to delete this team?')) {
-      return;
-    }
+    if (!confirm('Are you sure you want to delete this team?')) return;
 
     try {
       await api.delete(`/teams/${teamId}`);
-
-      toast({
-        title: "Team Deleted",
-        description: "Team has been successfully deleted.",
-      });
-
+      toast({ title: "Team Deleted", description: "Team has been successfully deleted." });
       fetchTeams();
     } catch (error) {
-      console.error('Error deleting team:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete team. Please try again.",
-        variant: "destructive"
-      });
+      toast({ title: "Error", description: "Failed to delete team. Please try again.", variant: "destructive" });
     }
   };
 
   const openCreateDialog = () => {
-    resetForm();
+    form.reset();
+    setEditingTeam(null);
     setIsDialogOpen(true);
   };
 
@@ -182,7 +119,6 @@ const CreateTeam = () => {
 
   return (
     <div className="space-y-6">
-      {/* Team Table */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="flex items-center gap-2">
@@ -203,61 +139,26 @@ const CreateTeam = () => {
                     {editingTeam ? 'Edit Team' : 'Create New Team'}
                   </DialogTitle>
                 </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="name">Team Name</Label>
                       <Input
                         id="name"
-                        name="name"
-                        value={formData.name}
-                        onChange={handleInputChange}
                         placeholder="Enter team name"
-                        required
+                        {...form.getInputProps('name')}
                       />
+                      <FieldError message={form.errors.name} />
                     </div>
-                    {/* <div>
-                      <Label htmlFor="team_type">Team Type</Label>
-                      <Select onValueChange={(value) => handleSelectChange('team_type', value)} value={formData.team_type}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select team type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="outreach">Outreach Team</SelectItem>
-                          <SelectItem value="followup">Follow-up Team</SelectItem>
-                          <SelectItem value="transport">Transport Team</SelectItem>
-                          <SelectItem value="prayer">Prayer Team</SelectItem>
-                          <SelectItem value="youth">Youth Team</SelectItem>
-                          <SelectItem value="worship">Worship Team</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div> */}
                   </div>
-
-                  {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="max_members">Maximum Members</Label>
-                      <Input
-                        id="max_members"
-                        name="max_members"
-                        type="number"
-                        value={formData.max_members}
-                        onChange={handleInputChange}
-                        placeholder="e.g., 10"
-                        min="1"
-                      />
-                    </div>
-                  </div> */}
 
                   <div>
                     <Label htmlFor="description">Description</Label>
                     <Textarea
                       id="description"
-                      name="description"
-                      value={formData.description}
-                      onChange={handleInputChange}
                       placeholder="Brief description of the team and its purpose"
                       rows={3}
+                      {...form.getInputProps('description')}
                     />
                   </div>
 
@@ -293,18 +194,10 @@ const CreateTeam = () => {
                   {isAdmin && (
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEdit(team)}
-                        >
+                        <Button variant="outline" size="sm" onClick={() => handleEdit(team)}>
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDelete(team.team_id || '')}
-                        >
+                        <Button variant="outline" size="sm" onClick={() => handleDelete(team.team_id || '')}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>

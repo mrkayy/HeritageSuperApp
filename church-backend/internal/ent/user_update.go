@@ -10,8 +10,10 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
+	"github.com/hofchurchng/church-backend/internal/ent/attendancerecord"
 	"github.com/hofchurchng/church-backend/internal/ent/followup"
 	"github.com/hofchurchng/church-backend/internal/ent/localchurch"
 	"github.com/hofchurchng/church-backend/internal/ent/otpinvites"
@@ -22,10 +24,12 @@ import (
 	"github.com/hofchurchng/church-backend/internal/ent/soul"
 	"github.com/hofchurchng/church-backend/internal/ent/souljournal"
 	"github.com/hofchurchng/church-backend/internal/ent/team"
+	"github.com/hofchurchng/church-backend/internal/ent/teamtodo"
 	"github.com/hofchurchng/church-backend/internal/ent/teamvolunteers"
 	"github.com/hofchurchng/church-backend/internal/ent/user"
 	"github.com/hofchurchng/church-backend/internal/ent/usersector"
 	"github.com/hofchurchng/church-backend/internal/ent/userteam"
+	"github.com/hofchurchng/church-backend/internal/ent/visitor"
 )
 
 // UserUpdate is the builder for updating User entities.
@@ -177,6 +181,26 @@ func (_u *UserUpdate) SetNillablePasswordHash(v *string) *UserUpdate {
 	return _u
 }
 
+// SetPinHash sets the "pin_hash" field.
+func (_u *UserUpdate) SetPinHash(v string) *UserUpdate {
+	_u.mutation.SetPinHash(v)
+	return _u
+}
+
+// SetNillablePinHash sets the "pin_hash" field if the given value is not nil.
+func (_u *UserUpdate) SetNillablePinHash(v *string) *UserUpdate {
+	if v != nil {
+		_u.SetPinHash(*v)
+	}
+	return _u
+}
+
+// ClearPinHash clears the value of the "pin_hash" field.
+func (_u *UserUpdate) ClearPinHash() *UserUpdate {
+	_u.mutation.ClearPinHash()
+	return _u
+}
+
 // SetPhoneNumber sets the "phone_number" field.
 func (_u *UserUpdate) SetPhoneNumber(v string) *UserUpdate {
 	_u.mutation.SetPhoneNumber(v)
@@ -268,6 +292,24 @@ func (_u *UserUpdate) SetNillableRole(v *user.Role) *UserUpdate {
 	if v != nil {
 		_u.SetRole(*v)
 	}
+	return _u
+}
+
+// SetRoles sets the "roles" field.
+func (_u *UserUpdate) SetRoles(v []string) *UserUpdate {
+	_u.mutation.SetRoles(v)
+	return _u
+}
+
+// AppendRoles appends value to the "roles" field.
+func (_u *UserUpdate) AppendRoles(v []string) *UserUpdate {
+	_u.mutation.AppendRoles(v)
+	return _u
+}
+
+// ClearRoles clears the value of the "roles" field.
+func (_u *UserUpdate) ClearRoles() *UserUpdate {
+	_u.mutation.ClearRoles()
 	return _u
 }
 
@@ -461,6 +503,51 @@ func (_u *UserUpdate) AddUsedInvites(v ...*OtpInvites) *UserUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.AddUsedInviteIDs(ids...)
+}
+
+// AddCreatedVisitorIDs adds the "created_visitors" edge to the Visitor entity by IDs.
+func (_u *UserUpdate) AddCreatedVisitorIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.AddCreatedVisitorIDs(ids...)
+	return _u
+}
+
+// AddCreatedVisitors adds the "created_visitors" edges to the Visitor entity.
+func (_u *UserUpdate) AddCreatedVisitors(v ...*Visitor) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddCreatedVisitorIDs(ids...)
+}
+
+// AddRecordedAttendanceIDs adds the "recorded_attendances" edge to the AttendanceRecord entity by IDs.
+func (_u *UserUpdate) AddRecordedAttendanceIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.AddRecordedAttendanceIDs(ids...)
+	return _u
+}
+
+// AddRecordedAttendances adds the "recorded_attendances" edges to the AttendanceRecord entity.
+func (_u *UserUpdate) AddRecordedAttendances(v ...*AttendanceRecord) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddRecordedAttendanceIDs(ids...)
+}
+
+// AddCreatedTodoIDs adds the "created_todos" edge to the TeamTodo entity by IDs.
+func (_u *UserUpdate) AddCreatedTodoIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.AddCreatedTodoIDs(ids...)
+	return _u
+}
+
+// AddCreatedTodos adds the "created_todos" edges to the TeamTodo entity.
+func (_u *UserUpdate) AddCreatedTodos(v ...*TeamTodo) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddCreatedTodoIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -675,6 +762,69 @@ func (_u *UserUpdate) RemoveUsedInvites(v ...*OtpInvites) *UserUpdate {
 	return _u.RemoveUsedInviteIDs(ids...)
 }
 
+// ClearCreatedVisitors clears all "created_visitors" edges to the Visitor entity.
+func (_u *UserUpdate) ClearCreatedVisitors() *UserUpdate {
+	_u.mutation.ClearCreatedVisitors()
+	return _u
+}
+
+// RemoveCreatedVisitorIDs removes the "created_visitors" edge to Visitor entities by IDs.
+func (_u *UserUpdate) RemoveCreatedVisitorIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.RemoveCreatedVisitorIDs(ids...)
+	return _u
+}
+
+// RemoveCreatedVisitors removes "created_visitors" edges to Visitor entities.
+func (_u *UserUpdate) RemoveCreatedVisitors(v ...*Visitor) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveCreatedVisitorIDs(ids...)
+}
+
+// ClearRecordedAttendances clears all "recorded_attendances" edges to the AttendanceRecord entity.
+func (_u *UserUpdate) ClearRecordedAttendances() *UserUpdate {
+	_u.mutation.ClearRecordedAttendances()
+	return _u
+}
+
+// RemoveRecordedAttendanceIDs removes the "recorded_attendances" edge to AttendanceRecord entities by IDs.
+func (_u *UserUpdate) RemoveRecordedAttendanceIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.RemoveRecordedAttendanceIDs(ids...)
+	return _u
+}
+
+// RemoveRecordedAttendances removes "recorded_attendances" edges to AttendanceRecord entities.
+func (_u *UserUpdate) RemoveRecordedAttendances(v ...*AttendanceRecord) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveRecordedAttendanceIDs(ids...)
+}
+
+// ClearCreatedTodos clears all "created_todos" edges to the TeamTodo entity.
+func (_u *UserUpdate) ClearCreatedTodos() *UserUpdate {
+	_u.mutation.ClearCreatedTodos()
+	return _u
+}
+
+// RemoveCreatedTodoIDs removes the "created_todos" edge to TeamTodo entities by IDs.
+func (_u *UserUpdate) RemoveCreatedTodoIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.RemoveCreatedTodoIDs(ids...)
+	return _u
+}
+
+// RemoveCreatedTodos removes "created_todos" edges to TeamTodo entities.
+func (_u *UserUpdate) RemoveCreatedTodos(v ...*TeamTodo) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveCreatedTodoIDs(ids...)
+}
+
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (_u *UserUpdate) Save(ctx context.Context) (int, error) {
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
@@ -747,6 +897,12 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.PasswordHash(); ok {
 		_spec.SetField(user.FieldPasswordHash, field.TypeString, value)
 	}
+	if value, ok := _u.mutation.PinHash(); ok {
+		_spec.SetField(user.FieldPinHash, field.TypeString, value)
+	}
+	if _u.mutation.PinHashCleared() {
+		_spec.ClearField(user.FieldPinHash, field.TypeString)
+	}
 	if value, ok := _u.mutation.PhoneNumber(); ok {
 		_spec.SetField(user.FieldPhoneNumber, field.TypeString, value)
 	}
@@ -773,6 +929,17 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.Role(); ok {
 		_spec.SetField(user.FieldRole, field.TypeEnum, value)
+	}
+	if value, ok := _u.mutation.Roles(); ok {
+		_spec.SetField(user.FieldRoles, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedRoles(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, user.FieldRoles, value)
+		})
+	}
+	if _u.mutation.RolesCleared() {
+		_spec.ClearField(user.FieldRoles, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.AccountStatus(); ok {
 		_spec.SetField(user.FieldAccountStatus, field.TypeEnum, value)
@@ -1275,6 +1442,141 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.CreatedVisitorsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CreatedVisitorsTable,
+			Columns: []string{user.CreatedVisitorsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(visitor.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedCreatedVisitorsIDs(); len(nodes) > 0 && !_u.mutation.CreatedVisitorsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CreatedVisitorsTable,
+			Columns: []string{user.CreatedVisitorsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(visitor.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.CreatedVisitorsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CreatedVisitorsTable,
+			Columns: []string{user.CreatedVisitorsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(visitor.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.RecordedAttendancesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RecordedAttendancesTable,
+			Columns: []string{user.RecordedAttendancesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(attendancerecord.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedRecordedAttendancesIDs(); len(nodes) > 0 && !_u.mutation.RecordedAttendancesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RecordedAttendancesTable,
+			Columns: []string{user.RecordedAttendancesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(attendancerecord.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RecordedAttendancesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RecordedAttendancesTable,
+			Columns: []string{user.RecordedAttendancesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(attendancerecord.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.CreatedTodosCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CreatedTodosTable,
+			Columns: []string{user.CreatedTodosColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(teamtodo.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedCreatedTodosIDs(); len(nodes) > 0 && !_u.mutation.CreatedTodosCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CreatedTodosTable,
+			Columns: []string{user.CreatedTodosColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(teamtodo.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.CreatedTodosIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CreatedTodosTable,
+			Columns: []string{user.CreatedTodosColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(teamtodo.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{user.Label}
@@ -1431,6 +1733,26 @@ func (_u *UserUpdateOne) SetNillablePasswordHash(v *string) *UserUpdateOne {
 	return _u
 }
 
+// SetPinHash sets the "pin_hash" field.
+func (_u *UserUpdateOne) SetPinHash(v string) *UserUpdateOne {
+	_u.mutation.SetPinHash(v)
+	return _u
+}
+
+// SetNillablePinHash sets the "pin_hash" field if the given value is not nil.
+func (_u *UserUpdateOne) SetNillablePinHash(v *string) *UserUpdateOne {
+	if v != nil {
+		_u.SetPinHash(*v)
+	}
+	return _u
+}
+
+// ClearPinHash clears the value of the "pin_hash" field.
+func (_u *UserUpdateOne) ClearPinHash() *UserUpdateOne {
+	_u.mutation.ClearPinHash()
+	return _u
+}
+
 // SetPhoneNumber sets the "phone_number" field.
 func (_u *UserUpdateOne) SetPhoneNumber(v string) *UserUpdateOne {
 	_u.mutation.SetPhoneNumber(v)
@@ -1522,6 +1844,24 @@ func (_u *UserUpdateOne) SetNillableRole(v *user.Role) *UserUpdateOne {
 	if v != nil {
 		_u.SetRole(*v)
 	}
+	return _u
+}
+
+// SetRoles sets the "roles" field.
+func (_u *UserUpdateOne) SetRoles(v []string) *UserUpdateOne {
+	_u.mutation.SetRoles(v)
+	return _u
+}
+
+// AppendRoles appends value to the "roles" field.
+func (_u *UserUpdateOne) AppendRoles(v []string) *UserUpdateOne {
+	_u.mutation.AppendRoles(v)
+	return _u
+}
+
+// ClearRoles clears the value of the "roles" field.
+func (_u *UserUpdateOne) ClearRoles() *UserUpdateOne {
+	_u.mutation.ClearRoles()
 	return _u
 }
 
@@ -1715,6 +2055,51 @@ func (_u *UserUpdateOne) AddUsedInvites(v ...*OtpInvites) *UserUpdateOne {
 		ids[i] = v[i].ID
 	}
 	return _u.AddUsedInviteIDs(ids...)
+}
+
+// AddCreatedVisitorIDs adds the "created_visitors" edge to the Visitor entity by IDs.
+func (_u *UserUpdateOne) AddCreatedVisitorIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.AddCreatedVisitorIDs(ids...)
+	return _u
+}
+
+// AddCreatedVisitors adds the "created_visitors" edges to the Visitor entity.
+func (_u *UserUpdateOne) AddCreatedVisitors(v ...*Visitor) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddCreatedVisitorIDs(ids...)
+}
+
+// AddRecordedAttendanceIDs adds the "recorded_attendances" edge to the AttendanceRecord entity by IDs.
+func (_u *UserUpdateOne) AddRecordedAttendanceIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.AddRecordedAttendanceIDs(ids...)
+	return _u
+}
+
+// AddRecordedAttendances adds the "recorded_attendances" edges to the AttendanceRecord entity.
+func (_u *UserUpdateOne) AddRecordedAttendances(v ...*AttendanceRecord) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddRecordedAttendanceIDs(ids...)
+}
+
+// AddCreatedTodoIDs adds the "created_todos" edge to the TeamTodo entity by IDs.
+func (_u *UserUpdateOne) AddCreatedTodoIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.AddCreatedTodoIDs(ids...)
+	return _u
+}
+
+// AddCreatedTodos adds the "created_todos" edges to the TeamTodo entity.
+func (_u *UserUpdateOne) AddCreatedTodos(v ...*TeamTodo) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddCreatedTodoIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -1929,6 +2314,69 @@ func (_u *UserUpdateOne) RemoveUsedInvites(v ...*OtpInvites) *UserUpdateOne {
 	return _u.RemoveUsedInviteIDs(ids...)
 }
 
+// ClearCreatedVisitors clears all "created_visitors" edges to the Visitor entity.
+func (_u *UserUpdateOne) ClearCreatedVisitors() *UserUpdateOne {
+	_u.mutation.ClearCreatedVisitors()
+	return _u
+}
+
+// RemoveCreatedVisitorIDs removes the "created_visitors" edge to Visitor entities by IDs.
+func (_u *UserUpdateOne) RemoveCreatedVisitorIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.RemoveCreatedVisitorIDs(ids...)
+	return _u
+}
+
+// RemoveCreatedVisitors removes "created_visitors" edges to Visitor entities.
+func (_u *UserUpdateOne) RemoveCreatedVisitors(v ...*Visitor) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveCreatedVisitorIDs(ids...)
+}
+
+// ClearRecordedAttendances clears all "recorded_attendances" edges to the AttendanceRecord entity.
+func (_u *UserUpdateOne) ClearRecordedAttendances() *UserUpdateOne {
+	_u.mutation.ClearRecordedAttendances()
+	return _u
+}
+
+// RemoveRecordedAttendanceIDs removes the "recorded_attendances" edge to AttendanceRecord entities by IDs.
+func (_u *UserUpdateOne) RemoveRecordedAttendanceIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.RemoveRecordedAttendanceIDs(ids...)
+	return _u
+}
+
+// RemoveRecordedAttendances removes "recorded_attendances" edges to AttendanceRecord entities.
+func (_u *UserUpdateOne) RemoveRecordedAttendances(v ...*AttendanceRecord) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveRecordedAttendanceIDs(ids...)
+}
+
+// ClearCreatedTodos clears all "created_todos" edges to the TeamTodo entity.
+func (_u *UserUpdateOne) ClearCreatedTodos() *UserUpdateOne {
+	_u.mutation.ClearCreatedTodos()
+	return _u
+}
+
+// RemoveCreatedTodoIDs removes the "created_todos" edge to TeamTodo entities by IDs.
+func (_u *UserUpdateOne) RemoveCreatedTodoIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.RemoveCreatedTodoIDs(ids...)
+	return _u
+}
+
+// RemoveCreatedTodos removes "created_todos" edges to TeamTodo entities.
+func (_u *UserUpdateOne) RemoveCreatedTodos(v ...*TeamTodo) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveCreatedTodoIDs(ids...)
+}
+
 // Where appends a list predicates to the UserUpdate builder.
 func (_u *UserUpdateOne) Where(ps ...predicate.User) *UserUpdateOne {
 	_u.mutation.Where(ps...)
@@ -2031,6 +2479,12 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 	if value, ok := _u.mutation.PasswordHash(); ok {
 		_spec.SetField(user.FieldPasswordHash, field.TypeString, value)
 	}
+	if value, ok := _u.mutation.PinHash(); ok {
+		_spec.SetField(user.FieldPinHash, field.TypeString, value)
+	}
+	if _u.mutation.PinHashCleared() {
+		_spec.ClearField(user.FieldPinHash, field.TypeString)
+	}
 	if value, ok := _u.mutation.PhoneNumber(); ok {
 		_spec.SetField(user.FieldPhoneNumber, field.TypeString, value)
 	}
@@ -2057,6 +2511,17 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 	}
 	if value, ok := _u.mutation.Role(); ok {
 		_spec.SetField(user.FieldRole, field.TypeEnum, value)
+	}
+	if value, ok := _u.mutation.Roles(); ok {
+		_spec.SetField(user.FieldRoles, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedRoles(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, user.FieldRoles, value)
+		})
+	}
+	if _u.mutation.RolesCleared() {
+		_spec.ClearField(user.FieldRoles, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.AccountStatus(); ok {
 		_spec.SetField(user.FieldAccountStatus, field.TypeEnum, value)
@@ -2552,6 +3017,141 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(otpinvites.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.CreatedVisitorsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CreatedVisitorsTable,
+			Columns: []string{user.CreatedVisitorsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(visitor.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedCreatedVisitorsIDs(); len(nodes) > 0 && !_u.mutation.CreatedVisitorsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CreatedVisitorsTable,
+			Columns: []string{user.CreatedVisitorsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(visitor.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.CreatedVisitorsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CreatedVisitorsTable,
+			Columns: []string{user.CreatedVisitorsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(visitor.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.RecordedAttendancesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RecordedAttendancesTable,
+			Columns: []string{user.RecordedAttendancesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(attendancerecord.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedRecordedAttendancesIDs(); len(nodes) > 0 && !_u.mutation.RecordedAttendancesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RecordedAttendancesTable,
+			Columns: []string{user.RecordedAttendancesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(attendancerecord.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RecordedAttendancesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RecordedAttendancesTable,
+			Columns: []string{user.RecordedAttendancesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(attendancerecord.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.CreatedTodosCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CreatedTodosTable,
+			Columns: []string{user.CreatedTodosColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(teamtodo.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedCreatedTodosIDs(); len(nodes) > 0 && !_u.mutation.CreatedTodosCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CreatedTodosTable,
+			Columns: []string{user.CreatedTodosColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(teamtodo.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.CreatedTodosIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CreatedTodosTable,
+			Columns: []string{user.CreatedTodosColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(teamtodo.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
