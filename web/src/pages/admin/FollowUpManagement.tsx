@@ -1,37 +1,22 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon, MessageSquare, Plus, Pencil, Trash2, Search, UserCheck, Clock, CheckCircle } from 'lucide-react';
 import { format } from "date-fns";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { toast } from '@/hooks/use-toast';
 import { cn } from "@/lib/utils";
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import { Calendar } from '@/components/ui/calendar';
-
-// Form schemas
-const followUpSchema = z.object({
-  soul_id: z.string().min(1, "Soul is required"),
-  assigned_to_user_id: z.string().min(1, "Assigned user is required"),
-  due_date: z.date({
-    required_error: "Due date is required",
-  }),
-  status: z.enum(['pending', 'in_progress', 'completed', 'cancelled']),
-  notes: z.string().optional(),
-});
-
-type FollowUpFormData = z.infer<typeof followUpSchema>;
+import { useZodForm, FieldError } from '@/hooks/useZodForm';
+import { followUpSchema, type FollowUpFormValues } from '@/lib/schemas/followup';
 
 interface FollowUp {
   follow_up_id: string;
@@ -73,12 +58,16 @@ const FollowUpManagement = () => {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editingFollowUp, setEditingFollowUp] = useState<FollowUp | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
 
-  const form = useForm<FollowUpFormData>({
-    resolver: zodResolver(followUpSchema),
-    defaultValues: {
-      status: 'pending',
-      notes: '', // Initialize notes to an empty string to avoid undefined issues
+  const form = useZodForm({
+    schema: followUpSchema,
+    initialValues: {
+      soul_id: '',
+      assigned_to_user_id: '',
+      due_date: '',
+      status: 'pending' as const,
+      notes: '',
     },
   });
 
@@ -88,7 +77,6 @@ const FollowUpManagement = () => {
     fetchUsers();
   }, []);
 
-  // Check permissions
   if (!user || (user.role !== 'church_admin' && user.role !== 'super_admin' && user.role !== 'team_lead')) {
     return (
       <div className="p-6 page-background">
@@ -108,13 +96,8 @@ const FollowUpManagement = () => {
       setLoading(true);
       const { data } = await api.get('/follow-up');
       setFollowUps(data || []);
-    } catch (error) {
-      console.error('Error fetching follow-ups:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch follow-ups",
-        variant: "destructive"
-      });
+    } catch {
+      toast({ title: "Error", description: "Failed to fetch follow-ups", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -124,8 +107,8 @@ const FollowUpManagement = () => {
     try {
       const { data } = await api.get('/souls', { params: { is_active: true } });
       setSouls(data || []);
-    } catch (error) {
-      console.error('Error fetching souls:', error);
+    } catch {
+      // silently fail
     }
   };
 
@@ -133,76 +116,74 @@ const FollowUpManagement = () => {
     try {
       const { data } = await api.get('/users');
       setUsers(data || []);
-    } catch (error) {
-      console.error('Error fetching users:', error);
+    } catch {
+      // silently fail
     }
   };
 
-  const onSubmit = async (data: FollowUpFormData) => {
+  const onSubmit = async (data: FollowUpFormValues) => {
     try {
       setLoading(true);
+      const payload = {
+        soul_id: data.soul_id,
+        assigned_to_user_id: data.assigned_to_user_id,
+        due_date: data.due_date,
+        status: data.status,
+      };
 
       if (editingFollowUp) {
-        await api.patch(`/follow-up/${editingFollowUp.follow_up_id}`, {
-          soul_id: data.soul_id,
-          assigned_to_user_id: data.assigned_to_user_id,
-          due_date: data.due_date.toISOString().split('T')[0],
-          status: data.status,
-        });
+        await api.patch(`/follow-up/${editingFollowUp.follow_up_id}`, payload);
         toast({ title: "Success", description: "Follow-up updated successfully" });
         setIsEditOpen(false);
         setEditingFollowUp(null);
       } else {
-        await api.post('/follow-up', {
-          soul_id: data.soul_id,
-          assigned_to_user_id: data.assigned_to_user_id,
-          due_date: data.due_date.toISOString().split('T')[0],
-          status: data.status,
-        });
+        await api.post('/follow-up', payload);
         toast({ title: "Success", description: "Follow-up created successfully" });
         setIsCreateOpen(false);
       }
 
       form.reset();
+      setSelectedDate(undefined);
       fetchFollowUps();
-    } catch (error) {
-      console.error('Error saving follow-up:', error);
-      toast({
-        title: "Error",
-        description: "Failed to save follow-up",
-        variant: "destructive"
-      });
+    } catch {
+      toast({ title: "Error", description: "Failed to save follow-up", variant: "destructive" });
     } finally {
       setLoading(false);
     }
   };
 
+  const handleDateSelect = (date: Date | undefined) => {
+    setSelectedDate(date);
+    if (date) {
+      form.setValue('due_date', date.toISOString().split('T')[0]);
+    } else {
+      form.setValue('due_date', '');
+    }
+  };
+
   const handleEdit = (followUp: FollowUp) => {
     setEditingFollowUp(followUp);
+    const dueDate = new Date(followUp.due_date);
+    setSelectedDate(dueDate);
     form.reset({
       soul_id: followUp.soul_id ?? '',
       assigned_to_user_id: followUp.assigned_to_user_id ?? '',
-      due_date: new Date(followUp.due_date),
-      status: (followUp.status ?? 'pending') as 'pending' | 'in_progress' | 'completed' | 'cancelled',
+      due_date: followUp.due_date.split('T')[0],
+      status: (followUp.status ?? 'pending') as FollowUpFormValues['status'],
+      notes: '',
     });
     setIsEditOpen(true);
   };
 
   const handleDelete = async (followUpId: string) => {
     if (!confirm('Are you sure you want to delete this follow-up?')) return;
-
     try {
       setLoading(true);
       await api.delete(`/follow-up/${followUpId}`);
       toast({ title: "Success", description: "Follow-up deleted successfully" });
       fetchFollowUps();
-    } catch (error) {
-      console.error('Error deleting follow-up:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete follow-up",
-        variant: "destructive"
-      });
+    } catch {
+      toast({ title: "Error", description: "Failed to delete follow-up", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -215,10 +196,8 @@ const FollowUpManagement = () => {
       completed: { color: 'bg-green-100 text-green-800', icon: CheckCircle },
       cancelled: { color: 'bg-red-100 text-red-800', icon: Trash2 },
     };
-
     const config = statusConfig[status as keyof typeof statusConfig];
     const IconComponent = config?.icon || Clock;
-
     return (
       <Badge className={config?.color}>
         <IconComponent className="h-3 w-3 mr-1" />
@@ -236,142 +215,102 @@ const FollowUpManagement = () => {
   });
 
   const FormContent = () => (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="soul_id"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Soul</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a soul" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {souls.map((soul) => (
-                    <SelectItem key={soul.soul_id} value={soul.soul_id}>
-                      {soul.full_name} - {soul.phone}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <div className="space-y-2">
+        <Label>Soul</Label>
+        <Select {...form.getSelectProps('soul_id')}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select a soul" />
+          </SelectTrigger>
+          <SelectContent>
+            {souls.map((soul) => (
+              <SelectItem key={soul.soul_id} value={soul.soul_id}>
+                {soul.full_name} - {soul.phone}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <FieldError message={form.errors.soul_id} />
+      </div>
 
-        <FormField
-          control={form.control}
-          name="assigned_to_user_id"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Assign To</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a user" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {users.map((user) => (
-                    <SelectItem key={user.user_id} value={user.user_id}>
-                      {user.first_name} {user.last_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+      <div className="space-y-2">
+        <Label>Assign To</Label>
+        <Select {...form.getSelectProps('assigned_to_user_id')}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select a user" />
+          </SelectTrigger>
+          <SelectContent>
+            {users.map((u) => (
+              <SelectItem key={u.user_id} value={u.user_id}>
+                {u.first_name} {u.last_name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <FieldError message={form.errors.assigned_to_user_id} />
+      </div>
 
-        <FormField
-          control={form.control}
-          name="due_date"
-          render={({ field }) => (
-            <FormItem className="flex flex-col">
-              <FormLabel>Due Date</FormLabel>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <FormControl>
-                    <Button
-                      variant={"outline"}
-                      className={cn(
-                        "w-full pl-3 text-left font-normal",
-                        !field.value && "text-muted-foreground"
-                      )}
-                    >
-                      {field.value ? (
-                        format(field.value, "PPP")
-                      ) : (
-                        <span>Pick a date</span>
-                      )}
-                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                    </Button>
-                  </FormControl>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={field.value}
-                    onSelect={field.onChange}
-                    disabled={(date) =>
-                      date < new Date()
-                    }
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+      <div className="flex flex-col space-y-2">
+        <Label>Due Date</Label>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className={cn(
+                "w-full pl-3 text-left font-normal",
+                !selectedDate && "text-muted-foreground"
+              )}
+            >
+              {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
+              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              onSelect={handleDateSelect}
+              disabled={(date) => date < new Date()}
+              initialFocus
+            />
+          </PopoverContent>
+        </Popover>
+        <FieldError message={form.errors.due_date} />
+      </div>
 
-        <FormField
-          control={form.control}
-          name="status"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Status</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="in_progress">In Progress</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+      <div className="space-y-2">
+        <Label>Status</Label>
+        <Select {...form.getSelectProps('status')}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="pending">Pending</SelectItem>
+            <SelectItem value="in_progress">In Progress</SelectItem>
+            <SelectItem value="completed">Completed</SelectItem>
+            <SelectItem value="cancelled">Cancelled</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
-        <div className="flex justify-end space-x-2 pt-4">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              setIsCreateOpen(false);
-              setIsEditOpen(false);
-              form.reset();
-            }}
-          >
-            Cancel
-          </Button>
-          <Button type="submit" disabled={loading}>
-            {loading ? "Saving..." : editingFollowUp ? "Update" : "Create"}
-          </Button>
-        </div>
-      </form>
-    </Form>
+      <div className="flex justify-end space-x-2 pt-4">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => {
+            setIsCreateOpen(false);
+            setIsEditOpen(false);
+            form.reset();
+            setSelectedDate(undefined);
+          }}
+        >
+          Cancel
+        </Button>
+        <Button type="submit" disabled={loading}>
+          {loading ? "Saving..." : editingFollowUp ? "Update" : "Create"}
+        </Button>
+      </div>
+    </form>
   );
 
   return (
@@ -401,7 +340,6 @@ const FollowUpManagement = () => {
         </Dialog>
       </div>
 
-      {/* Filters */}
       <Card className="glass-card">
         <CardContent className="p-4">
           <div className="flex flex-col sm:flex-row gap-4">
@@ -430,7 +368,6 @@ const FollowUpManagement = () => {
         </CardContent>
       </Card>
 
-      {/* Follow-ups Table */}
       <Card className="glass-card">
         <CardHeader>
           <CardTitle>Follow-ups ({filteredFollowUps.length})</CardTitle>
@@ -481,11 +418,7 @@ const FollowUpManagement = () => {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end space-x-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEdit(followUp)}
-                          >
+                          <Button variant="ghost" size="sm" onClick={() => handleEdit(followUp)}>
                             <Pencil className="h-4 w-4" />
                           </Button>
                           <Button
@@ -507,7 +440,6 @@ const FollowUpManagement = () => {
         </CardContent>
       </Card>
 
-      {/* Edit Dialog */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>

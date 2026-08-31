@@ -20,6 +20,10 @@ const (
 	FieldEmail = "email"
 	// FieldOtpCode holds the string denoting the otp_code field in the database.
 	FieldOtpCode = "otp_code"
+	// FieldFirstName holds the string denoting the first_name field in the database.
+	FieldFirstName = "first_name"
+	// FieldLastName holds the string denoting the last_name field in the database.
+	FieldLastName = "last_name"
 	// FieldSectorID holds the string denoting the sector_id field in the database.
 	FieldSectorID = "sector_id"
 	// FieldChurchID holds the string denoting the church_id field in the database.
@@ -78,6 +82,8 @@ var Columns = []string{
 	FieldID,
 	FieldEmail,
 	FieldOtpCode,
+	FieldFirstName,
+	FieldLastName,
 	FieldSectorID,
 	FieldChurchID,
 	FieldRole,
@@ -99,6 +105,10 @@ func ValidColumn(column string) bool {
 }
 
 var (
+	// DefaultFirstName holds the default value on creation for the "first_name" field.
+	DefaultFirstName string
+	// DefaultLastName holds the default value on creation for the "last_name" field.
+	DefaultLastName string
 	// DefaultUsed holds the default value on creation for the "used" field.
 	DefaultUsed bool
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
@@ -112,13 +122,16 @@ type Role string
 
 // Role values.
 const (
-	RoleChurchAdmin    Role = "church_admin"
-	RoleTeamLead       Role = "team_lead"
-	RoleResidentPastor Role = "resident_pastor"
-	RoleSteward        Role = "steward"
-	RoleMember         Role = "member"
-	RoleFirstTimer     Role = "first_timer"
-	RoleGuest          Role = "guest"
+	RoleSuperAdmin      Role = "super_admin"
+	RoleGeneralOverseer Role = "general_overseer"
+	RoleResidentPastor  Role = "resident_pastor"
+	RoleChurchAdmin     Role = "church_admin"
+	RoleSectorLead      Role = "sector_lead"
+	RoleTeamLead        Role = "team_lead"
+	RoleSteward         Role = "steward"
+	RoleMember          Role = "member"
+	RoleFirstTimer      Role = "first_timer"
+	RoleGuest           Role = "guest"
 )
 
 func (r Role) String() string {
@@ -128,7 +141,7 @@ func (r Role) String() string {
 // RoleValidator is a validator for the "role" field enum values. It is called by the builders before save.
 func RoleValidator(r Role) error {
 	switch r {
-	case RoleChurchAdmin, RoleTeamLead, RoleResidentPastor, RoleSteward, RoleMember, RoleFirstTimer, RoleGuest:
+	case RoleSuperAdmin, RoleGeneralOverseer, RoleResidentPastor, RoleChurchAdmin, RoleSectorLead, RoleTeamLead, RoleSteward, RoleMember, RoleFirstTimer, RoleGuest:
 		return nil
 	default:
 		return fmt.Errorf("otpinvites: invalid enum value for role field: %q", r)
@@ -151,6 +164,16 @@ func ByEmail(opts ...sql.OrderTermOption) OrderOption {
 // ByOtpCode orders the results by the otp_code field.
 func ByOtpCode(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldOtpCode, opts...).ToFunc()
+}
+
+// ByFirstName orders the results by the first_name field.
+func ByFirstName(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldFirstName, opts...).ToFunc()
+}
+
+// ByLastName orders the results by the last_name field.
+func ByLastName(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLastName, opts...).ToFunc()
 }
 
 // BySectorID orders the results by the sector_id field.

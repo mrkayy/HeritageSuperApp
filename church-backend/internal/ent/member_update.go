@@ -418,6 +418,60 @@ func (_u *MemberUpdate) SetNillableIsPlaceholder(v *bool) *MemberUpdate {
 	return _u
 }
 
+// SetIsProfiled sets the "is_profiled" field.
+func (_u *MemberUpdate) SetIsProfiled(v bool) *MemberUpdate {
+	_u.mutation.SetIsProfiled(v)
+	return _u
+}
+
+// SetNillableIsProfiled sets the "is_profiled" field if the given value is not nil.
+func (_u *MemberUpdate) SetNillableIsProfiled(v *bool) *MemberUpdate {
+	if v != nil {
+		_u.SetIsProfiled(*v)
+	}
+	return _u
+}
+
+// SetProfiledByUserID sets the "profiled_by_user_id" field.
+func (_u *MemberUpdate) SetProfiledByUserID(v uuid.UUID) *MemberUpdate {
+	_u.mutation.SetProfiledByUserID(v)
+	return _u
+}
+
+// SetNillableProfiledByUserID sets the "profiled_by_user_id" field if the given value is not nil.
+func (_u *MemberUpdate) SetNillableProfiledByUserID(v *uuid.UUID) *MemberUpdate {
+	if v != nil {
+		_u.SetProfiledByUserID(*v)
+	}
+	return _u
+}
+
+// ClearProfiledByUserID clears the value of the "profiled_by_user_id" field.
+func (_u *MemberUpdate) ClearProfiledByUserID() *MemberUpdate {
+	_u.mutation.ClearProfiledByUserID()
+	return _u
+}
+
+// SetProfiledAt sets the "profiled_at" field.
+func (_u *MemberUpdate) SetProfiledAt(v time.Time) *MemberUpdate {
+	_u.mutation.SetProfiledAt(v)
+	return _u
+}
+
+// SetNillableProfiledAt sets the "profiled_at" field if the given value is not nil.
+func (_u *MemberUpdate) SetNillableProfiledAt(v *time.Time) *MemberUpdate {
+	if v != nil {
+		_u.SetProfiledAt(*v)
+	}
+	return _u
+}
+
+// ClearProfiledAt clears the value of the "profiled_at" field.
+func (_u *MemberUpdate) ClearProfiledAt() *MemberUpdate {
+	_u.mutation.ClearProfiledAt()
+	return _u
+}
+
 // SetSourceTeam sets the "source_team" field.
 func (_u *MemberUpdate) SetSourceTeam(v string) *MemberUpdate {
 	_u.mutation.SetSourceTeam(v)
@@ -515,6 +569,40 @@ func (_u *MemberUpdate) SetNillableTeamID(v *uuid.UUID) *MemberUpdate {
 // ClearTeamID clears the value of the "team_id" field.
 func (_u *MemberUpdate) ClearTeamID() *MemberUpdate {
 	_u.mutation.ClearTeamID()
+	return _u
+}
+
+// SetVolunteeringTeamID sets the "volunteering_team_id" field.
+func (_u *MemberUpdate) SetVolunteeringTeamID(v uuid.UUID) *MemberUpdate {
+	_u.mutation.SetVolunteeringTeamID(v)
+	return _u
+}
+
+// SetNillableVolunteeringTeamID sets the "volunteering_team_id" field if the given value is not nil.
+func (_u *MemberUpdate) SetNillableVolunteeringTeamID(v *uuid.UUID) *MemberUpdate {
+	if v != nil {
+		_u.SetVolunteeringTeamID(*v)
+	}
+	return _u
+}
+
+// ClearVolunteeringTeamID clears the value of the "volunteering_team_id" field.
+func (_u *MemberUpdate) ClearVolunteeringTeamID() *MemberUpdate {
+	_u.mutation.ClearVolunteeringTeamID()
+	return _u
+}
+
+// SetJoinedAt sets the "joined_at" field.
+func (_u *MemberUpdate) SetJoinedAt(v time.Time) *MemberUpdate {
+	_u.mutation.SetJoinedAt(v)
+	return _u
+}
+
+// SetNillableJoinedAt sets the "joined_at" field if the given value is not nil.
+func (_u *MemberUpdate) SetNillableJoinedAt(v *time.Time) *MemberUpdate {
+	if v != nil {
+		_u.SetJoinedAt(*v)
+	}
 	return _u
 }
 
@@ -944,6 +1032,21 @@ func (_u *MemberUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.IsPlaceholder(); ok {
 		_spec.SetField(member.FieldIsPlaceholder, field.TypeBool, value)
 	}
+	if value, ok := _u.mutation.IsProfiled(); ok {
+		_spec.SetField(member.FieldIsProfiled, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.ProfiledByUserID(); ok {
+		_spec.SetField(member.FieldProfiledByUserID, field.TypeUUID, value)
+	}
+	if _u.mutation.ProfiledByUserIDCleared() {
+		_spec.ClearField(member.FieldProfiledByUserID, field.TypeUUID)
+	}
+	if value, ok := _u.mutation.ProfiledAt(); ok {
+		_spec.SetField(member.FieldProfiledAt, field.TypeTime, value)
+	}
+	if _u.mutation.ProfiledAtCleared() {
+		_spec.ClearField(member.FieldProfiledAt, field.TypeTime)
+	}
 	if value, ok := _u.mutation.SourceTeam(); ok {
 		_spec.SetField(member.FieldSourceTeam, field.TypeString, value)
 	}
@@ -955,6 +1058,15 @@ func (_u *MemberUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.CreatedByCleared() {
 		_spec.ClearField(member.FieldCreatedBy, field.TypeUUID)
+	}
+	if value, ok := _u.mutation.VolunteeringTeamID(); ok {
+		_spec.SetField(member.FieldVolunteeringTeamID, field.TypeUUID, value)
+	}
+	if _u.mutation.VolunteeringTeamIDCleared() {
+		_spec.ClearField(member.FieldVolunteeringTeamID, field.TypeUUID)
+	}
+	if value, ok := _u.mutation.JoinedAt(); ok {
+		_spec.SetField(member.FieldJoinedAt, field.TypeTime, value)
 	}
 	if value, ok := _u.mutation.CreatedAt(); ok {
 		_spec.SetField(member.FieldCreatedAt, field.TypeTime, value)
@@ -1663,6 +1775,60 @@ func (_u *MemberUpdateOne) SetNillableIsPlaceholder(v *bool) *MemberUpdateOne {
 	return _u
 }
 
+// SetIsProfiled sets the "is_profiled" field.
+func (_u *MemberUpdateOne) SetIsProfiled(v bool) *MemberUpdateOne {
+	_u.mutation.SetIsProfiled(v)
+	return _u
+}
+
+// SetNillableIsProfiled sets the "is_profiled" field if the given value is not nil.
+func (_u *MemberUpdateOne) SetNillableIsProfiled(v *bool) *MemberUpdateOne {
+	if v != nil {
+		_u.SetIsProfiled(*v)
+	}
+	return _u
+}
+
+// SetProfiledByUserID sets the "profiled_by_user_id" field.
+func (_u *MemberUpdateOne) SetProfiledByUserID(v uuid.UUID) *MemberUpdateOne {
+	_u.mutation.SetProfiledByUserID(v)
+	return _u
+}
+
+// SetNillableProfiledByUserID sets the "profiled_by_user_id" field if the given value is not nil.
+func (_u *MemberUpdateOne) SetNillableProfiledByUserID(v *uuid.UUID) *MemberUpdateOne {
+	if v != nil {
+		_u.SetProfiledByUserID(*v)
+	}
+	return _u
+}
+
+// ClearProfiledByUserID clears the value of the "profiled_by_user_id" field.
+func (_u *MemberUpdateOne) ClearProfiledByUserID() *MemberUpdateOne {
+	_u.mutation.ClearProfiledByUserID()
+	return _u
+}
+
+// SetProfiledAt sets the "profiled_at" field.
+func (_u *MemberUpdateOne) SetProfiledAt(v time.Time) *MemberUpdateOne {
+	_u.mutation.SetProfiledAt(v)
+	return _u
+}
+
+// SetNillableProfiledAt sets the "profiled_at" field if the given value is not nil.
+func (_u *MemberUpdateOne) SetNillableProfiledAt(v *time.Time) *MemberUpdateOne {
+	if v != nil {
+		_u.SetProfiledAt(*v)
+	}
+	return _u
+}
+
+// ClearProfiledAt clears the value of the "profiled_at" field.
+func (_u *MemberUpdateOne) ClearProfiledAt() *MemberUpdateOne {
+	_u.mutation.ClearProfiledAt()
+	return _u
+}
+
 // SetSourceTeam sets the "source_team" field.
 func (_u *MemberUpdateOne) SetSourceTeam(v string) *MemberUpdateOne {
 	_u.mutation.SetSourceTeam(v)
@@ -1760,6 +1926,40 @@ func (_u *MemberUpdateOne) SetNillableTeamID(v *uuid.UUID) *MemberUpdateOne {
 // ClearTeamID clears the value of the "team_id" field.
 func (_u *MemberUpdateOne) ClearTeamID() *MemberUpdateOne {
 	_u.mutation.ClearTeamID()
+	return _u
+}
+
+// SetVolunteeringTeamID sets the "volunteering_team_id" field.
+func (_u *MemberUpdateOne) SetVolunteeringTeamID(v uuid.UUID) *MemberUpdateOne {
+	_u.mutation.SetVolunteeringTeamID(v)
+	return _u
+}
+
+// SetNillableVolunteeringTeamID sets the "volunteering_team_id" field if the given value is not nil.
+func (_u *MemberUpdateOne) SetNillableVolunteeringTeamID(v *uuid.UUID) *MemberUpdateOne {
+	if v != nil {
+		_u.SetVolunteeringTeamID(*v)
+	}
+	return _u
+}
+
+// ClearVolunteeringTeamID clears the value of the "volunteering_team_id" field.
+func (_u *MemberUpdateOne) ClearVolunteeringTeamID() *MemberUpdateOne {
+	_u.mutation.ClearVolunteeringTeamID()
+	return _u
+}
+
+// SetJoinedAt sets the "joined_at" field.
+func (_u *MemberUpdateOne) SetJoinedAt(v time.Time) *MemberUpdateOne {
+	_u.mutation.SetJoinedAt(v)
+	return _u
+}
+
+// SetNillableJoinedAt sets the "joined_at" field if the given value is not nil.
+func (_u *MemberUpdateOne) SetNillableJoinedAt(v *time.Time) *MemberUpdateOne {
+	if v != nil {
+		_u.SetJoinedAt(*v)
+	}
 	return _u
 }
 
@@ -2219,6 +2419,21 @@ func (_u *MemberUpdateOne) sqlSave(ctx context.Context) (_node *Member, err erro
 	if value, ok := _u.mutation.IsPlaceholder(); ok {
 		_spec.SetField(member.FieldIsPlaceholder, field.TypeBool, value)
 	}
+	if value, ok := _u.mutation.IsProfiled(); ok {
+		_spec.SetField(member.FieldIsProfiled, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.ProfiledByUserID(); ok {
+		_spec.SetField(member.FieldProfiledByUserID, field.TypeUUID, value)
+	}
+	if _u.mutation.ProfiledByUserIDCleared() {
+		_spec.ClearField(member.FieldProfiledByUserID, field.TypeUUID)
+	}
+	if value, ok := _u.mutation.ProfiledAt(); ok {
+		_spec.SetField(member.FieldProfiledAt, field.TypeTime, value)
+	}
+	if _u.mutation.ProfiledAtCleared() {
+		_spec.ClearField(member.FieldProfiledAt, field.TypeTime)
+	}
 	if value, ok := _u.mutation.SourceTeam(); ok {
 		_spec.SetField(member.FieldSourceTeam, field.TypeString, value)
 	}
@@ -2230,6 +2445,15 @@ func (_u *MemberUpdateOne) sqlSave(ctx context.Context) (_node *Member, err erro
 	}
 	if _u.mutation.CreatedByCleared() {
 		_spec.ClearField(member.FieldCreatedBy, field.TypeUUID)
+	}
+	if value, ok := _u.mutation.VolunteeringTeamID(); ok {
+		_spec.SetField(member.FieldVolunteeringTeamID, field.TypeUUID, value)
+	}
+	if _u.mutation.VolunteeringTeamIDCleared() {
+		_spec.ClearField(member.FieldVolunteeringTeamID, field.TypeUUID)
+	}
+	if value, ok := _u.mutation.JoinedAt(); ok {
+		_spec.SetField(member.FieldJoinedAt, field.TypeTime, value)
 	}
 	if value, ok := _u.mutation.CreatedAt(); ok {
 		_spec.SetField(member.FieldCreatedAt, field.TypeTime, value)

@@ -36,15 +36,59 @@ func (_c *OtpInvitesCreate) SetOtpCode(v string) *OtpInvitesCreate {
 	return _c
 }
 
+// SetFirstName sets the "first_name" field.
+func (_c *OtpInvitesCreate) SetFirstName(v string) *OtpInvitesCreate {
+	_c.mutation.SetFirstName(v)
+	return _c
+}
+
+// SetNillableFirstName sets the "first_name" field if the given value is not nil.
+func (_c *OtpInvitesCreate) SetNillableFirstName(v *string) *OtpInvitesCreate {
+	if v != nil {
+		_c.SetFirstName(*v)
+	}
+	return _c
+}
+
+// SetLastName sets the "last_name" field.
+func (_c *OtpInvitesCreate) SetLastName(v string) *OtpInvitesCreate {
+	_c.mutation.SetLastName(v)
+	return _c
+}
+
+// SetNillableLastName sets the "last_name" field if the given value is not nil.
+func (_c *OtpInvitesCreate) SetNillableLastName(v *string) *OtpInvitesCreate {
+	if v != nil {
+		_c.SetLastName(*v)
+	}
+	return _c
+}
+
 // SetSectorID sets the "sector_id" field.
 func (_c *OtpInvitesCreate) SetSectorID(v uuid.UUID) *OtpInvitesCreate {
 	_c.mutation.SetSectorID(v)
 	return _c
 }
 
+// SetNillableSectorID sets the "sector_id" field if the given value is not nil.
+func (_c *OtpInvitesCreate) SetNillableSectorID(v *uuid.UUID) *OtpInvitesCreate {
+	if v != nil {
+		_c.SetSectorID(*v)
+	}
+	return _c
+}
+
 // SetChurchID sets the "church_id" field.
 func (_c *OtpInvitesCreate) SetChurchID(v uuid.UUID) *OtpInvitesCreate {
 	_c.mutation.SetChurchID(v)
+	return _c
+}
+
+// SetNillableChurchID sets the "church_id" field if the given value is not nil.
+func (_c *OtpInvitesCreate) SetNillableChurchID(v *uuid.UUID) *OtpInvitesCreate {
+	if v != nil {
+		_c.SetChurchID(*v)
+	}
 	return _c
 }
 
@@ -172,6 +216,14 @@ func (_c *OtpInvitesCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (_c *OtpInvitesCreate) defaults() {
+	if _, ok := _c.mutation.FirstName(); !ok {
+		v := otpinvites.DefaultFirstName
+		_c.mutation.SetFirstName(v)
+	}
+	if _, ok := _c.mutation.LastName(); !ok {
+		v := otpinvites.DefaultLastName
+		_c.mutation.SetLastName(v)
+	}
 	if _, ok := _c.mutation.Used(); !ok {
 		v := otpinvites.DefaultUsed
 		_c.mutation.SetUsed(v)
@@ -194,12 +246,6 @@ func (_c *OtpInvitesCreate) check() error {
 	if _, ok := _c.mutation.OtpCode(); !ok {
 		return &ValidationError{Name: "otp_code", err: errors.New(`ent: missing required field "OtpInvites.otp_code"`)}
 	}
-	if _, ok := _c.mutation.SectorID(); !ok {
-		return &ValidationError{Name: "sector_id", err: errors.New(`ent: missing required field "OtpInvites.sector_id"`)}
-	}
-	if _, ok := _c.mutation.ChurchID(); !ok {
-		return &ValidationError{Name: "church_id", err: errors.New(`ent: missing required field "OtpInvites.church_id"`)}
-	}
 	if _, ok := _c.mutation.Role(); !ok {
 		return &ValidationError{Name: "role", err: errors.New(`ent: missing required field "OtpInvites.role"`)}
 	}
@@ -219,12 +265,6 @@ func (_c *OtpInvitesCreate) check() error {
 	}
 	if _, ok := _c.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "OtpInvites.created_at"`)}
-	}
-	if len(_c.mutation.SectorIDs()) == 0 {
-		return &ValidationError{Name: "sector", err: errors.New(`ent: missing required edge "OtpInvites.sector"`)}
-	}
-	if len(_c.mutation.ChurchIDs()) == 0 {
-		return &ValidationError{Name: "church", err: errors.New(`ent: missing required edge "OtpInvites.church"`)}
 	}
 	return nil
 }
@@ -269,6 +309,14 @@ func (_c *OtpInvitesCreate) createSpec() (*OtpInvites, *sqlgraph.CreateSpec) {
 		_spec.SetField(otpinvites.FieldOtpCode, field.TypeString, value)
 		_node.OtpCode = value
 	}
+	if value, ok := _c.mutation.FirstName(); ok {
+		_spec.SetField(otpinvites.FieldFirstName, field.TypeString, value)
+		_node.FirstName = value
+	}
+	if value, ok := _c.mutation.LastName(); ok {
+		_spec.SetField(otpinvites.FieldLastName, field.TypeString, value)
+		_node.LastName = value
+	}
 	if value, ok := _c.mutation.Role(); ok {
 		_spec.SetField(otpinvites.FieldRole, field.TypeEnum, value)
 		_node.Role = value
@@ -303,7 +351,7 @@ func (_c *OtpInvitesCreate) createSpec() (*OtpInvites, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.SectorID = nodes[0]
+		_node.SectorID = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := _c.mutation.ChurchIDs(); len(nodes) > 0 {
@@ -320,7 +368,7 @@ func (_c *OtpInvitesCreate) createSpec() (*OtpInvites, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.ChurchID = nodes[0]
+		_node.ChurchID = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := _c.mutation.UsedByUserIDs(); len(nodes) > 0 {

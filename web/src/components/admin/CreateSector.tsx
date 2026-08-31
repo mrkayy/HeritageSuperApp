@@ -12,19 +12,9 @@ import { Plus, Pencil, Trash2, Building } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useAuthStore } from '@/store/authStore';
 import api from '@/lib/api';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
 import { Sector, LocalChurch as Church } from '@/integrations/type_def';
-
-// Fix for default markers
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-});
-
-
+import { useZodForm, FieldError } from '@/hooks/useZodForm';
+import { sectorSchema, type SectorFormValues } from '@/lib/schemas/admin';
 
 const CreateSector = () => {
   const { user } = useAuthStore();
@@ -33,12 +23,16 @@ const CreateSector = () => {
   const [loading, setLoading] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingSector, setEditingSector] = useState<Sector | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [sectorForm, setSectorForm] = useState({
-    sector_name: '',
-    description: '',
-    region: '',
-    church_id: user?.role === 'super_admin' ? '' : user?.church_id || ''
+  const form = useZodForm({
+    schema: sectorSchema,
+    initialValues: {
+      sector_name: '',
+      description: '',
+      region: '',
+      church_id: user?.role === 'super_admin' ? '' : user?.church_id || '',
+    },
   });
 
   useEffect(() => {
@@ -54,12 +48,7 @@ const CreateSector = () => {
       const { data } = await api.get('/sectors');
       setSectors(data || []);
     } catch (error) {
-      console.error('Error fetching sectors:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch sectors",
-        variant: "destructive"
-      });
+      toast({ title: "Error", description: "Failed to fetch sectors", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -70,110 +59,69 @@ const CreateSector = () => {
       const { data } = await api.get('/churches');
       setChurches(data || []);
     } catch (error) {
-      console.error('Error fetching churches:', error);
+      // silently fail
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!sectorForm.sector_name.trim()) {
-      toast({
-        title: "Error",
-        description: "Sector name is required",
-        variant: "destructive"
-      });
-      return;
-    }
-
+  const onSubmit = async (data: SectorFormValues) => {
+    setIsSubmitting(true);
     try {
-      setLoading(true);
-
       const sectorData = {
-        sector_name: sectorForm.sector_name.trim(),
-        description: sectorForm.description.trim() || undefined,
-        region: sectorForm.region || undefined,
-        church_id: sectorForm.church_id || user?.church_id
+        sector_name: data.sector_name.trim(),
+        description: data.description?.trim() || undefined,
+        region: data.region || undefined,
+        church_id: data.church_id || user?.church_id,
       };
 
       if (editingSector) {
         await api.put(`/sectors/${editingSector.sector_id}`, sectorData);
-
-        toast({
-          title: "Success",
-          description: "Sector updated successfully",
-        });
+        toast({ title: "Success", description: "Sector updated successfully" });
       } else {
         await api.post('/sectors', sectorData);
-
-        toast({
-          title: "Success",
-          description: "Sector created successfully",
-        });
+        toast({ title: "Success", description: "Sector created successfully" });
       }
 
-      setSectorForm({
-        sector_name: '',
-        description: '',
-        region: '',
-        church_id: user?.role === 'super_admin' ? '' : user?.church_id || ''
-      });
-      setEditingSector(null);
+      resetForm();
       setIsDialogOpen(false);
       fetchSectors();
     } catch (error) {
-      console.error('Error saving sector:', error);
-      toast({
-        title: "Error",
-        description: "Failed to save sector",
-        variant: "destructive"
-      });
+      toast({ title: "Error", description: "Failed to save sector", variant: "destructive" });
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
   const handleEdit = (sector: Sector) => {
     setEditingSector(sector);
-    setSectorForm({
+    form.reset({
       sector_name: sector.sector_name,
       description: sector.description || '',
       region: (sector as any).region || '',
-      church_id: sector.church_id || ''
+      church_id: sector.church_id || '',
     });
     setIsDialogOpen(true);
   };
 
   const handleDelete = async (sectorId: string) => {
     if (!confirm('Are you sure you want to delete this sector?')) return;
-
     try {
       setLoading(true);
       await api.delete(`/sectors/${sectorId}`);
-
-      toast({
-        title: "Success",
-        description: "Sector deleted successfully",
-      });
+      toast({ title: "Success", description: "Sector deleted successfully" });
       fetchSectors();
     } catch (error) {
-      console.error('Error deleting sector:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete sector",
-        variant: "destructive"
-      });
+      toast({ title: "Error", description: "Failed to delete sector", variant: "destructive" });
     } finally {
       setLoading(false);
     }
   };
 
   const resetForm = () => {
-    setSectorForm({
+    form.reset({
       sector_name: '',
       description: '',
       region: '',
-      church_id: user?.role === 'super_admin' ? '' : user?.church_id || ''
+      church_id: user?.role === 'super_admin' ? '' : user?.church_id || '',
     });
     setEditingSector(null);
   };
@@ -198,31 +146,29 @@ const CreateSector = () => {
                 {editingSector ? 'Edit Sector' : 'Create New Sector'}
               </DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="sector_name">Sector Name *</Label>
                 <Input
                   id="sector_name"
-                  value={sectorForm.sector_name}
-                  onChange={(e) => setSectorForm(prev => ({ ...prev, sector_name: e.target.value }))}
                   placeholder="Enter sector name"
-                  required
+                  {...form.getInputProps('sector_name')}
                 />
+                <FieldError message={form.errors.sector_name} />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="description">Description</Label>
                 <Textarea
                   id="description"
-                  value={sectorForm.description}
-                  onChange={(e) => setSectorForm(prev => ({ ...prev, description: e.target.value }))}
                   placeholder="Enter sector description"
+                  {...form.getInputProps('description')}
                 />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="region">Region</Label>
-                <Select value={sectorForm.region} onValueChange={(value) => setSectorForm(prev => ({ ...prev, region: value }))}>
+                <Select {...form.getSelectProps('region')}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select region" />
                   </SelectTrigger>
@@ -239,7 +185,7 @@ const CreateSector = () => {
               {user?.role === 'super_admin' && (
                 <div className="space-y-2">
                   <Label htmlFor="church_id">Church *</Label>
-                  <Select value={sectorForm.church_id} onValueChange={(value) => setSectorForm(prev => ({ ...prev, church_id: value }))}>
+                  <Select {...form.getSelectProps('church_id')}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select church" />
                     </SelectTrigger>
@@ -255,15 +201,11 @@ const CreateSector = () => {
               )}
 
               <div className="flex justify-end space-x-2 pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsDialogOpen(false)}
-                >
+                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button type="submit" disabled={loading}>
-                  {loading ? "Saving..." : editingSector ? "Update" : "Create"}
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? "Saving..." : editingSector ? "Update" : "Create"}
                 </Button>
               </div>
             </form>
@@ -271,7 +213,6 @@ const CreateSector = () => {
         </Dialog>
       </div>
 
-      {/* Sectors List */}
       <Card>
         <CardHeader>
           <CardTitle>Sectors ({sectors.length})</CardTitle>
@@ -308,9 +249,7 @@ const CreateSector = () => {
                       <TableCell>
                         {(sector as any).region ? (
                           <Badge variant="outline">{(sector as any).region}</Badge>
-                        ) : (
-                          '-'
-                        )}
+                        ) : '-'}
                       </TableCell>
                       {user?.role === 'super_admin' && (
                         <TableCell>
@@ -325,19 +264,10 @@ const CreateSector = () => {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end space-x-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEdit(sector)}
-                          >
+                          <Button variant="ghost" size="sm" onClick={() => handleEdit(sector)}>
                             <Pencil className="h-4 w-4" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDelete(sector.sector_id)}
-                            className="text-red-600 hover:text-red-800"
-                          >
+                          <Button variant="ghost" size="sm" onClick={() => handleDelete(sector.sector_id)} className="text-red-600 hover:text-red-800">
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>

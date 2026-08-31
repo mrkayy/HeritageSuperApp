@@ -8,7 +8,9 @@ export interface User {
   first_name: string;
   last_name: string;
   role: string;
+  roles?: string[];
   team_id?: string;
+  team_name?: string;
   sector_id?: string;
   church_id?: string;
 }

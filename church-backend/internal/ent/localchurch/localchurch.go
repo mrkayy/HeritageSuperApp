@@ -23,6 +23,18 @@ const (
 	FieldDescription = "description"
 	// FieldSlug holds the string denoting the slug field in the database.
 	FieldSlug = "slug"
+	// FieldAddress holds the string denoting the address field in the database.
+	FieldAddress = "address"
+	// FieldCity holds the string denoting the city field in the database.
+	FieldCity = "city"
+	// FieldState holds the string denoting the state field in the database.
+	FieldState = "state"
+	// FieldResidentPastorID holds the string denoting the resident_pastor_id field in the database.
+	FieldResidentPastorID = "resident_pastor_id"
+	// FieldChurchAdminID holds the string denoting the church_admin_id field in the database.
+	FieldChurchAdminID = "church_admin_id"
+	// FieldIsActive holds the string denoting the is_active field in the database.
+	FieldIsActive = "is_active"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
 	// EdgeMembers holds the string denoting the members edge name in mutations.
@@ -39,6 +51,14 @@ const (
 	EdgeChurchTeams = "church_teams"
 	// EdgeChurchEvents holds the string denoting the church_events edge name in mutations.
 	EdgeChurchEvents = "church_events"
+	// EdgeVisitors holds the string denoting the visitors edge name in mutations.
+	EdgeVisitors = "visitors"
+	// EdgeAttendanceRecords holds the string denoting the attendance_records edge name in mutations.
+	EdgeAttendanceRecords = "attendance_records"
+	// EdgeSettings holds the string denoting the settings edge name in mutations.
+	EdgeSettings = "settings"
+	// EdgeTeamTodos holds the string denoting the team_todos edge name in mutations.
+	EdgeTeamTodos = "team_todos"
 	// MemberFieldID holds the string denoting the ID field of the Member.
 	MemberFieldID = "id"
 	// SectorFieldID holds the string denoting the ID field of the Sector.
@@ -53,6 +73,14 @@ const (
 	ChurchTeamsFieldID = "church_team_id"
 	// ChurchEventFieldID holds the string denoting the ID field of the ChurchEvent.
 	ChurchEventFieldID = "id"
+	// VisitorFieldID holds the string denoting the ID field of the Visitor.
+	VisitorFieldID = "visitor_id"
+	// AttendanceRecordFieldID holds the string denoting the ID field of the AttendanceRecord.
+	AttendanceRecordFieldID = "attendance_id"
+	// ChurchSettingFieldID holds the string denoting the ID field of the ChurchSetting.
+	ChurchSettingFieldID = "id"
+	// TeamTodoFieldID holds the string denoting the ID field of the TeamTodo.
+	TeamTodoFieldID = "id"
 	// Table holds the table name of the localchurch in the database.
 	Table = "local_church"
 	// MembersTable is the table that holds the members relation/edge.
@@ -104,6 +132,34 @@ const (
 	ChurchEventsInverseTable = "church_event"
 	// ChurchEventsColumn is the table column denoting the church_events relation/edge.
 	ChurchEventsColumn = "church_id"
+	// VisitorsTable is the table that holds the visitors relation/edge.
+	VisitorsTable = "visitors"
+	// VisitorsInverseTable is the table name for the Visitor entity.
+	// It exists in this package in order to avoid circular dependency with the "visitor" package.
+	VisitorsInverseTable = "visitors"
+	// VisitorsColumn is the table column denoting the visitors relation/edge.
+	VisitorsColumn = "church_id"
+	// AttendanceRecordsTable is the table that holds the attendance_records relation/edge.
+	AttendanceRecordsTable = "attendance_records"
+	// AttendanceRecordsInverseTable is the table name for the AttendanceRecord entity.
+	// It exists in this package in order to avoid circular dependency with the "attendancerecord" package.
+	AttendanceRecordsInverseTable = "attendance_records"
+	// AttendanceRecordsColumn is the table column denoting the attendance_records relation/edge.
+	AttendanceRecordsColumn = "church_id"
+	// SettingsTable is the table that holds the settings relation/edge.
+	SettingsTable = "church_settings"
+	// SettingsInverseTable is the table name for the ChurchSetting entity.
+	// It exists in this package in order to avoid circular dependency with the "churchsetting" package.
+	SettingsInverseTable = "church_settings"
+	// SettingsColumn is the table column denoting the settings relation/edge.
+	SettingsColumn = "church_id"
+	// TeamTodosTable is the table that holds the team_todos relation/edge.
+	TeamTodosTable = "team_todos"
+	// TeamTodosInverseTable is the table name for the TeamTodo entity.
+	// It exists in this package in order to avoid circular dependency with the "teamtodo" package.
+	TeamTodosInverseTable = "team_todos"
+	// TeamTodosColumn is the table column denoting the team_todos relation/edge.
+	TeamTodosColumn = "church_id"
 )
 
 // Columns holds all SQL columns for localchurch fields.
@@ -113,6 +169,12 @@ var Columns = []string{
 	FieldCenter,
 	FieldDescription,
 	FieldSlug,
+	FieldAddress,
+	FieldCity,
+	FieldState,
+	FieldResidentPastorID,
+	FieldChurchAdminID,
+	FieldIsActive,
 	FieldCreatedAt,
 }
 
@@ -127,6 +189,8 @@ func ValidColumn(column string) bool {
 }
 
 var (
+	// DefaultIsActive holds the default value on creation for the "is_active" field.
+	DefaultIsActive bool
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
 	// DefaultID holds the default value on creation for the "id" field.
@@ -159,6 +223,36 @@ func ByDescription(opts ...sql.OrderTermOption) OrderOption {
 // BySlug orders the results by the slug field.
 func BySlug(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldSlug, opts...).ToFunc()
+}
+
+// ByAddress orders the results by the address field.
+func ByAddress(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAddress, opts...).ToFunc()
+}
+
+// ByCity orders the results by the city field.
+func ByCity(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCity, opts...).ToFunc()
+}
+
+// ByState orders the results by the state field.
+func ByState(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldState, opts...).ToFunc()
+}
+
+// ByResidentPastorID orders the results by the resident_pastor_id field.
+func ByResidentPastorID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldResidentPastorID, opts...).ToFunc()
+}
+
+// ByChurchAdminID orders the results by the church_admin_id field.
+func ByChurchAdminID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldChurchAdminID, opts...).ToFunc()
+}
+
+// ByIsActive orders the results by the is_active field.
+func ByIsActive(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldIsActive, opts...).ToFunc()
 }
 
 // ByCreatedAt orders the results by the created_at field.
@@ -263,6 +357,62 @@ func ByChurchEvents(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newChurchEventsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByVisitorsCount orders the results by visitors count.
+func ByVisitorsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newVisitorsStep(), opts...)
+	}
+}
+
+// ByVisitors orders the results by visitors terms.
+func ByVisitors(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newVisitorsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByAttendanceRecordsCount orders the results by attendance_records count.
+func ByAttendanceRecordsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newAttendanceRecordsStep(), opts...)
+	}
+}
+
+// ByAttendanceRecords orders the results by attendance_records terms.
+func ByAttendanceRecords(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newAttendanceRecordsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// BySettingsCount orders the results by settings count.
+func BySettingsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newSettingsStep(), opts...)
+	}
+}
+
+// BySettings orders the results by settings terms.
+func BySettings(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newSettingsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByTeamTodosCount orders the results by team_todos count.
+func ByTeamTodosCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newTeamTodosStep(), opts...)
+	}
+}
+
+// ByTeamTodos orders the results by team_todos terms.
+func ByTeamTodos(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newTeamTodosStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newMembersStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -310,5 +460,33 @@ func newChurchEventsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(ChurchEventsInverseTable, ChurchEventFieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, ChurchEventsTable, ChurchEventsColumn),
+	)
+}
+func newVisitorsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(VisitorsInverseTable, VisitorFieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, VisitorsTable, VisitorsColumn),
+	)
+}
+func newAttendanceRecordsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(AttendanceRecordsInverseTable, AttendanceRecordFieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, AttendanceRecordsTable, AttendanceRecordsColumn),
+	)
+}
+func newSettingsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(SettingsInverseTable, ChurchSettingFieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, SettingsTable, SettingsColumn),
+	)
+}
+func newTeamTodosStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(TeamTodosInverseTable, TeamTodoFieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, TeamTodosTable, TeamTodosColumn),
 	)
 }

@@ -1,616 +1,411 @@
-
-import React, { useState, useEffect } from 'react';
-import { useAuthStore } from '@/store/authStore';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect, useCallback } from 'react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Shield, Plus, Trash2, Search, UserPlus, CheckCircle, XCircle } from 'lucide-react';
-import { format } from "date-fns";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import api from '@/lib/api';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { 
+  ShieldAlert, 
+  UserPlus, 
+  Search, 
+  Send, 
+  Trash2, 
+  Copy, 
+  Check, 
+  Clock, 
+  KeyRound, 
+  Loader2,
+  CheckCircle2,
+  Building2
+} from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { cn, generateOTP } from "@/lib/utils";
-import { Sector, LocalChurch as Church, User, AdminUser as Admin } from '@/integrations/type_def';
-export const inviteSchema = z.object({
-  email: z.string().email("Invalid email address"),
-  otp_code: z.string().optional(), // Made optional as it's generated
-  role: z.enum(['super_admin', 'church_admin', 'team_lead', 'member', 'guest']),
-  used: z.boolean().default(false),
-  expires_at: z.string(),
-  sector_id: z.string().uuid().nullable().optional(),
-  church_id: z.string().uuid().nullable().optional(),
-  created_by_user_id: z.string().uuid().nullable().optional(),
-  used_by_user_id: z.string().uuid().nullable().optional(),
-});
+import { SuperAdminService, LeadershipInvite, CreateLeadershipInvitePayload, LocalChurchBranch } from '@/services/superAdminService';
 
-type InviteFormData = z.infer<typeof inviteSchema>;
+const LEADERSHIP_ROLES = [
+  { value: 'resident_pastor', label: 'Resident Pastor (Branch Super-Admin)' },
+  { value: 'church_admin', label: 'Church Admin' },
+  { value: 'super_admin', label: 'Super Admin (Global Platform)' },
+  { value: 'general_overseer', label: 'General Overseer' }
+];
 
-interface Invite {
-  id: string;
-  email: string;
-  otp_code: string;
-  role: string;
-  used: boolean;
-  expires_at: string;
-  created_at: string;
-  sector?: Sector,
-  church?: Church,
-  created_by_user_id?: Admin,
-  used_by_user_id?: Partial<User>,
-}
+export default function SuperAdminInvites() {
+  const [invites, setInvites] = useState<LeadershipInvite[]>([]);
+  const [branches, setBranches] = useState<LocalChurchBranch[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [roleFilter, setRoleFilter] = useState('all');
 
-const SuperAdminInvites = () => {
-  const { user } = useAuthStore();
-  const [invites, setInvites] = useState<Invite[]>([]);
-  const [editingInvite, setEditingInvite] = useState<Invite | null>(null);
-  const [churches, setChurches] = useState<Church[]>([]);
-  const [sectors, setSectors] = useState<Sector[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [roleFilter, setRoleFilter] = useState<string>('all');
-  const [churchFilter, setChurchFilter] = useState<string>('all');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  // Modal
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  const inviteData = useForm<InviteFormData>({
-    resolver: zodResolver(inviteSchema),
-    defaultValues: {
-      email: '',
-      role: 'member',
-      sector_id: '',
-      church_id: user?.church_id ?? '',
-      expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now
-    },
-  });
+  // Form State
+  const [formEmail, setFormEmail] = useState('');
+  const [formFirstName, setFormFirstName] = useState('');
+  const [formLastName, setFormLastName] = useState('');
+  const [formRole, setFormRole] = useState('resident_pastor');
+  const [formChurchId, setFormChurchId] = useState('');
 
-  // Check permissions
-  if (!user || user.role !== 'super_admin') {
-    return (
-      <div className="p-6 page-background">
-        <Card className="glass-card">
-          <CardContent className="p-8 text-center">
-            <Shield className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-            <h2 className="text-xl font-semibold mb-2">Access Denied</h2>
-            <p className="text-muted-foreground">You don&apos;t have Super Admin permissions to access this page.</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  // Copied state
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchInvites();
-    fetchSector();
-    fetchChurches();
+  const loadData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const [inviteList, branchList] = await Promise.all([
+        SuperAdminService.listLeadershipInvites(),
+        SuperAdminService.listBranches(),
+      ]);
+      setInvites(inviteList);
+      setBranches(branchList);
+    } catch {
+      toast({
+        title: "Error",
+        description: "Failed to load executive leadership invitations",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const fetchInvites = async () => {
-    try {
-      setLoading(true);
-      const { data } = await api.get('/otp-invites');
-      setInvites(data || []);
-    } catch (error) {
-      console.error('Error fetching invites:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch invites",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const handleOpenInvite = () => {
+    setFormEmail('');
+    setFormFirstName('');
+    setFormLastName('');
+    setFormRole('resident_pastor');
+    setFormChurchId(branches[0]?.id || '');
+    setInviteOpen(true);
   };
 
-  const fetchChurches = async () => {
-    try {
-      const { data } = await api.get('/churches');
-      setChurches(data || []);
-    } catch (error) {
-      console.error('Error fetching churches:', error);
-    }
-  };
-
-  const fetchSector = async () => {
-    try {
-      const { data } = await api.get('/sectors');
-      setSectors(data || []);
-    } catch (error) {
-      console.error('Error fetching sectors:', error);
-    }
-  };
-
-  const handleUpdateStatus = async (inviteId: string, used: boolean) => {
-    try {
-      setLoading(true);
-      await api.put(`/otp-invites/${inviteId}/status`, { used });
-      toast({
-        title: "Success",
-        description: `Invite ${used ? 'activated' : 'deactivated'} successfully`,
-      });
-      fetchInvites();
-    } catch (error) {
-      console.error('Error updating invite status:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update invite status",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const resetForm = () => {
-    inviteData.reset({
-      email: '',
-      role: 'member',
-      sector_id: '',
-      church_id: user?.church_id ?? '',
-      expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now
-    });
-  }
-
-  const handleEdit = (invite: Invite) => {
-    // setEditingInvite(invite);
-    // form.reset({
-    //   email: invite.email,
-    //   role: invite.role as any,
-    //   sector_id: invite.sector_id || '',
-    //   expires_at: new Date(invite.expires_at),
-    // });
-    setIsDialogOpen(true);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSendInvite = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!user?.user_id) return;
+    if (!formEmail.trim() || !formFirstName.trim() || !formLastName.trim()) {
+      toast({ title: "Validation Error", description: "All fields are required", variant: "destructive" });
+      return;
+    }
 
     try {
-      // Get form values
-      const formValues = inviteData.getValues();
-      setLoading(true);
-
-      // Prepare data for insert (convert expires_at to string, handle optional fields)
-      const insertData = {
-        email: formValues.email,
-        otp_code: generateOTP(),
-        role: formValues.role,
-        used: false,
-        expires_at: formValues.expires_at ? new Date(formValues.expires_at).toISOString() : null,
-        sector_id: formValues.sector_id && formValues.sector_id !== "none" ? formValues.sector_id : null,
-        church_id: formValues.church_id && formValues.church_id !== "none" ? formValues.church_id : null,
-        created_by_user_id: user.user_id,
+      setSubmitting(true);
+      const payload: CreateLeadershipInvitePayload = {
+        email: formEmail.trim(),
+        first_name: formFirstName.trim(),
+        last_name: formLastName.trim(),
+        role: formRole,
+        church_id: ['super_admin', 'general_overseer'].includes(formRole) ? undefined : (formChurchId || undefined),
       };
 
-      inviteSchema.parse(insertData);
-      console.error('Saving invite:', insertData);
-
-      await api.post('/otp-invites/invite', {
-        email: insertData.email,
-        otp_code: insertData.otp_code,
-        role: insertData.role,
-        used: insertData.used,
-        expires_at: insertData.expires_at,
-        sector_id: insertData.sector_id,
-        church_id: insertData.church_id,
-        created_by_user_id: insertData.created_by_user_id,
-      });
-
+      const result = await SuperAdminService.createLeadershipInvite(payload);
       toast({
-        title: "Success",
-        description: "Invite created successfully",
+        title: "Leadership Magic Link Generated",
+        description: `Dispatched single-use onboarding token for ${result.first_name} ${result.last_name} (${result.role}).`,
       });
-
-      inviteData.reset();
-      setEditingInvite(null);
-      setIsDialogOpen(false);
-      fetchInvites();
-    } catch (error) {
-      console.error('Error saving invite:', error);
+      setInviteOpen(false);
+      loadData();
+    } catch (err: any) {
       toast({
-        title: "Error",
-        description: `Failed to save invite.`,
-        variant: "destructive"
+        title: "Invitation Failed",
+        description: err.response?.data?.message || err.message,
+        variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
-  const handleDelete = async (inviteId: string) => {
-    if (!confirm('Are you sure you want to delete this invite?')) return;
-
+  const handleRevoke = async (id: string) => {
     try {
-      setLoading(true);
-      await api.delete(`/otp-invites/${inviteId}`);
-
+      await SuperAdminService.revokeLeadershipInvite(id);
       toast({
-        title: "Success",
-        description: "Invite deleted successfully",
+        title: "Invitation Revoked",
+        description: "The magic link token has been permanently invalidated.",
       });
-      fetchInvites();
-    } catch (error) {
-      console.error('Error deleting invite:', error);
+      loadData();
+    } catch (err: any) {
       toast({
-        title: "Error",
-        description: "Failed to delete invite",
-        variant: "destructive"
+        title: "Revocation Failed",
+        description: err.response?.data?.message || err.message,
+        variant: "destructive",
       });
-    } finally {
-      setLoading(false);
     }
   };
 
-  const getRoleBadge = (role: string) => {
-    const roleColors = {
-      super_admin: 'bg-red-100 text-red-800',
-      church_admin: 'bg-purple-100 text-purple-800',
-      team_lead: 'bg-blue-100 text-blue-800',
-      member: 'bg-green-100 text-green-800',
-      guest: 'bg-gray-100 text-gray-800',
-    };
-
-    return (
-      <Badge className={roleColors[role as keyof typeof roleColors] || 'bg-gray-100 text-gray-800'}>
-        {role.replace('_', ' ').toUpperCase()}
-      </Badge>
-    );
+  const handleCopyLink = (invite: LeadershipInvite) => {
+    const link = `${window.location.origin}/auth/magic-login?code=${invite.otp_code}&email=${encodeURIComponent(invite.email)}`;
+    navigator.clipboard.writeText(link);
+    setCopiedId(invite.id);
+    toast({
+      title: "Magic Link Copied",
+      description: "Invitation link copied to clipboard.",
+    });
+    setTimeout(() => setCopiedId(null), 2500);
   };
 
-  const getStatusBadge = (invite: Invite) => {
-    if (invite.used) {
-      return <Badge className="bg-green-100 text-green-800">USED</Badge>;
-    } else if (new Date(invite.expires_at || '') < new Date()) {
-      return <Badge className="bg-red-100 text-red-800">EXPIRED</Badge>;
-    } else {
-      return <Badge className="bg-yellow-100 text-yellow-800">UNUSED</Badge>;
-    }
-  };
-
-  const filteredInvites = invites.filter(invite => {
-    const matchesSearch = invite.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      invite.otp_code?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRole = roleFilter === 'all' || invite.role === roleFilter;
-    const matchesChurch = churchFilter === 'all' || invite.church?.church_id === churchFilter;
-    const matchesStatus = statusFilter === 'all' ||
-      (statusFilter === 'used' && invite.used) ||
-      (statusFilter === 'unused' && !invite.used) ||
-      (statusFilter === 'expired' && new Date(invite.expires_at || '') < new Date());
-
-    return matchesSearch && matchesRole && matchesChurch && matchesStatus;
+  const filteredInvites = invites.filter(inv => {
+    const matchesSearch = 
+      inv.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      inv.first_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      inv.last_name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesRole = roleFilter === 'all' || inv.role === roleFilter;
+    return matchesSearch && matchesRole;
   });
 
   return (
-    <div className="p-6 page-background space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-4 md:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
+      {/* Header Banner */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 glass-card p-6 rounded-2xl border border-border/50">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <UserPlus className="h-6 w-6 text-primary" />
-            Member Invites
+          <div className="flex items-center gap-2 mb-2">
+            <Badge variant="outline" className="text-primary border-primary/30">
+              <KeyRound className="w-3.5 h-3.5 mr-1" /> Super Admin
+            </Badge>
+            <Badge variant="secondary" className="text-xs">
+              Executive Onboarding Engine
+            </Badge>
+          </div>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
+            Leadership & Admin Magic Link Invitations
           </h1>
-          <p className="text-muted-foreground">Manage invites for new members</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Dispatch high-privilege single-use Magic Link invitations with automatic 72-hour expiration and Security PIN onboarding.
+          </p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={resetForm}>
-              <Plus className="h-4 w-4 mr-2" />
-              Create Invite
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>
-                Create New Invite
-              </DialogTitle>
-            </DialogHeader>
-            <Form {...inviteData}>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <FormField
-                  control={inviteData.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email Address</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter email address" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={inviteData.control}
-                  name="role"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Role</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select role" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="member">Member</SelectItem>
-                          <SelectItem value="team_lead">Team Lead</SelectItem>
-                          <SelectItem value="church_admin">Church Admin</SelectItem>
-                          <SelectItem value="guest">Guest</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={inviteData.control}
-                  name="church_id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Church Center (Optional)</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select your Center" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {churches.map((church) => (
-                            <SelectItem key={church.church_id} value={church.church_id}>
-                              {church.name}-{church.center}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Show sector field only if a church is selected */}
-                {inviteData.watch('church_id') && (
-                  <FormField
-                    control={inviteData.control}
-                    name="sector_id"
-                    render={({ field }) => {
-                      const selectedChurchId = inviteData.watch('church_id');
-                      const filteredSectors = sectors.filter((sector) => sector.church_id === selectedChurchId);
-                      return (
-                        <FormItem>
-                          <FormLabel>Sector (Optional)</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value ?? ''}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select sector" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {filteredSectors.map((sector) => (
-                                <SelectItem key={sector.sector_id} value={sector.sector_id || ''}>
-                                  {sector.sector_name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      );
-                    }}
-                  />
-                )}
-
-                <FormField
-                  control={inviteData.control}
-                  name="expires_at"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                      <FormLabel>Expiry Date</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              variant={"outline"}
-                              className={cn(
-                                "w-full pl-3 text-left font-normal",
-                                !field.value && "text-muted-foreground"
-                              )}
-                            >
-                              {field.value ? (
-                                format(field.value, "PPP")
-                              ) : (
-                                <span>Pick a date</span>
-                              )}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={field.value ? new Date(field.value) : undefined}
-                            onSelect={field.onChange}
-                            disabled={(date) =>
-                              date < new Date()
-                            }
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="flex justify-end space-x-2 pt-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setIsDialogOpen(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button type="submit" disabled={loading}>
-                    {loading ? "Saving..." : editingInvite ? "Update" : "Create"}
-                  </Button>
-                </div>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
+        <Button onClick={handleOpenInvite} className="gap-2 bg-primary hover:bg-primary/90">
+          <Send className="w-4 h-4" /> Invite Executive Leader
+        </Button>
       </div>
 
-      {/* Filters */}
+      {/* Main Table Card */}
       <Card className="glass-card">
-        <CardContent className="p-4">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by email or invite code..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+        <CardHeader className="pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <CardTitle className="text-lg">Leadership Invites</CardTitle>
+              <CardDescription>View, copy, or revoke executive onboarding tokens.</CardDescription>
             </div>
-            <Select value={roleFilter} onValueChange={setRoleFilter}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="Filter by role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Roles</SelectItem>
-                <SelectItem value="super_admin">Super Admin</SelectItem>
-                <SelectItem value="church_admin">Church Admin</SelectItem>
-                <SelectItem value="team_lead">Team Lead</SelectItem>
-                <SelectItem value="member">Member</SelectItem>
-                <SelectItem value="guest">Guest</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={churchFilter} onValueChange={setChurchFilter}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="Filter by church" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Churches</SelectItem>
-                {churches.map((church) => (
-                  <SelectItem key={church.church_id} value={church.church_id}>
-                    {church.name}
-                  </SelectItem>
+            <div className="flex items-center gap-3">
+              <select
+                className="h-9 px-3 rounded-lg border border-input bg-background text-xs"
+                value={roleFilter}
+                onChange={e => setRoleFilter(e.target.value)}
+              >
+                <option value="all">All Roles</option>
+                {LEADERSHIP_ROLES.map(r => (
+                  <option key={r.value} value={r.value}>{r.label}</option>
                 ))}
-              </SelectContent>
-            </Select>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="used">Used</SelectItem>
-                <SelectItem value="unused">Unused</SelectItem>
-                <SelectItem value="expired">Expired</SelectItem>
-              </SelectContent>
-            </Select>
+              </select>
+              <div className="relative w-64">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Search by name or email..."
+                  className="pl-9 text-xs"
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                />
+              </div>
+            </div>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Invites Table */}
-      <Card className="glass-card">
-        <CardHeader>
-          <CardTitle>Invites ({filteredInvites.length})</CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="flex justify-center items-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <div className="p-12 flex flex-col items-center justify-center gap-3 text-muted-foreground">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              <p className="text-sm">Loading invitations...</p>
+            </div>
+          ) : filteredInvites.length === 0 ? (
+            <div className="p-12 text-center text-muted-foreground">
+              <KeyRound className="w-10 h-10 mx-auto mb-2 opacity-40" />
+              <p className="font-medium">No invitations found</p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Invite Code</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Used By</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Expires At</TableHead>
-                  <TableHead>Created By</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredInvites.length === 0 ? (
+            <div className="rounded-xl border border-border/50 overflow-hidden">
+              <Table className="text-xs">
+                <TableHeader className="bg-secondary/40">
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                      No invites found
-                    </TableCell>
+                    <TableHead>Invitee Details</TableHead>
+                    <TableHead>Target Branch</TableHead>
+                    <TableHead>Elevated Role</TableHead>
+                    <TableHead>Token Status</TableHead>
+                    <TableHead>Expiration</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ) : (
-                  filteredInvites.map((invite) => (
-                    <TableRow key={invite.id}>
-                      <TableCell>{invite.otp_code}</TableCell>
-                      <TableCell className="font-medium">{invite.email}</TableCell>
+                </TableHeader>
+                <TableBody>
+                  {filteredInvites.map(invite => (
+                    <TableRow key={invite.id} className="hover:bg-secondary/10">
                       <TableCell>
-                        {invite.used_by_user_id?.first_name} {invite.used_by_user_id?.last_name}
-                      </TableCell>
-                      <TableCell>{getRoleBadge(invite.role)}</TableCell>
-                      <TableCell>{getStatusBadge(invite)}</TableCell>
-                      <TableCell>
-                        {new Date(invite.expires_at || '').toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>
-                        {invite.created_by_user_id?.first_name} {invite.created_by_user_id?.last_name}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end space-x-2">
-                          {!invite.used && new Date(invite.expires_at || '') > new Date() && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleUpdateStatus(invite.id, true)}
-                            >
-                              <CheckCircle className="h-4 w-4 text-green-500" />
-                            </Button>
-                          )}
-                          {invite.used && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleUpdateStatus(invite.id, false)}
-                            >
-                              <XCircle className="h-4 w-4 text-yellow-500" />
-                            </Button>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDelete(invite.id)}
-                            className="text-red-600 hover:text-red-800"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                        <div className="font-semibold text-foreground text-sm">
+                          {invite.first_name} {invite.last_name}
                         </div>
+                        <div className="text-[11px] text-muted-foreground font-mono">{invite.email}</div>
+                      </TableCell>
+                      <TableCell>
+                        {invite.church_name ? (
+                          <div className="flex items-center gap-1.5">
+                            <Building2 className="w-3.5 h-3.5 text-primary" />
+                            <span className="font-medium text-foreground">{invite.church_name}</span>
+                          </div>
+                        ) : (
+                          <Badge variant="outline" className="text-[10px]">Global Organization</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className="capitalize">
+                          {invite.role.replace(/_/g, ' ')}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {invite.used ? (
+                          <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 gap-1">
+                            <CheckCircle2 className="w-3 h-3" /> Accepted & Active
+                          </Badge>
+                        ) : new Date(invite.expires_at) < new Date() ? (
+                          <Badge variant="destructive" className="gap-1">
+                            <Clock className="w-3 h-3" /> Expired
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/20 gap-1">
+                            <Clock className="w-3 h-3" /> Pending (72h)
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-muted-foreground font-mono">
+                          {new Date(invite.expires_at).toLocaleDateString('en-GB', {
+                            day: 'numeric',
+                            month: 'short',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right space-x-1">
+                        {!invite.used && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 text-xs gap-1"
+                            onClick={() => handleCopyLink(invite)}
+                          >
+                            {copiedId === invite.id ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                            Copy Magic Link
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs text-rose-600 hover:text-rose-700"
+                          onClick={() => handleRevoke(invite.id)}
+                        >
+                          <Trash2 className="w-3.5 h-3.5 mr-1" /> Revoke
+                        </Button>
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>
+
+      {/* Modal: Invite Executive Leader */}
+      <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl font-bold">
+              <UserPlus className="w-5 h-5 text-primary" />
+              Invite Executive Leader
+            </DialogTitle>
+            <DialogDescription>
+              Dispatches a secure, single-use onboarding link for leadership account setup.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleSendInvite} className="space-y-4 py-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="invFirstName">First Name *</Label>
+                <Input
+                  id="invFirstName"
+                  placeholder="e.g. David"
+                  value={formFirstName}
+                  onChange={e => setFormFirstName(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="invLastName">Last Name *</Label>
+                <Input
+                  id="invLastName"
+                  placeholder="e.g. Oyedepo"
+                  value={formLastName}
+                  onChange={e => setFormLastName(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="invEmail">Email Address *</Label>
+              <Input
+                id="invEmail"
+                type="email"
+                placeholder="pastor@hofchurch.org"
+                value={formEmail}
+                onChange={e => setFormEmail(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="invRole">Elevated Role *</Label>
+              <select
+                id="invRole"
+                className="w-full h-10 px-3 rounded-lg border border-input bg-background text-xs"
+                value={formRole}
+                onChange={e => setFormRole(e.target.value)}
+              >
+                {LEADERSHIP_ROLES.map(r => (
+                  <option key={r.value} value={r.value}>{r.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {!['super_admin', 'general_overseer'].includes(formRole) && (
+              <div className="space-y-2">
+                <Label htmlFor="invChurch">Assigned Local Church Branch *</Label>
+                <select
+                  id="invChurch"
+                  className="w-full h-10 px-3 rounded-lg border border-input bg-background text-xs"
+                  value={formChurchId}
+                  onChange={e => setFormChurchId(e.target.value)}
+                  required
+                >
+                  {branches.map(b => (
+                    <option key={b.id} value={b.id}>{b.name} ({b.slug})</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <DialogFooter className="pt-4 border-t border-border/50">
+              <Button type="button" variant="outline" onClick={() => setInviteOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={submitting} className="bg-primary hover:bg-primary/90">
+                {submitting ? "Generating..." : "Dispatch Magic Link"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
-};
-
-export default SuperAdminInvites;
+}

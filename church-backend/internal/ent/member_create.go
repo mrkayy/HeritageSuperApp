@@ -280,6 +280,48 @@ func (_c *MemberCreate) SetNillableIsPlaceholder(v *bool) *MemberCreate {
 	return _c
 }
 
+// SetIsProfiled sets the "is_profiled" field.
+func (_c *MemberCreate) SetIsProfiled(v bool) *MemberCreate {
+	_c.mutation.SetIsProfiled(v)
+	return _c
+}
+
+// SetNillableIsProfiled sets the "is_profiled" field if the given value is not nil.
+func (_c *MemberCreate) SetNillableIsProfiled(v *bool) *MemberCreate {
+	if v != nil {
+		_c.SetIsProfiled(*v)
+	}
+	return _c
+}
+
+// SetProfiledByUserID sets the "profiled_by_user_id" field.
+func (_c *MemberCreate) SetProfiledByUserID(v uuid.UUID) *MemberCreate {
+	_c.mutation.SetProfiledByUserID(v)
+	return _c
+}
+
+// SetNillableProfiledByUserID sets the "profiled_by_user_id" field if the given value is not nil.
+func (_c *MemberCreate) SetNillableProfiledByUserID(v *uuid.UUID) *MemberCreate {
+	if v != nil {
+		_c.SetProfiledByUserID(*v)
+	}
+	return _c
+}
+
+// SetProfiledAt sets the "profiled_at" field.
+func (_c *MemberCreate) SetProfiledAt(v time.Time) *MemberCreate {
+	_c.mutation.SetProfiledAt(v)
+	return _c
+}
+
+// SetNillableProfiledAt sets the "profiled_at" field if the given value is not nil.
+func (_c *MemberCreate) SetNillableProfiledAt(v *time.Time) *MemberCreate {
+	if v != nil {
+		_c.SetProfiledAt(*v)
+	}
+	return _c
+}
+
 // SetSourceTeam sets the "source_team" field.
 func (_c *MemberCreate) SetSourceTeam(v string) *MemberCreate {
 	_c.mutation.SetSourceTeam(v)
@@ -346,6 +388,34 @@ func (_c *MemberCreate) SetTeamID(v uuid.UUID) *MemberCreate {
 func (_c *MemberCreate) SetNillableTeamID(v *uuid.UUID) *MemberCreate {
 	if v != nil {
 		_c.SetTeamID(*v)
+	}
+	return _c
+}
+
+// SetVolunteeringTeamID sets the "volunteering_team_id" field.
+func (_c *MemberCreate) SetVolunteeringTeamID(v uuid.UUID) *MemberCreate {
+	_c.mutation.SetVolunteeringTeamID(v)
+	return _c
+}
+
+// SetNillableVolunteeringTeamID sets the "volunteering_team_id" field if the given value is not nil.
+func (_c *MemberCreate) SetNillableVolunteeringTeamID(v *uuid.UUID) *MemberCreate {
+	if v != nil {
+		_c.SetVolunteeringTeamID(*v)
+	}
+	return _c
+}
+
+// SetJoinedAt sets the "joined_at" field.
+func (_c *MemberCreate) SetJoinedAt(v time.Time) *MemberCreate {
+	_c.mutation.SetJoinedAt(v)
+	return _c
+}
+
+// SetNillableJoinedAt sets the "joined_at" field if the given value is not nil.
+func (_c *MemberCreate) SetNillableJoinedAt(v *time.Time) *MemberCreate {
+	if v != nil {
+		_c.SetJoinedAt(*v)
 	}
 	return _c
 }
@@ -547,6 +617,14 @@ func (_c *MemberCreate) defaults() {
 		v := member.DefaultIsPlaceholder
 		_c.mutation.SetIsPlaceholder(v)
 	}
+	if _, ok := _c.mutation.IsProfiled(); !ok {
+		v := member.DefaultIsProfiled
+		_c.mutation.SetIsProfiled(v)
+	}
+	if _, ok := _c.mutation.JoinedAt(); !ok {
+		v := member.DefaultJoinedAt()
+		_c.mutation.SetJoinedAt(v)
+	}
 	if _, ok := _c.mutation.CreatedAt(); !ok {
 		v := member.DefaultCreatedAt()
 		_c.mutation.SetCreatedAt(v)
@@ -579,6 +657,12 @@ func (_c *MemberCreate) check() error {
 	}
 	if _, ok := _c.mutation.IsPlaceholder(); !ok {
 		return &ValidationError{Name: "is_placeholder", err: errors.New(`ent: missing required field "Member.is_placeholder"`)}
+	}
+	if _, ok := _c.mutation.IsProfiled(); !ok {
+		return &ValidationError{Name: "is_profiled", err: errors.New(`ent: missing required field "Member.is_profiled"`)}
+	}
+	if _, ok := _c.mutation.JoinedAt(); !ok {
+		return &ValidationError{Name: "joined_at", err: errors.New(`ent: missing required field "Member.joined_at"`)}
 	}
 	if _, ok := _c.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Member.created_at"`)}
@@ -701,6 +785,18 @@ func (_c *MemberCreate) createSpec() (*Member, *sqlgraph.CreateSpec) {
 		_spec.SetField(member.FieldIsPlaceholder, field.TypeBool, value)
 		_node.IsPlaceholder = value
 	}
+	if value, ok := _c.mutation.IsProfiled(); ok {
+		_spec.SetField(member.FieldIsProfiled, field.TypeBool, value)
+		_node.IsProfiled = value
+	}
+	if value, ok := _c.mutation.ProfiledByUserID(); ok {
+		_spec.SetField(member.FieldProfiledByUserID, field.TypeUUID, value)
+		_node.ProfiledByUserID = &value
+	}
+	if value, ok := _c.mutation.ProfiledAt(); ok {
+		_spec.SetField(member.FieldProfiledAt, field.TypeTime, value)
+		_node.ProfiledAt = &value
+	}
 	if value, ok := _c.mutation.SourceTeam(); ok {
 		_spec.SetField(member.FieldSourceTeam, field.TypeString, value)
 		_node.SourceTeam = &value
@@ -708,6 +804,14 @@ func (_c *MemberCreate) createSpec() (*Member, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.CreatedBy(); ok {
 		_spec.SetField(member.FieldCreatedBy, field.TypeUUID, value)
 		_node.CreatedBy = &value
+	}
+	if value, ok := _c.mutation.VolunteeringTeamID(); ok {
+		_spec.SetField(member.FieldVolunteeringTeamID, field.TypeUUID, value)
+		_node.VolunteeringTeamID = &value
+	}
+	if value, ok := _c.mutation.JoinedAt(); ok {
+		_spec.SetField(member.FieldJoinedAt, field.TypeTime, value)
+		_node.JoinedAt = value
 	}
 	if value, ok := _c.mutation.CreatedAt(); ok {
 		_spec.SetField(member.FieldCreatedAt, field.TypeTime, value)

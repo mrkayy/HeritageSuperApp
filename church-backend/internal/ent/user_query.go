@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
+	"github.com/hofchurchng/church-backend/internal/ent/attendancerecord"
 	"github.com/hofchurchng/church-backend/internal/ent/followup"
 	"github.com/hofchurchng/church-backend/internal/ent/localchurch"
 	"github.com/hofchurchng/church-backend/internal/ent/otpinvites"
@@ -23,31 +24,36 @@ import (
 	"github.com/hofchurchng/church-backend/internal/ent/soul"
 	"github.com/hofchurchng/church-backend/internal/ent/souljournal"
 	"github.com/hofchurchng/church-backend/internal/ent/team"
+	"github.com/hofchurchng/church-backend/internal/ent/teamtodo"
 	"github.com/hofchurchng/church-backend/internal/ent/teamvolunteers"
 	"github.com/hofchurchng/church-backend/internal/ent/user"
 	"github.com/hofchurchng/church-backend/internal/ent/usersector"
 	"github.com/hofchurchng/church-backend/internal/ent/userteam"
+	"github.com/hofchurchng/church-backend/internal/ent/visitor"
 )
 
 // UserQuery is the builder for querying User entities.
 type UserQuery struct {
 	config
-	ctx                 *QueryContext
-	order               []user.OrderOption
-	inters              []Interceptor
-	predicates          []predicate.User
-	withChurch          *LocalChurchQuery
-	withSector          *SectorQuery
-	withTeam            *TeamQuery
-	withOutreachReports *OutreachReportQuery
-	withFollowUps       *FollowUpQuery
-	withUserTeams       *UserTeamQuery
-	withUserSectors     *UserSectorQuery
-	withAddedSouls      *SoulQuery
-	withTeamVolunteers  *TeamVolunteersQuery
-	withSoulJournals    *SoulJournalQuery
-	withOutreachTargets *OutreachTargetsQuery
-	withUsedInvites     *OtpInvitesQuery
+	ctx                     *QueryContext
+	order                   []user.OrderOption
+	inters                  []Interceptor
+	predicates              []predicate.User
+	withChurch              *LocalChurchQuery
+	withSector              *SectorQuery
+	withTeam                *TeamQuery
+	withOutreachReports     *OutreachReportQuery
+	withFollowUps           *FollowUpQuery
+	withUserTeams           *UserTeamQuery
+	withUserSectors         *UserSectorQuery
+	withAddedSouls          *SoulQuery
+	withTeamVolunteers      *TeamVolunteersQuery
+	withSoulJournals        *SoulJournalQuery
+	withOutreachTargets     *OutreachTargetsQuery
+	withUsedInvites         *OtpInvitesQuery
+	withCreatedVisitors     *VisitorQuery
+	withRecordedAttendances *AttendanceRecordQuery
+	withCreatedTodos        *TeamTodoQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -348,6 +354,72 @@ func (_q *UserQuery) QueryUsedInvites() *OtpInvitesQuery {
 	return query
 }
 
+// QueryCreatedVisitors chains the current query on the "created_visitors" edge.
+func (_q *UserQuery) QueryCreatedVisitors() *VisitorQuery {
+	query := (&VisitorClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(visitor.Table, visitor.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.CreatedVisitorsTable, user.CreatedVisitorsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryRecordedAttendances chains the current query on the "recorded_attendances" edge.
+func (_q *UserQuery) QueryRecordedAttendances() *AttendanceRecordQuery {
+	query := (&AttendanceRecordClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(attendancerecord.Table, attendancerecord.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.RecordedAttendancesTable, user.RecordedAttendancesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryCreatedTodos chains the current query on the "created_todos" edge.
+func (_q *UserQuery) QueryCreatedTodos() *TeamTodoQuery {
+	query := (&TeamTodoClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(teamtodo.Table, teamtodo.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.CreatedTodosTable, user.CreatedTodosColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // First returns the first User entity from the query.
 // Returns a *NotFoundError when no User was found.
 func (_q *UserQuery) First(ctx context.Context) (*User, error) {
@@ -535,23 +607,26 @@ func (_q *UserQuery) Clone() *UserQuery {
 		return nil
 	}
 	return &UserQuery{
-		config:              _q.config,
-		ctx:                 _q.ctx.Clone(),
-		order:               append([]user.OrderOption{}, _q.order...),
-		inters:              append([]Interceptor{}, _q.inters...),
-		predicates:          append([]predicate.User{}, _q.predicates...),
-		withChurch:          _q.withChurch.Clone(),
-		withSector:          _q.withSector.Clone(),
-		withTeam:            _q.withTeam.Clone(),
-		withOutreachReports: _q.withOutreachReports.Clone(),
-		withFollowUps:       _q.withFollowUps.Clone(),
-		withUserTeams:       _q.withUserTeams.Clone(),
-		withUserSectors:     _q.withUserSectors.Clone(),
-		withAddedSouls:      _q.withAddedSouls.Clone(),
-		withTeamVolunteers:  _q.withTeamVolunteers.Clone(),
-		withSoulJournals:    _q.withSoulJournals.Clone(),
-		withOutreachTargets: _q.withOutreachTargets.Clone(),
-		withUsedInvites:     _q.withUsedInvites.Clone(),
+		config:                  _q.config,
+		ctx:                     _q.ctx.Clone(),
+		order:                   append([]user.OrderOption{}, _q.order...),
+		inters:                  append([]Interceptor{}, _q.inters...),
+		predicates:              append([]predicate.User{}, _q.predicates...),
+		withChurch:              _q.withChurch.Clone(),
+		withSector:              _q.withSector.Clone(),
+		withTeam:                _q.withTeam.Clone(),
+		withOutreachReports:     _q.withOutreachReports.Clone(),
+		withFollowUps:           _q.withFollowUps.Clone(),
+		withUserTeams:           _q.withUserTeams.Clone(),
+		withUserSectors:         _q.withUserSectors.Clone(),
+		withAddedSouls:          _q.withAddedSouls.Clone(),
+		withTeamVolunteers:      _q.withTeamVolunteers.Clone(),
+		withSoulJournals:        _q.withSoulJournals.Clone(),
+		withOutreachTargets:     _q.withOutreachTargets.Clone(),
+		withUsedInvites:         _q.withUsedInvites.Clone(),
+		withCreatedVisitors:     _q.withCreatedVisitors.Clone(),
+		withRecordedAttendances: _q.withRecordedAttendances.Clone(),
+		withCreatedTodos:        _q.withCreatedTodos.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -690,6 +765,39 @@ func (_q *UserQuery) WithUsedInvites(opts ...func(*OtpInvitesQuery)) *UserQuery 
 	return _q
 }
 
+// WithCreatedVisitors tells the query-builder to eager-load the nodes that are connected to
+// the "created_visitors" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithCreatedVisitors(opts ...func(*VisitorQuery)) *UserQuery {
+	query := (&VisitorClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withCreatedVisitors = query
+	return _q
+}
+
+// WithRecordedAttendances tells the query-builder to eager-load the nodes that are connected to
+// the "recorded_attendances" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithRecordedAttendances(opts ...func(*AttendanceRecordQuery)) *UserQuery {
+	query := (&AttendanceRecordClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withRecordedAttendances = query
+	return _q
+}
+
+// WithCreatedTodos tells the query-builder to eager-load the nodes that are connected to
+// the "created_todos" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithCreatedTodos(opts ...func(*TeamTodoQuery)) *UserQuery {
+	query := (&TeamTodoClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withCreatedTodos = query
+	return _q
+}
+
 // GroupBy is used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
 //
@@ -768,7 +876,7 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = _q.querySpec()
-		loadedTypes = [12]bool{
+		loadedTypes = [15]bool{
 			_q.withChurch != nil,
 			_q.withSector != nil,
 			_q.withTeam != nil,
@@ -781,6 +889,9 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			_q.withSoulJournals != nil,
 			_q.withOutreachTargets != nil,
 			_q.withUsedInvites != nil,
+			_q.withCreatedVisitors != nil,
+			_q.withRecordedAttendances != nil,
+			_q.withCreatedTodos != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -879,6 +990,29 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := _q.loadUsedInvites(ctx, query, nodes,
 			func(n *User) { n.Edges.UsedInvites = []*OtpInvites{} },
 			func(n *User, e *OtpInvites) { n.Edges.UsedInvites = append(n.Edges.UsedInvites, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withCreatedVisitors; query != nil {
+		if err := _q.loadCreatedVisitors(ctx, query, nodes,
+			func(n *User) { n.Edges.CreatedVisitors = []*Visitor{} },
+			func(n *User, e *Visitor) { n.Edges.CreatedVisitors = append(n.Edges.CreatedVisitors, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withRecordedAttendances; query != nil {
+		if err := _q.loadRecordedAttendances(ctx, query, nodes,
+			func(n *User) { n.Edges.RecordedAttendances = []*AttendanceRecord{} },
+			func(n *User, e *AttendanceRecord) {
+				n.Edges.RecordedAttendances = append(n.Edges.RecordedAttendances, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withCreatedTodos; query != nil {
+		if err := _q.loadCreatedTodos(ctx, query, nodes,
+			func(n *User) { n.Edges.CreatedTodos = []*TeamTodo{} },
+			func(n *User, e *TeamTodo) { n.Edges.CreatedTodos = append(n.Edges.CreatedTodos, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -1264,6 +1398,96 @@ func (_q *UserQuery) loadUsedInvites(ctx context.Context, query *OtpInvitesQuery
 		node, ok := nodeids[*fk]
 		if !ok {
 			return fmt.Errorf(`unexpected referenced foreign-key "used_by_user_id" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadCreatedVisitors(ctx context.Context, query *VisitorQuery, nodes []*User, init func(*User), assign func(*User, *Visitor)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(visitor.FieldCreatedBy)
+	}
+	query.Where(predicate.Visitor(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.CreatedVisitorsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.CreatedBy
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "created_by" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadRecordedAttendances(ctx context.Context, query *AttendanceRecordQuery, nodes []*User, init func(*User), assign func(*User, *AttendanceRecord)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(attendancerecord.FieldRecordedBy)
+	}
+	query.Where(predicate.AttendanceRecord(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.RecordedAttendancesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.RecordedBy
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "recorded_by" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadCreatedTodos(ctx context.Context, query *TeamTodoQuery, nodes []*User, init func(*User), assign func(*User, *TeamTodo)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(teamtodo.FieldCreatedBy)
+	}
+	query.Where(predicate.TeamTodo(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.CreatedTodosColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.CreatedBy
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "created_by" returned %v for node %v`, fk, n.ID)
 		}
 		assign(node, n)
 	}

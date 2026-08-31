@@ -125,7 +125,7 @@ const PublicMap = () => {
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 flex items-center justify-center">
                   <img 
-                    src="/lovable-uploads/60590913-3ee4-42d4-96aa-92a4316a4edc.png" 
+                    src="/logo-design.png" 
                     alt="Soul Bank Logo" 
                     className="w-12 h-12 object-contain"
                   />

@@ -11,14 +11,18 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
+	"github.com/hofchurchng/church-backend/internal/ent/attendancerecord"
 	"github.com/hofchurchng/church-backend/internal/ent/churchevent"
+	"github.com/hofchurchng/church-backend/internal/ent/churchsetting"
 	"github.com/hofchurchng/church-backend/internal/ent/churchteams"
 	"github.com/hofchurchng/church-backend/internal/ent/localchurch"
 	"github.com/hofchurchng/church-backend/internal/ent/member"
 	"github.com/hofchurchng/church-backend/internal/ent/otpinvites"
 	"github.com/hofchurchng/church-backend/internal/ent/sector"
 	"github.com/hofchurchng/church-backend/internal/ent/team"
+	"github.com/hofchurchng/church-backend/internal/ent/teamtodo"
 	"github.com/hofchurchng/church-backend/internal/ent/user"
+	"github.com/hofchurchng/church-backend/internal/ent/visitor"
 )
 
 // LocalChurchCreate is the builder for creating a LocalChurch entity.
@@ -57,6 +61,90 @@ func (_c *LocalChurchCreate) SetNillableDescription(v *string) *LocalChurchCreat
 // SetSlug sets the "slug" field.
 func (_c *LocalChurchCreate) SetSlug(v string) *LocalChurchCreate {
 	_c.mutation.SetSlug(v)
+	return _c
+}
+
+// SetAddress sets the "address" field.
+func (_c *LocalChurchCreate) SetAddress(v string) *LocalChurchCreate {
+	_c.mutation.SetAddress(v)
+	return _c
+}
+
+// SetNillableAddress sets the "address" field if the given value is not nil.
+func (_c *LocalChurchCreate) SetNillableAddress(v *string) *LocalChurchCreate {
+	if v != nil {
+		_c.SetAddress(*v)
+	}
+	return _c
+}
+
+// SetCity sets the "city" field.
+func (_c *LocalChurchCreate) SetCity(v string) *LocalChurchCreate {
+	_c.mutation.SetCity(v)
+	return _c
+}
+
+// SetNillableCity sets the "city" field if the given value is not nil.
+func (_c *LocalChurchCreate) SetNillableCity(v *string) *LocalChurchCreate {
+	if v != nil {
+		_c.SetCity(*v)
+	}
+	return _c
+}
+
+// SetState sets the "state" field.
+func (_c *LocalChurchCreate) SetState(v string) *LocalChurchCreate {
+	_c.mutation.SetState(v)
+	return _c
+}
+
+// SetNillableState sets the "state" field if the given value is not nil.
+func (_c *LocalChurchCreate) SetNillableState(v *string) *LocalChurchCreate {
+	if v != nil {
+		_c.SetState(*v)
+	}
+	return _c
+}
+
+// SetResidentPastorID sets the "resident_pastor_id" field.
+func (_c *LocalChurchCreate) SetResidentPastorID(v uuid.UUID) *LocalChurchCreate {
+	_c.mutation.SetResidentPastorID(v)
+	return _c
+}
+
+// SetNillableResidentPastorID sets the "resident_pastor_id" field if the given value is not nil.
+func (_c *LocalChurchCreate) SetNillableResidentPastorID(v *uuid.UUID) *LocalChurchCreate {
+	if v != nil {
+		_c.SetResidentPastorID(*v)
+	}
+	return _c
+}
+
+// SetChurchAdminID sets the "church_admin_id" field.
+func (_c *LocalChurchCreate) SetChurchAdminID(v uuid.UUID) *LocalChurchCreate {
+	_c.mutation.SetChurchAdminID(v)
+	return _c
+}
+
+// SetNillableChurchAdminID sets the "church_admin_id" field if the given value is not nil.
+func (_c *LocalChurchCreate) SetNillableChurchAdminID(v *uuid.UUID) *LocalChurchCreate {
+	if v != nil {
+		_c.SetChurchAdminID(*v)
+	}
+	return _c
+}
+
+// SetIsActive sets the "is_active" field.
+func (_c *LocalChurchCreate) SetIsActive(v bool) *LocalChurchCreate {
+	_c.mutation.SetIsActive(v)
+	return _c
+}
+
+// SetNillableIsActive sets the "is_active" field if the given value is not nil.
+func (_c *LocalChurchCreate) SetNillableIsActive(v *bool) *LocalChurchCreate {
+	if v != nil {
+		_c.SetIsActive(*v)
+	}
 	return _c
 }
 
@@ -193,6 +281,66 @@ func (_c *LocalChurchCreate) AddChurchEvents(v ...*ChurchEvent) *LocalChurchCrea
 	return _c.AddChurchEventIDs(ids...)
 }
 
+// AddVisitorIDs adds the "visitors" edge to the Visitor entity by IDs.
+func (_c *LocalChurchCreate) AddVisitorIDs(ids ...uuid.UUID) *LocalChurchCreate {
+	_c.mutation.AddVisitorIDs(ids...)
+	return _c
+}
+
+// AddVisitors adds the "visitors" edges to the Visitor entity.
+func (_c *LocalChurchCreate) AddVisitors(v ...*Visitor) *LocalChurchCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddVisitorIDs(ids...)
+}
+
+// AddAttendanceRecordIDs adds the "attendance_records" edge to the AttendanceRecord entity by IDs.
+func (_c *LocalChurchCreate) AddAttendanceRecordIDs(ids ...uuid.UUID) *LocalChurchCreate {
+	_c.mutation.AddAttendanceRecordIDs(ids...)
+	return _c
+}
+
+// AddAttendanceRecords adds the "attendance_records" edges to the AttendanceRecord entity.
+func (_c *LocalChurchCreate) AddAttendanceRecords(v ...*AttendanceRecord) *LocalChurchCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddAttendanceRecordIDs(ids...)
+}
+
+// AddSettingIDs adds the "settings" edge to the ChurchSetting entity by IDs.
+func (_c *LocalChurchCreate) AddSettingIDs(ids ...uuid.UUID) *LocalChurchCreate {
+	_c.mutation.AddSettingIDs(ids...)
+	return _c
+}
+
+// AddSettings adds the "settings" edges to the ChurchSetting entity.
+func (_c *LocalChurchCreate) AddSettings(v ...*ChurchSetting) *LocalChurchCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddSettingIDs(ids...)
+}
+
+// AddTeamTodoIDs adds the "team_todos" edge to the TeamTodo entity by IDs.
+func (_c *LocalChurchCreate) AddTeamTodoIDs(ids ...uuid.UUID) *LocalChurchCreate {
+	_c.mutation.AddTeamTodoIDs(ids...)
+	return _c
+}
+
+// AddTeamTodos adds the "team_todos" edges to the TeamTodo entity.
+func (_c *LocalChurchCreate) AddTeamTodos(v ...*TeamTodo) *LocalChurchCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddTeamTodoIDs(ids...)
+}
+
 // Mutation returns the LocalChurchMutation object of the builder.
 func (_c *LocalChurchCreate) Mutation() *LocalChurchMutation {
 	return _c.mutation
@@ -228,6 +376,10 @@ func (_c *LocalChurchCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (_c *LocalChurchCreate) defaults() {
+	if _, ok := _c.mutation.IsActive(); !ok {
+		v := localchurch.DefaultIsActive
+		_c.mutation.SetIsActive(v)
+	}
 	if _, ok := _c.mutation.CreatedAt(); !ok {
 		v := localchurch.DefaultCreatedAt()
 		_c.mutation.SetCreatedAt(v)
@@ -248,6 +400,9 @@ func (_c *LocalChurchCreate) check() error {
 	}
 	if _, ok := _c.mutation.Slug(); !ok {
 		return &ValidationError{Name: "slug", err: errors.New(`ent: missing required field "LocalChurch.slug"`)}
+	}
+	if _, ok := _c.mutation.IsActive(); !ok {
+		return &ValidationError{Name: "is_active", err: errors.New(`ent: missing required field "LocalChurch.is_active"`)}
 	}
 	if _, ok := _c.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "LocalChurch.created_at"`)}
@@ -302,6 +457,30 @@ func (_c *LocalChurchCreate) createSpec() (*LocalChurch, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Slug(); ok {
 		_spec.SetField(localchurch.FieldSlug, field.TypeString, value)
 		_node.Slug = value
+	}
+	if value, ok := _c.mutation.Address(); ok {
+		_spec.SetField(localchurch.FieldAddress, field.TypeString, value)
+		_node.Address = &value
+	}
+	if value, ok := _c.mutation.City(); ok {
+		_spec.SetField(localchurch.FieldCity, field.TypeString, value)
+		_node.City = &value
+	}
+	if value, ok := _c.mutation.State(); ok {
+		_spec.SetField(localchurch.FieldState, field.TypeString, value)
+		_node.State = &value
+	}
+	if value, ok := _c.mutation.ResidentPastorID(); ok {
+		_spec.SetField(localchurch.FieldResidentPastorID, field.TypeUUID, value)
+		_node.ResidentPastorID = &value
+	}
+	if value, ok := _c.mutation.ChurchAdminID(); ok {
+		_spec.SetField(localchurch.FieldChurchAdminID, field.TypeUUID, value)
+		_node.ChurchAdminID = &value
+	}
+	if value, ok := _c.mutation.IsActive(); ok {
+		_spec.SetField(localchurch.FieldIsActive, field.TypeBool, value)
+		_node.IsActive = value
 	}
 	if value, ok := _c.mutation.CreatedAt(); ok {
 		_spec.SetField(localchurch.FieldCreatedAt, field.TypeTime, value)
@@ -412,6 +591,70 @@ func (_c *LocalChurchCreate) createSpec() (*LocalChurch, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(churchevent.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.VisitorsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   localchurch.VisitorsTable,
+			Columns: []string{localchurch.VisitorsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(visitor.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.AttendanceRecordsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   localchurch.AttendanceRecordsTable,
+			Columns: []string{localchurch.AttendanceRecordsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(attendancerecord.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.SettingsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   localchurch.SettingsTable,
+			Columns: []string{localchurch.SettingsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(churchsetting.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.TeamTodosIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   localchurch.TeamTodosTable,
+			Columns: []string{localchurch.TeamTodosColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(teamtodo.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

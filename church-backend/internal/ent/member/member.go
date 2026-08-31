@@ -52,6 +52,12 @@ const (
 	FieldMedicalNotes = "medical_notes"
 	// FieldIsPlaceholder holds the string denoting the is_placeholder field in the database.
 	FieldIsPlaceholder = "is_placeholder"
+	// FieldIsProfiled holds the string denoting the is_profiled field in the database.
+	FieldIsProfiled = "is_profiled"
+	// FieldProfiledByUserID holds the string denoting the profiled_by_user_id field in the database.
+	FieldProfiledByUserID = "profiled_by_user_id"
+	// FieldProfiledAt holds the string denoting the profiled_at field in the database.
+	FieldProfiledAt = "profiled_at"
 	// FieldSourceTeam holds the string denoting the source_team field in the database.
 	FieldSourceTeam = "source_team"
 	// FieldCreatedBy holds the string denoting the created_by field in the database.
@@ -62,6 +68,10 @@ const (
 	FieldSectorID = "sector_id"
 	// FieldTeamID holds the string denoting the team_id field in the database.
 	FieldTeamID = "team_id"
+	// FieldVolunteeringTeamID holds the string denoting the volunteering_team_id field in the database.
+	FieldVolunteeringTeamID = "volunteering_team_id"
+	// FieldJoinedAt holds the string denoting the joined_at field in the database.
+	FieldJoinedAt = "joined_at"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
@@ -171,11 +181,16 @@ var Columns = []string{
 	FieldAllergies,
 	FieldMedicalNotes,
 	FieldIsPlaceholder,
+	FieldIsProfiled,
+	FieldProfiledByUserID,
+	FieldProfiledAt,
 	FieldSourceTeam,
 	FieldCreatedBy,
 	FieldLocalChurchID,
 	FieldSectorID,
 	FieldTeamID,
+	FieldVolunteeringTeamID,
+	FieldJoinedAt,
 	FieldCreatedAt,
 	FieldUpdatedAt,
 	FieldCurrentStage,
@@ -198,6 +213,10 @@ var (
 	DefaultSurname string
 	// DefaultIsPlaceholder holds the default value on creation for the "is_placeholder" field.
 	DefaultIsPlaceholder bool
+	// DefaultIsProfiled holds the default value on creation for the "is_profiled" field.
+	DefaultIsProfiled bool
+	// DefaultJoinedAt holds the default value on creation for the "joined_at" field.
+	DefaultJoinedAt func() time.Time
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
 	// DefaultUpdatedAt holds the default value on creation for the "updated_at" field.
@@ -272,6 +291,8 @@ const (
 	CurrentStageSundaySchoolModule3 CurrentStage = "sunday_school_module_3"
 	CurrentStageMembershipClass     CurrentStage = "membership_class"
 	CurrentStageStewardship         CurrentStage = "stewardship"
+	CurrentStageMit                 CurrentStage = "mit"
+	CurrentStageResidentPastor      CurrentStage = "resident_pastor"
 )
 
 func (cs CurrentStage) String() string {
@@ -281,7 +302,7 @@ func (cs CurrentStage) String() string {
 // CurrentStageValidator is a validator for the "current_stage" field enum values. It is called by the builders before save.
 func CurrentStageValidator(cs CurrentStage) error {
 	switch cs {
-	case CurrentStageFirstTimeGuest, CurrentStageFoundationClass, CurrentStageSundaySchoolModule1, CurrentStageSundaySchoolModule2, CurrentStageSundaySchoolModule3, CurrentStageMembershipClass, CurrentStageStewardship:
+	case CurrentStageFirstTimeGuest, CurrentStageFoundationClass, CurrentStageSundaySchoolModule1, CurrentStageSundaySchoolModule2, CurrentStageSundaySchoolModule3, CurrentStageMembershipClass, CurrentStageStewardship, CurrentStageMit, CurrentStageResidentPastor:
 		return nil
 	default:
 		return fmt.Errorf("member: invalid enum value for current_stage field: %q", cs)
@@ -386,6 +407,21 @@ func ByIsPlaceholder(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldIsPlaceholder, opts...).ToFunc()
 }
 
+// ByIsProfiled orders the results by the is_profiled field.
+func ByIsProfiled(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldIsProfiled, opts...).ToFunc()
+}
+
+// ByProfiledByUserID orders the results by the profiled_by_user_id field.
+func ByProfiledByUserID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldProfiledByUserID, opts...).ToFunc()
+}
+
+// ByProfiledAt orders the results by the profiled_at field.
+func ByProfiledAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldProfiledAt, opts...).ToFunc()
+}
+
 // BySourceTeam orders the results by the source_team field.
 func BySourceTeam(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldSourceTeam, opts...).ToFunc()
@@ -409,6 +445,16 @@ func BySectorID(opts ...sql.OrderTermOption) OrderOption {
 // ByTeamID orders the results by the team_id field.
 func ByTeamID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldTeamID, opts...).ToFunc()
+}
+
+// ByVolunteeringTeamID orders the results by the volunteering_team_id field.
+func ByVolunteeringTeamID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldVolunteeringTeamID, opts...).ToFunc()
+}
+
+// ByJoinedAt orders the results by the joined_at field.
+func ByJoinedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldJoinedAt, opts...).ToFunc()
 }
 
 // ByCreatedAt orders the results by the created_at field.

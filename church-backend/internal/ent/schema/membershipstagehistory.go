@@ -31,6 +31,8 @@ func (MembershipStageHistory) Fields() []ent.Field {
 				"sunday_school_module_3",
 				"membership_class",
 				"stewardship",
+				"mit",
+				"resident_pastor",
 			),
 		field.Time("entered_at").
 			Default(time.Now),
@@ -50,7 +52,8 @@ func (MembershipStageHistory) Edges() []ent.Edge {
 			Ref("stage_histories").
 			Unique().
 			Field("member_id").
-			Required(),
+			Required().
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 	}
 }
 

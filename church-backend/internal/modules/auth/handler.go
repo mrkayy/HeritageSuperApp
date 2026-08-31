@@ -39,6 +39,8 @@ func (h *Handler) RegisterPublic(g *echo.Group) {
 	g.POST("/login", h.login)
 	g.GET("/login/google", h.loginGoogle)
 	g.GET("/callback/google", h.callbackGoogle)
+	g.GET("/magic-link/verify", h.verifyMagicLink)
+	g.POST("/magic-link/complete", h.completeMagicLink)
 }
 
 // RegisterProtected mounts endpoints that require validation.
@@ -66,11 +68,29 @@ func (h *Handler) login(c echo.Context) error {
 }
 
 func (h *Handler) me(c echo.Context) error {
-	user, ok := contracts.UserFromContext(c.Request().Context())
+	userCtx, ok := contracts.UserFromContext(c.Request().Context())
 	if !ok {
 		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
 	}
-	return c.JSON(http.StatusOK, user)
+
+	u, err := h.svc.repo.FindByEmail(c.Request().Context(), userCtx.Email)
+	if err != nil {
+		return c.JSON(http.StatusOK, userCtx)
+	}
+
+	currentRole := ""
+	if len(u.Roles) > 0 {
+		currentRole = u.Roles[0]
+	}
+
+	return c.JSON(http.StatusOK, contracts.AuthedUser{
+		ID:          u.ID,
+		Email:       u.Email,
+		Roles:       u.Roles,
+		CurrentRole: currentRole,
+		TeamID:      u.TeamID,
+		TeamName:    u.TeamName,
+	})
 }
 
 func (h *Handler) loginGoogle(c echo.Context) error {
@@ -115,4 +135,47 @@ func (h *Handler) callbackGoogle(c echo.Context) error {
 	// Redirect to frontend with token
 	redirectURL := h.frontendURL + "/login?token=" + result.Token
 	return c.Redirect(http.StatusTemporaryRedirect, redirectURL)
+}
+
+func (h *Handler) verifyMagicLink(c echo.Context) error {
+	code := c.QueryParam("code")
+	email := c.QueryParam("email")
+	if code == "" || email == "" {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"valid":   false,
+			"message": "code and email query parameters are required",
+		})
+	}
+
+	res, err := h.svc.VerifyMagicLink(c.Request().Context(), code, email)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"valid":   false,
+			"message": err.Error(),
+		})
+	}
+	return c.JSON(http.StatusOK, res)
+}
+
+func (h *Handler) completeMagicLink(c echo.Context) error {
+	var req struct {
+		Code      string `json:"code"`
+		Email     string `json:"email"`
+		FirstName string `json:"first_name"`
+		LastName  string `json:"last_name"`
+		Password  string `json:"password"`
+	}
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"message": "invalid request body"})
+	}
+
+	if req.Code == "" || req.Email == "" || req.Password == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{"message": "code, email and password are required"})
+	}
+
+	res, err := h.svc.CompleteMagicLinkOnboarding(c.Request().Context(), req.Code, req.Email, req.FirstName, req.LastName, req.Password)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"message": err.Error()})
+	}
+	return c.JSON(http.StatusOK, res)
 }

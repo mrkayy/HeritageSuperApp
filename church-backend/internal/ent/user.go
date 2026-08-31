@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -37,6 +38,8 @@ type User struct {
 	Email string `json:"email,omitempty"`
 	// PasswordHash holds the value of the "password_hash" field.
 	PasswordHash string `json:"password_hash,omitempty"`
+	// PinHash holds the value of the "pin_hash" field.
+	PinHash *string `json:"pin_hash,omitempty"`
 	// PhoneNumber holds the value of the "phone_number" field.
 	PhoneNumber *string `json:"phone_number,omitempty"`
 	// ProfileImageURL holds the value of the "profile_image_url" field.
@@ -47,6 +50,8 @@ type User struct {
 	Address *string `json:"address,omitempty"`
 	// Role holds the value of the "role" field.
 	Role user.Role `json:"role,omitempty"`
+	// Roles holds the value of the "roles" field.
+	Roles []string `json:"roles,omitempty"`
 	// AccountStatus holds the value of the "account_status" field.
 	AccountStatus user.AccountStatus `json:"account_status,omitempty"`
 	// IsProfileComplete holds the value of the "is_profile_complete" field.
@@ -85,9 +90,15 @@ type UserEdges struct {
 	OutreachTargets []*OutreachTargets `json:"outreach_targets,omitempty"`
 	// UsedInvites holds the value of the used_invites edge.
 	UsedInvites []*OtpInvites `json:"used_invites,omitempty"`
+	// CreatedVisitors holds the value of the created_visitors edge.
+	CreatedVisitors []*Visitor `json:"created_visitors,omitempty"`
+	// RecordedAttendances holds the value of the recorded_attendances edge.
+	RecordedAttendances []*AttendanceRecord `json:"recorded_attendances,omitempty"`
+	// CreatedTodos holds the value of the created_todos edge.
+	CreatedTodos []*TeamTodo `json:"created_todos,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [12]bool
+	loadedTypes [15]bool
 }
 
 // ChurchOrErr returns the Church value or an error if the edge
@@ -204,6 +215,33 @@ func (e UserEdges) UsedInvitesOrErr() ([]*OtpInvites, error) {
 	return nil, &NotLoadedError{edge: "used_invites"}
 }
 
+// CreatedVisitorsOrErr returns the CreatedVisitors value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) CreatedVisitorsOrErr() ([]*Visitor, error) {
+	if e.loadedTypes[12] {
+		return e.CreatedVisitors, nil
+	}
+	return nil, &NotLoadedError{edge: "created_visitors"}
+}
+
+// RecordedAttendancesOrErr returns the RecordedAttendances value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) RecordedAttendancesOrErr() ([]*AttendanceRecord, error) {
+	if e.loadedTypes[13] {
+		return e.RecordedAttendances, nil
+	}
+	return nil, &NotLoadedError{edge: "recorded_attendances"}
+}
+
+// CreatedTodosOrErr returns the CreatedTodos value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) CreatedTodosOrErr() ([]*TeamTodo, error) {
+	if e.loadedTypes[14] {
+		return e.CreatedTodos, nil
+	}
+	return nil, &NotLoadedError{edge: "created_todos"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*User) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
@@ -211,9 +249,11 @@ func (*User) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case user.FieldChurchID, user.FieldSectorID, user.FieldTeamID:
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
+		case user.FieldRoles:
+			values[i] = new([]byte)
 		case user.FieldIsProfileComplete:
 			values[i] = new(sql.NullBool)
-		case user.FieldUsername, user.FieldFirstName, user.FieldLastName, user.FieldEmail, user.FieldPasswordHash, user.FieldPhoneNumber, user.FieldProfileImageURL, user.FieldAddress, user.FieldRole, user.FieldAccountStatus:
+		case user.FieldUsername, user.FieldFirstName, user.FieldLastName, user.FieldEmail, user.FieldPasswordHash, user.FieldPinHash, user.FieldPhoneNumber, user.FieldProfileImageURL, user.FieldAddress, user.FieldRole, user.FieldAccountStatus:
 			values[i] = new(sql.NullString)
 		case user.FieldDateOfBirth, user.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
@@ -292,6 +332,13 @@ func (_m *User) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.PasswordHash = value.String
 			}
+		case user.FieldPinHash:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field pin_hash", values[i])
+			} else if value.Valid {
+				_m.PinHash = new(string)
+				*_m.PinHash = value.String
+			}
 		case user.FieldPhoneNumber:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field phone_number", values[i])
@@ -325,6 +372,14 @@ func (_m *User) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field role", values[i])
 			} else if value.Valid {
 				_m.Role = user.Role(value.String)
+			}
+		case user.FieldRoles:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field roles", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.Roles); err != nil {
+					return fmt.Errorf("unmarshal field roles: %w", err)
+				}
 			}
 		case user.FieldAccountStatus:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -417,6 +472,21 @@ func (_m *User) QueryUsedInvites() *OtpInvitesQuery {
 	return NewUserClient(_m.config).QueryUsedInvites(_m)
 }
 
+// QueryCreatedVisitors queries the "created_visitors" edge of the User entity.
+func (_m *User) QueryCreatedVisitors() *VisitorQuery {
+	return NewUserClient(_m.config).QueryCreatedVisitors(_m)
+}
+
+// QueryRecordedAttendances queries the "recorded_attendances" edge of the User entity.
+func (_m *User) QueryRecordedAttendances() *AttendanceRecordQuery {
+	return NewUserClient(_m.config).QueryRecordedAttendances(_m)
+}
+
+// QueryCreatedTodos queries the "created_todos" edge of the User entity.
+func (_m *User) QueryCreatedTodos() *TeamTodoQuery {
+	return NewUserClient(_m.config).QueryCreatedTodos(_m)
+}
+
 // Update returns a builder for updating this User.
 // Note that you need to call User.Unwrap() before calling this method if this User
 // was returned from a transaction, and the transaction was committed or rolled back.
@@ -472,6 +542,11 @@ func (_m *User) String() string {
 	builder.WriteString("password_hash=")
 	builder.WriteString(_m.PasswordHash)
 	builder.WriteString(", ")
+	if v := _m.PinHash; v != nil {
+		builder.WriteString("pin_hash=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
 	if v := _m.PhoneNumber; v != nil {
 		builder.WriteString("phone_number=")
 		builder.WriteString(*v)
@@ -494,6 +569,9 @@ func (_m *User) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("role=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Role))
+	builder.WriteString(", ")
+	builder.WriteString("roles=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Roles))
 	builder.WriteString(", ")
 	builder.WriteString("account_status=")
 	builder.WriteString(fmt.Sprintf("%v", _m.AccountStatus))

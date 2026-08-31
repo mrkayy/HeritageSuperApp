@@ -66,6 +66,16 @@ func OtpCode(v string) predicate.OtpInvites {
 	return predicate.OtpInvites(sql.FieldEQ(FieldOtpCode, v))
 }
 
+// FirstName applies equality check predicate on the "first_name" field. It's identical to FirstNameEQ.
+func FirstName(v string) predicate.OtpInvites {
+	return predicate.OtpInvites(sql.FieldEQ(FieldFirstName, v))
+}
+
+// LastName applies equality check predicate on the "last_name" field. It's identical to LastNameEQ.
+func LastName(v string) predicate.OtpInvites {
+	return predicate.OtpInvites(sql.FieldEQ(FieldLastName, v))
+}
+
 // SectorID applies equality check predicate on the "sector_id" field. It's identical to SectorIDEQ.
 func SectorID(v uuid.UUID) predicate.OtpInvites {
 	return predicate.OtpInvites(sql.FieldEQ(FieldSectorID, v))
@@ -231,6 +241,156 @@ func OtpCodeContainsFold(v string) predicate.OtpInvites {
 	return predicate.OtpInvites(sql.FieldContainsFold(FieldOtpCode, v))
 }
 
+// FirstNameEQ applies the EQ predicate on the "first_name" field.
+func FirstNameEQ(v string) predicate.OtpInvites {
+	return predicate.OtpInvites(sql.FieldEQ(FieldFirstName, v))
+}
+
+// FirstNameNEQ applies the NEQ predicate on the "first_name" field.
+func FirstNameNEQ(v string) predicate.OtpInvites {
+	return predicate.OtpInvites(sql.FieldNEQ(FieldFirstName, v))
+}
+
+// FirstNameIn applies the In predicate on the "first_name" field.
+func FirstNameIn(vs ...string) predicate.OtpInvites {
+	return predicate.OtpInvites(sql.FieldIn(FieldFirstName, vs...))
+}
+
+// FirstNameNotIn applies the NotIn predicate on the "first_name" field.
+func FirstNameNotIn(vs ...string) predicate.OtpInvites {
+	return predicate.OtpInvites(sql.FieldNotIn(FieldFirstName, vs...))
+}
+
+// FirstNameGT applies the GT predicate on the "first_name" field.
+func FirstNameGT(v string) predicate.OtpInvites {
+	return predicate.OtpInvites(sql.FieldGT(FieldFirstName, v))
+}
+
+// FirstNameGTE applies the GTE predicate on the "first_name" field.
+func FirstNameGTE(v string) predicate.OtpInvites {
+	return predicate.OtpInvites(sql.FieldGTE(FieldFirstName, v))
+}
+
+// FirstNameLT applies the LT predicate on the "first_name" field.
+func FirstNameLT(v string) predicate.OtpInvites {
+	return predicate.OtpInvites(sql.FieldLT(FieldFirstName, v))
+}
+
+// FirstNameLTE applies the LTE predicate on the "first_name" field.
+func FirstNameLTE(v string) predicate.OtpInvites {
+	return predicate.OtpInvites(sql.FieldLTE(FieldFirstName, v))
+}
+
+// FirstNameContains applies the Contains predicate on the "first_name" field.
+func FirstNameContains(v string) predicate.OtpInvites {
+	return predicate.OtpInvites(sql.FieldContains(FieldFirstName, v))
+}
+
+// FirstNameHasPrefix applies the HasPrefix predicate on the "first_name" field.
+func FirstNameHasPrefix(v string) predicate.OtpInvites {
+	return predicate.OtpInvites(sql.FieldHasPrefix(FieldFirstName, v))
+}
+
+// FirstNameHasSuffix applies the HasSuffix predicate on the "first_name" field.
+func FirstNameHasSuffix(v string) predicate.OtpInvites {
+	return predicate.OtpInvites(sql.FieldHasSuffix(FieldFirstName, v))
+}
+
+// FirstNameIsNil applies the IsNil predicate on the "first_name" field.
+func FirstNameIsNil() predicate.OtpInvites {
+	return predicate.OtpInvites(sql.FieldIsNull(FieldFirstName))
+}
+
+// FirstNameNotNil applies the NotNil predicate on the "first_name" field.
+func FirstNameNotNil() predicate.OtpInvites {
+	return predicate.OtpInvites(sql.FieldNotNull(FieldFirstName))
+}
+
+// FirstNameEqualFold applies the EqualFold predicate on the "first_name" field.
+func FirstNameEqualFold(v string) predicate.OtpInvites {
+	return predicate.OtpInvites(sql.FieldEqualFold(FieldFirstName, v))
+}
+
+// FirstNameContainsFold applies the ContainsFold predicate on the "first_name" field.
+func FirstNameContainsFold(v string) predicate.OtpInvites {
+	return predicate.OtpInvites(sql.FieldContainsFold(FieldFirstName, v))
+}
+
+// LastNameEQ applies the EQ predicate on the "last_name" field.
+func LastNameEQ(v string) predicate.OtpInvites {
+	return predicate.OtpInvites(sql.FieldEQ(FieldLastName, v))
+}
+
+// LastNameNEQ applies the NEQ predicate on the "last_name" field.
+func LastNameNEQ(v string) predicate.OtpInvites {
+	return predicate.OtpInvites(sql.FieldNEQ(FieldLastName, v))
+}
+
+// LastNameIn applies the In predicate on the "last_name" field.
+func LastNameIn(vs ...string) predicate.OtpInvites {
+	return predicate.OtpInvites(sql.FieldIn(FieldLastName, vs...))
+}
+
+// LastNameNotIn applies the NotIn predicate on the "last_name" field.
+func LastNameNotIn(vs ...string) predicate.OtpInvites {
+	return predicate.OtpInvites(sql.FieldNotIn(FieldLastName, vs...))
+}
+
+// LastNameGT applies the GT predicate on the "last_name" field.
+func LastNameGT(v string) predicate.OtpInvites {
+	return predicate.OtpInvites(sql.FieldGT(FieldLastName, v))
+}
+
+// LastNameGTE applies the GTE predicate on the "last_name" field.
+func LastNameGTE(v string) predicate.OtpInvites {
+	return predicate.OtpInvites(sql.FieldGTE(FieldLastName, v))
+}
+
+// LastNameLT applies the LT predicate on the "last_name" field.
+func LastNameLT(v string) predicate.OtpInvites {
+	return predicate.OtpInvites(sql.FieldLT(FieldLastName, v))
+}
+
+// LastNameLTE applies the LTE predicate on the "last_name" field.
+func LastNameLTE(v string) predicate.OtpInvites {
+	return predicate.OtpInvites(sql.FieldLTE(FieldLastName, v))
+}
+
+// LastNameContains applies the Contains predicate on the "last_name" field.
+func LastNameContains(v string) predicate.OtpInvites {
+	return predicate.OtpInvites(sql.FieldContains(FieldLastName, v))
+}
+
+// LastNameHasPrefix applies the HasPrefix predicate on the "last_name" field.
+func LastNameHasPrefix(v string) predicate.OtpInvites {
+	return predicate.OtpInvites(sql.FieldHasPrefix(FieldLastName, v))
+}
+
+// LastNameHasSuffix applies the HasSuffix predicate on the "last_name" field.
+func LastNameHasSuffix(v string) predicate.OtpInvites {
+	return predicate.OtpInvites(sql.FieldHasSuffix(FieldLastName, v))
+}
+
+// LastNameIsNil applies the IsNil predicate on the "last_name" field.
+func LastNameIsNil() predicate.OtpInvites {
+	return predicate.OtpInvites(sql.FieldIsNull(FieldLastName))
+}
+
+// LastNameNotNil applies the NotNil predicate on the "last_name" field.
+func LastNameNotNil() predicate.OtpInvites {
+	return predicate.OtpInvites(sql.FieldNotNull(FieldLastName))
+}
+
+// LastNameEqualFold applies the EqualFold predicate on the "last_name" field.
+func LastNameEqualFold(v string) predicate.OtpInvites {
+	return predicate.OtpInvites(sql.FieldEqualFold(FieldLastName, v))
+}
+
+// LastNameContainsFold applies the ContainsFold predicate on the "last_name" field.
+func LastNameContainsFold(v string) predicate.OtpInvites {
+	return predicate.OtpInvites(sql.FieldContainsFold(FieldLastName, v))
+}
+
 // SectorIDEQ applies the EQ predicate on the "sector_id" field.
 func SectorIDEQ(v uuid.UUID) predicate.OtpInvites {
 	return predicate.OtpInvites(sql.FieldEQ(FieldSectorID, v))
@@ -251,6 +411,16 @@ func SectorIDNotIn(vs ...uuid.UUID) predicate.OtpInvites {
 	return predicate.OtpInvites(sql.FieldNotIn(FieldSectorID, vs...))
 }
 
+// SectorIDIsNil applies the IsNil predicate on the "sector_id" field.
+func SectorIDIsNil() predicate.OtpInvites {
+	return predicate.OtpInvites(sql.FieldIsNull(FieldSectorID))
+}
+
+// SectorIDNotNil applies the NotNil predicate on the "sector_id" field.
+func SectorIDNotNil() predicate.OtpInvites {
+	return predicate.OtpInvites(sql.FieldNotNull(FieldSectorID))
+}
+
 // ChurchIDEQ applies the EQ predicate on the "church_id" field.
 func ChurchIDEQ(v uuid.UUID) predicate.OtpInvites {
 	return predicate.OtpInvites(sql.FieldEQ(FieldChurchID, v))
@@ -269,6 +439,16 @@ func ChurchIDIn(vs ...uuid.UUID) predicate.OtpInvites {
 // ChurchIDNotIn applies the NotIn predicate on the "church_id" field.
 func ChurchIDNotIn(vs ...uuid.UUID) predicate.OtpInvites {
 	return predicate.OtpInvites(sql.FieldNotIn(FieldChurchID, vs...))
+}
+
+// ChurchIDIsNil applies the IsNil predicate on the "church_id" field.
+func ChurchIDIsNil() predicate.OtpInvites {
+	return predicate.OtpInvites(sql.FieldIsNull(FieldChurchID))
+}
+
+// ChurchIDNotNil applies the NotNil predicate on the "church_id" field.
+func ChurchIDNotNil() predicate.OtpInvites {
+	return predicate.OtpInvites(sql.FieldNotNull(FieldChurchID))
 }
 
 // RoleEQ applies the EQ predicate on the "role" field.
