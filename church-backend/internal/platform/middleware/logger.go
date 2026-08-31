@@ -37,10 +37,14 @@ func (w *bodyLogWriter) Write(b []byte) (int, error) {
 
 // RequestResponseLogger creates a middleware that logs all requests, responses,
 // and their bodies to a file and stdout in a structured JSON format.
-func RequestResponseLogger(logFile *os.File) echo.MiddlewareFunc {
-	// Write to both stdout and the log file
-	multiWriter := io.MultiWriter(os.Stdout, logFile)
-	logger := log.New(multiWriter, "", 0)
+func RequestResponseLogger(logWriter io.Writer) echo.MiddlewareFunc {
+	var writer io.Writer
+	if logWriter != nil {
+		writer = io.MultiWriter(os.Stdout, logWriter)
+	} else {
+		writer = os.Stdout
+	}
+	logger := log.New(writer, "", 0)
 
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {

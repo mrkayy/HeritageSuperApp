@@ -148,7 +148,7 @@ export default function MagicLogin() {
         <div className="flex flex-col items-center text-center space-y-2">
           <div className="w-14 h-14 rounded-2xl bg-card border border-primary/20 shadow-xl flex items-center justify-center p-2 mb-1">
             <img 
-              src="/lovable-uploads/e1aa47db-ce0d-41de-acc4-3fd9d77b6b39.png" 
+              src="/logo-design.png" 
               alt="Heritage Logo" 
               className="w-full h-full object-contain"
             />

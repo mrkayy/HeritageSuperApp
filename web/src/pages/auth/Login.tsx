@@ -60,7 +60,7 @@ const Login = () => {
         <div className="text-center mb-8">
           <div className="w-20 h-20 flex items-center justify-center mx-auto mb-4">
             <img
-              src="/lovable-uploads/e1aa47db-ce0d-41de-acc4-3fd9d77b6b39.png"
+              src="/logo-design.png"
               alt="Soul Bank Logo"
               className="w-20 h-20 object-contain"
             />
