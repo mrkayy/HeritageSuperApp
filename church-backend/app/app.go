@@ -135,12 +135,12 @@ func New(cfg config.Config, client *ent.Client, logWriter io.Writer) *echo.Echo 
 
 	requireAuth := middleware.RequireAuth(cfg.JWTSecret)
 
-	e.GET("/", func(c echo.Context) error {
-		return c.JSON(http.StatusOK, map[string]string{
-			"status":  "ok",
-			"service": "Heritage SuperApp Backend",
-		})
-	})
+	// e.GET("/", func(c echo.Context) error {
+	// 	return c.JSON(http.StatusOK, map[string]string{
+	// 		"status":  "ok",
+	// 		"service": "Heritage SuperApp Backend",
+	// 	})
+	// })
 
 	api := e.Group("/api")
 

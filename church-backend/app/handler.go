@@ -4,7 +4,6 @@ import (
 	"context"
 	"log"
 	"net/http"
-	"net/url"
 	"sync"
 
 	"github.com/hofchurchng/church-backend/internal/platform/config"
@@ -27,24 +26,15 @@ func ServerlessHandler(w http.ResponseWriter, r *http.Request) {
 		e = New(cfg, client, nil)
 	})
 
-	// Vercel serverless rewrites overwrite r.URL.Path with the target function ("/api/index.go").
-	// The original requested route is stored in the "x-matched-path" header.
-	originalPath := r.Header.Get("x-matched-path")
-	if originalPath == "" {
-		originalPath = r.Header.Get("x-forwarded-uri")
-	}
-
-	if originalPath != "" {
-		if u, err := url.Parse(originalPath); err == nil {
-			r.URL.Path = u.Path
-			r.RequestURI = originalPath
-			if u.RawQuery != "" && r.URL.RawQuery == "" {
-				r.URL.RawQuery = u.RawQuery
-			}
-		} else {
-			r.URL.Path = originalPath
-			r.RequestURI = originalPath
-		}
+	// Vercel rewrites overwrite r.URL.Path with "/api/index.go".
+	// The original path is forwarded via the __original_path query parameter
+	// set in vercel.json: /:path* -> /api/index.go?__original_path=/:path*
+	if path := r.URL.Query().Get("__original_path"); path != "" {
+		r.URL.Path = path
+		q := r.URL.Query()
+		q.Del("__original_path")
+		r.URL.RawQuery = q.Encode()
+		r.RequestURI = r.URL.RequestURI()
 	}
 
 	e.ServeHTTP(w, r)
