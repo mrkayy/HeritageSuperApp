@@ -32,9 +32,6 @@ cd web && npm run lint            # eslint --max-warnings 0
 # Scaffold a new backend module
 cd church-backend && make new-module NAME=events
 # Then wire it in cmd/server/main.go (build, register routes, contract checks)
-
-# Docker production
-make prod-build / prod-up / prod-down / prod-logs
 ```
 
 ## Architecture
@@ -80,6 +77,12 @@ Database-backed flags gate features on both sides. Backend: `middleware.RequireF
 **Backend** (`church-backend/.env`): `PORT`, `JWT_SECRET`, `DATABASE_URL`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL`, `FRONTEND_URL`
 
 **Frontend** (`web/.env`): `VITE_API_BASE_URL` (defaults to `/api`, proxied to `:8080` in dev)
+
+## Deployment
+
+**Backend (Vercel Serverless):** Set root directory to `church-backend/` in Vercel project settings. The `api/index.go` handler wraps the full Echo app as a single serverless function. All requests are routed to it via `vercel.json` rewrites. Set env vars (`DATABASE_URL`, `JWT_SECRET`, `FRONTEND_URL`, Google OAuth vars) in the Vercel dashboard.
+
+**App wiring:** `internal/app/app.go` is the sole wiring point — both `cmd/server/main.go` (local dev) and `api/index.go` (Vercel) call `app.New()`.
 
 ## CI/CD
 
