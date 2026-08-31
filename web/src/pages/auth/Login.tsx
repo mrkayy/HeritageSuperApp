@@ -127,11 +127,20 @@ const Login = () => {
               </form>
             )}
 
-            <div className="mt-6 text-center">
+            <div className="mt-6 text-center space-y-2">
               <p className="text-sm text-muted-foreground">
                 Are you a platform administrator?{" "}
                 <Link to="/admin-login" className="text-primary hover:underline font-medium">
                   Access Super Admin Portal
+                </Link>
+              </p>
+              <p className="text-xs text-muted-foreground">
+                <Link to="/terms-of-service" className="hover:underline">
+                  Terms of Service
+                </Link>
+                <span className="mx-2">|</span>
+                <Link to="/privacy-policy" className="hover:underline">
+                  Privacy Policy
                 </Link>
               </p>
             </div>
