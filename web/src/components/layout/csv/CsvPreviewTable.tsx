@@ -37,17 +37,19 @@ export default function CsvPreviewTable({
 
       {/* Scrollable Preview Grid */}
       <div className="border border-border/50 rounded-xl overflow-auto flex-1 w-full max-h-[60vh]">
-        <Table className="text-xs min-w-[1300px]">
+        <Table className="text-xs min-w-[1550px]">
             <TableHeader className="bg-secondary/40 sticky top-0 z-10">
               <TableRow>
-                <TableHead className="w-[150px]">First Name *</TableHead>
-                <TableHead className="w-[150px]">Surname</TableHead>
-                <TableHead className="w-[180px]">Email</TableHead>
+                <TableHead className="w-[140px]">First Name *</TableHead>
+                <TableHead className="w-[140px]">Surname</TableHead>
+                <TableHead className="w-[170px]">Email</TableHead>
                 <TableHead className="w-[130px]">Phone Number</TableHead>
                 <TableHead className="w-[100px]">Gender</TableHead>
-                <TableHead className="w-[100px]">DOB</TableHead>
-                <TableHead className="w-[100px]">Anniversary</TableHead>
-                <TableHead className="w-[160px]">Stage</TableHead>
+                <TableHead className="w-[180px]">Address</TableHead>
+                <TableHead className="w-[130px]">Occupation</TableHead>
+                <TableHead className="w-[90px]">DOB</TableHead>
+                <TableHead className="w-[90px]">Anniversary</TableHead>
+                <TableHead className="w-[150px]">Stage</TableHead>
                 <TableHead className="w-[130px]">Role</TableHead>
                 <TableHead className="w-[50px] text-center"></TableHead>
               </TableRow>
@@ -75,7 +77,7 @@ export default function CsvPreviewTable({
                   <TableCell>
                     <Input
                       value={row.email}
-                      placeholder={!row.email ? 'No Email (Direct Account)' : ''}
+                      placeholder={!row.email ? 'No Email' : ''}
                       className={`h-8 text-xs ${!row.email ? 'border-amber-500/30' : ''}`}
                       onChange={e => onCellChange(row.id, 'email', e.target.value)}
                     />
@@ -102,6 +104,24 @@ export default function CsvPreviewTable({
                         <SelectItem value="female">Female</SelectItem>
                       </SelectContent>
                     </Select>
+                  </TableCell>
+                  {/* Address */}
+                  <TableCell>
+                    <Input
+                      value={row.homeAddress}
+                      placeholder="e.g. Ikeja, Lagos"
+                      className="h-8 text-xs"
+                      onChange={e => onCellChange(row.id, 'homeAddress', e.target.value)}
+                    />
+                  </TableCell>
+                  {/* Occupation */}
+                  <TableCell>
+                    <Input
+                      value={row.jobOccupation}
+                      placeholder="e.g. Accountant"
+                      className="h-8 text-xs"
+                      onChange={e => onCellChange(row.id, 'jobOccupation', e.target.value)}
+                    />
                   </TableCell>
                   {/* DOB */}
                   <TableCell>
