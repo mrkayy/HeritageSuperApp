@@ -1,6 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { MembershipService, Member, SaveMemberPayload } from '@/services/membershipService';
 import { useAuth } from '@/contexts/AuthContext';
+import { useZodForm, FieldError } from '@/hooks/useZodForm';
+import { memberInfoCenterSchema, type MemberInfoCenterFormValues } from '@/lib/schemas/member';
+import { MEMBERSHIP_STAGES, GENDER_OPTIONS } from '@/lib/constants';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,27 +32,18 @@ import {
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
-const MEMBERSHIP_STAGES = [
-  { value: 'first_time_guest', label: 'First Time Guest' },
-  { value: 'foundation_class', label: 'Foundation Class' },
-  { value: 'sunday_school_module_1', label: 'Sunday School Module 1' },
-  { value: 'sunday_school_module_2', label: 'Sunday School Module 2' },
-  { value: 'sunday_school_module_3', label: 'Sunday School Module 3' },
-  { value: 'membership_class', label: 'Membership Class' },
-  { value: 'stewardship', label: 'Stewardship' },
-  { value: 'mit', label: 'Minister In Training' },
-  { value: 'resident_pastor', label: 'Resident Pastor' },
-];
-
-const USER_ROLES = [
-  { value: 'church_admin', label: 'Church Admin' },
-  { value: 'resident_pastor', label: 'Resident Pastor' },
-  { value: 'team_lead', label: 'Team Lead' },
-  { value: 'steward', label: 'Steward' },
-  { value: 'member', label: 'Member' },
-  { value: 'first_timer', label: 'First Timer' },
-  { value: 'guest', label: 'Guest' },
-];
+const defaultFormValues: MemberInfoCenterFormValues = {
+  firstName: '',
+  surname: '',
+  email: '',
+  phoneNumber: '',
+  role: 'member',
+  currentStage: 'first_time_guest',
+  sectorId: '',
+  teamId: '',
+  gender: '',
+  homeAddress: '',
+};
 
 export default function InfoCenterMembers() {
   const { user } = useAuth();
@@ -63,7 +57,6 @@ export default function InfoCenterMembers() {
   // Edit / Add modal
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
-  const [saving, setSaving] = useState(false);
 
   const [guardianModalOpen, setGuardianModalOpen] = useState(false);
   const [guardianMember, setGuardianMember] = useState<Member | null>(null);
@@ -71,17 +64,9 @@ export default function InfoCenterMembers() {
   // CSV Upload State
   const [csvModalOpen, setCsvModalOpen] = useState(false);
 
-  const [formData, setFormData] = useState<SaveMemberPayload>({
-    firstName: '',
-    surname: '',
-    email: '',
-    phoneNumber: '',
-    homeAddress: '',
-    gender: '',
-    jobOccupation: '',
-    emergencyContactName: '',
-    emergencyContactPhone: '',
-    currentStage: 'first_time_guest',
+  const form = useZodForm<MemberInfoCenterFormValues>({
+    schema: memberInfoCenterSchema,
+    initialValues: defaultFormValues,
   });
 
   const loadMembers = useCallback(async () => {
@@ -107,52 +92,44 @@ export default function InfoCenterMembers() {
 
   const handleOpenAdd = () => {
     setSelectedMember(null);
-    setFormData({
-      firstName: '',
-      surname: '',
-      email: '',
-      phoneNumber: '',
-      homeAddress: '',
-      gender: '',
-      jobOccupation: '',
-      emergencyContactName: '',
-      emergencyContactPhone: '',
-      currentStage: 'first_time_guest',
-    });
+    form.reset(defaultFormValues);
     setModalOpen(true);
   };
 
   const handleOpenEdit = (m: Member) => {
     setSelectedMember(m);
-    setFormData({
+    form.reset({
       firstName: m.firstName || '',
       surname: m.surname || '',
       email: m.email || '',
       phoneNumber: m.phoneNumber || '',
-      homeAddress: m.homeAddress || '',
-      gender: m.gender || '',
-      jobOccupation: m.jobOccupation || '',
-      emergencyContactName: m.emergencyContactName || '',
-      emergencyContactPhone: m.emergencyContactPhone || '',
+      role: m.role || 'member',
       currentStage: m.currentStage || 'first_time_guest',
+      sectorId: m.sectorId || '',
+      teamId: m.teamId || '',
+      gender: m.gender || '',
+      homeAddress: m.homeAddress || '',
     });
     setModalOpen(true);
   };
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.firstName.trim() || !formData.surname.trim()) {
-      toast({ title: "Error", description: "First Name and Surname are required.", variant: "destructive" });
-      return;
-    }
-
+  const onSave = async (data: MemberInfoCenterFormValues) => {
+    // Map validated form values to the API payload shape
+    const payload: SaveMemberPayload = {
+      firstName: data.firstName as string,
+      surname: data.surname as string,
+      email: data.email,
+      phoneNumber: data.phoneNumber,
+      currentStage: data.currentStage,
+      gender: data.gender,
+      homeAddress: data.homeAddress,
+    };
     try {
-      setSaving(true);
       if (selectedMember) {
-        await MembershipService.updateMember(selectedMember.id, formData);
+        await MembershipService.updateMember(selectedMember.id, payload);
         toast({ title: "Success", description: "Member record updated" });
       } else {
-        await MembershipService.addMember(formData);
+        await MembershipService.addMember(payload);
         toast({ title: "Success", description: "New member created" });
       }
       setModalOpen(false);
@@ -164,8 +141,6 @@ export default function InfoCenterMembers() {
         description: err.response?.data?.message || err.message,
         variant: "destructive",
       });
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -389,25 +364,23 @@ export default function InfoCenterMembers() {
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSave} className="space-y-4 py-2">
+          <form onSubmit={form.handleSubmit(onSave)} className="space-y-4 py-2">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="firstName">First Name *</Label>
                 <Input
                   id="firstName"
-                  value={formData.firstName}
-                  onChange={e => setFormData({ ...formData, firstName: e.target.value })}
-                  required
+                  {...form.getInputProps('firstName')}
                 />
+                <FieldError message={form.errors.firstName} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="surname">Surname *</Label>
                 <Input
                   id="surname"
-                  value={formData.surname}
-                  onChange={e => setFormData({ ...formData, surname: e.target.value })}
-                  required
+                  {...form.getInputProps('surname')}
                 />
+                <FieldError message={form.errors.surname} />
               </div>
             </div>
 
@@ -417,16 +390,15 @@ export default function InfoCenterMembers() {
                 <Input
                   id="email"
                   type="email"
-                  value={formData.email || ''}
-                  onChange={e => setFormData({ ...formData, email: e.target.value })}
+                  {...form.getInputProps('email')}
                 />
+                <FieldError message={form.errors.email} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="phoneNumber">Phone Number</Label>
                 <Input
                   id="phoneNumber"
-                  value={formData.phoneNumber || ''}
-                  onChange={e => setFormData({ ...formData, phoneNumber: e.target.value })}
+                  {...form.getInputProps('phoneNumber')}
                 />
               </div>
             </div>
@@ -435,8 +407,7 @@ export default function InfoCenterMembers() {
               <div className="space-y-2">
                 <Label htmlFor="currentStage">Growth Stage</Label>
                 <Select
-                  value={formData.currentStage || 'first_time_guest'}
-                  onValueChange={val => setFormData({ ...formData, currentStage: val })}
+                  {...form.getSelectProps('currentStage')}
                 >
                   <SelectTrigger id="currentStage">
                     <SelectValue />
@@ -452,15 +423,15 @@ export default function InfoCenterMembers() {
               <div className="space-y-2">
                 <Label htmlFor="gender">Gender</Label>
                 <Select
-                  value={formData.gender || ''}
-                  onValueChange={val => setFormData({ ...formData, gender: val })}
+                  {...form.getSelectProps('gender')}
                 >
                   <SelectTrigger id="gender">
                     <SelectValue placeholder="Select gender" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="male">Male</SelectItem>
-                    <SelectItem value="female">Female</SelectItem>
+                    {GENDER_OPTIONS.map(g => (
+                      <SelectItem key={g.value} value={g.value}>{g.label}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -470,15 +441,14 @@ export default function InfoCenterMembers() {
               <Label htmlFor="homeAddress">Address</Label>
               <Input
                 id="homeAddress"
-                value={formData.homeAddress || ''}
-                onChange={e => setFormData({ ...formData, homeAddress: e.target.value })}
+                {...form.getInputProps('homeAddress')}
               />
             </div>
 
             <DialogFooter className="pt-4 border-t border-border/50">
               <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>Cancel</Button>
-              <Button type="submit" disabled={saving}>
-                {saving ? 'Saving...' : 'Save Member'}
+              <Button type="submit" disabled={form.isSubmitting}>
+                {form.isSubmitting ? 'Saving...' : 'Save Member'}
               </Button>
             </DialogFooter>
           </form>
@@ -489,7 +459,7 @@ export default function InfoCenterMembers() {
       <CsvPreviewModal 
         open={csvModalOpen}
         onOpenChange={setCsvModalOpen}
-        onSuccess={loadMembers}
+        onImportComplete={loadMembers}
       />
 
       <GuardianRelationshipModal

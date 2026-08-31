@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Member, MembershipService } from '@/services/membershipService';
@@ -7,6 +7,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Trash2, UserPlus } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { useZodForm, FieldError } from '@/hooks/useZodForm';
+import { guardianRelationshipSchema, type GuardianRelationshipFormValues } from '@/lib/schemas/member';
 
 interface GuardianRelationshipModalProps {
   open: boolean;
@@ -18,11 +20,15 @@ interface GuardianRelationshipModalProps {
 export default function GuardianRelationshipModal({ open, onOpenChange, member, allMembers }: GuardianRelationshipModalProps) {
   const [relationships, setRelationships] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-
-  // Add new relationship form state
-  const [selectedRelativeId, setSelectedRelativeId] = useState('');
-  const [relationshipType, setRelationshipType] = useState('parent');
   const [adding, setAdding] = useState(false);
+
+  const form = useZodForm({
+    schema: guardianRelationshipSchema,
+    initialValues: {
+      selectedRelativeId: '',
+      relationshipType: 'parent' as const,
+    },
+  });
 
   const loadRelationships = useCallback(async () => {
     if (!member?.id) return;
@@ -32,11 +38,7 @@ export default function GuardianRelationshipModal({ open, onOpenChange, member, 
       setRelationships(data);
     } catch (err) {
       console.error(err);
-      toast({
-        title: "Error",
-        description: "Failed to load guardian relationships",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Failed to load guardian relationships", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -45,43 +47,31 @@ export default function GuardianRelationshipModal({ open, onOpenChange, member, 
   useEffect(() => {
     if (open && member) {
       loadRelationships();
-      setSelectedRelativeId('');
-      setRelationshipType('parent');
+      form.reset({
+        selectedRelativeId: '',
+        relationshipType: 'parent' as const,
+      });
     }
   }, [open, member, loadRelationships]);
 
-  const handleAdd = async () => {
-    if (!member?.id || !selectedRelativeId || !relationshipType) return;
+  const handleAdd = async (data: GuardianRelationshipFormValues) => {
+    if (!member?.id) return;
     try {
       setAdding(true);
-      // If we are selecting a parent/guardian for this member (the child)
-      // then child_member_id = member.id, guardian_member_id = selectedRelativeId
-      // Or if this member is the parent/guardian for someone else (the child)
-      // we need to know the direction. Let's assume the user selects a role for the relative relative to this member.
-      // Actually, let's keep it simple: the relationship is "child" if this member is the guardian, etc.
-      // Wait, relationshipType is from the schema: "parent", "guardian", "grandparent", "sibling_guardian".
-      // By default, the schema has child_member_id and guardian_member_id. 
-      // Let's assume if adding from the child's profile, the relative is the guardian.
-      
       await MembershipService.addGuardianRelationship({
         child_member_id: member.id,
-        guardian_member_id: selectedRelativeId,
-        relationship: relationshipType,
+        guardian_member_id: data.selectedRelativeId,
+        relationship: data.relationshipType,
       });
-      
-      toast({
-        title: "Success",
-        description: "Relationship added successfully",
+      toast({ title: "Success", description: "Relationship added successfully" });
+      form.reset({
+        selectedRelativeId: '',
+        relationshipType: 'parent' as const,
       });
-      setSelectedRelativeId('');
       loadRelationships();
     } catch (err) {
       console.error(err);
-      toast({
-        title: "Error",
-        description: "Failed to add relationship",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Failed to add relationship", variant: "destructive" });
     } finally {
       setAdding(false);
     }
@@ -90,18 +80,11 @@ export default function GuardianRelationshipModal({ open, onOpenChange, member, 
   const handleDelete = async (relId: string) => {
     try {
       await MembershipService.deleteGuardianRelationship(relId);
-      toast({
-        title: "Success",
-        description: "Relationship removed",
-      });
+      toast({ title: "Success", description: "Relationship removed" });
       loadRelationships();
     } catch (err) {
       console.error(err);
-      toast({
-        title: "Error",
-        description: "Failed to remove relationship",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Failed to remove relationship", variant: "destructive" });
     }
   };
 
@@ -122,10 +105,10 @@ export default function GuardianRelationshipModal({ open, onOpenChange, member, 
         <div className="space-y-6 py-4">
           <div className="space-y-4">
             <h4 className="text-sm font-medium">Add Relationship</h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+            <form onSubmit={form.handleSubmit(handleAdd)} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
               <div className="space-y-2">
                 <Label>Relative</Label>
-                <Select value={selectedRelativeId} onValueChange={setSelectedRelativeId}>
+                <Select {...form.getSelectProps('selectedRelativeId')}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select member..." />
                   </SelectTrigger>
@@ -137,10 +120,11 @@ export default function GuardianRelationshipModal({ open, onOpenChange, member, 
                     ))}
                   </SelectContent>
                 </Select>
+                <FieldError message={form.errors.selectedRelativeId} />
               </div>
               <div className="space-y-2">
                 <Label>Relationship (Relative is...)</Label>
-                <Select value={relationshipType} onValueChange={setRelationshipType}>
+                <Select {...form.getSelectProps('relationshipType')}>
                   <SelectTrigger>
                     <SelectValue placeholder="Relationship..." />
                   </SelectTrigger>
@@ -152,11 +136,11 @@ export default function GuardianRelationshipModal({ open, onOpenChange, member, 
                   </SelectContent>
                 </Select>
               </div>
-              <Button onClick={handleAdd} disabled={adding || !selectedRelativeId}>
+              <Button type="submit" disabled={adding}>
                 {adding ? 'Adding...' : 'Add'}
                 <UserPlus className="ml-2 w-4 h-4" />
               </Button>
-            </div>
+            </form>
           </div>
 
           <div className="space-y-4">
@@ -181,7 +165,7 @@ export default function GuardianRelationshipModal({ open, onOpenChange, member, 
                       const isChild = rel.child_member_id === member.id;
                       const relativeName = isChild ? rel.guardian_name : rel.child_name;
                       const linkedAs = isChild ? "This member's Guardian" : "This member's Child";
-                      
+
                       return (
                         <TableRow key={rel.id}>
                           <TableCell className="font-medium">{relativeName}</TableCell>

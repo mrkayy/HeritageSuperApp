@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +11,8 @@ import { toast } from '@/hooks/use-toast';
 import { useAuthStore } from '@/store/authStore';
 import api from '@/lib/api';
 import { LocalChurch } from '@/integrations/type_def';
+import { useZodForm, FieldError } from '@/hooks/useZodForm';
+import { churchSchema, type ChurchFormValues } from '@/lib/schemas/admin';
 
 const CreateChurch = () => {
   const { user } = useAuthStore();
@@ -19,17 +20,14 @@ const CreateChurch = () => {
   const [loading, setLoading] = useState(true);
   const [editingChurch, setEditingChurch] = useState<LocalChurch | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [formData, setFormData] = useState<Partial<LocalChurch>>({
-    name: '',
-    slug: '',
-    center: '',
-    description: '',
-  });
-
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Check if user is admin
   const isAdmin = user?.role === 'super_admin' || user?.role === 'church_admin';
+
+  const form = useZodForm({
+    schema: churchSchema,
+    initialValues: { name: '', center: '', description: '' },
+  });
 
   useEffect(() => {
     fetchChurches();
@@ -41,7 +39,6 @@ const CreateChurch = () => {
       const { data } = await api.get('/churches');
       setChurches(data || []);
     } catch (error) {
-      console.error('Error fetching churches:', error);
       toast({
         title: "Error",
         description: "Failed to fetch churches.",
@@ -52,66 +49,27 @@ const CreateChurch = () => {
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const resetForm = () => {
-    setFormData({
-      name: '',
-      slug: '',
-      center: '',
-      description: '',
-    });
-    setEditingChurch(null);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async (data: ChurchFormValues) => {
     if (!isAdmin) {
-      toast({
-        title: "Access Denied",
-        description: "Only admin users can perform this operation.",
-        variant: "destructive"
-      });
+      toast({ title: "Access Denied", description: "Only admin users can perform this operation.", variant: "destructive" });
       return;
     }
 
     setIsSubmitting(true);
-
     try {
       if (editingChurch && editingChurch.church_id) {
-        // Update existing church
-        await api.put(`/churches/${editingChurch.church_id}`, formData);
-
-        toast({
-          title: "Church Updated",
-          description: "Local church has been successfully updated.",
-        });
+        await api.put(`/churches/${editingChurch.church_id}`, data);
+        toast({ title: "Church Updated", description: "Local church has been successfully updated." });
       } else {
-        // Create new church
-        await api.post('/churches', formData);
-
-        toast({
-          title: "Church Created",
-          description: "Local church has been successfully created.",
-        });
+        await api.post('/churches', data);
+        toast({ title: "Church Created", description: "Local church has been successfully created." });
       }
-
-      resetForm();
+      form.reset();
+      setEditingChurch(null);
       setIsDialogOpen(false);
       fetchChurches();
     } catch (error) {
-      console.error('Error saving church:', error);
-      toast({
-        title: "Error",
-        description: "Failed to save church. Please try again.",
-        variant: "destructive"
-      });
+      toast({ title: "Error", description: "Failed to save church. Please try again.", variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
@@ -119,52 +77,33 @@ const CreateChurch = () => {
 
   const handleEdit = (church: LocalChurch) => {
     setEditingChurch(church);
-    setFormData({
+    form.reset({
       name: church.name || '',
-      slug: church.slug || '',
       center: church.center || '',
       description: church.description || '',
-      church_id: church.church_id || '',
-      created_at: church.created_at || '',
     });
     setIsDialogOpen(true);
   };
 
   const handleDelete = async (churchId: string | undefined) => {
     if (!isAdmin) {
-      toast({
-        title: "Access Denied",
-        description: "Only admin users can perform this operation.",
-        variant: "destructive"
-      });
+      toast({ title: "Access Denied", description: "Only admin users can perform this operation.", variant: "destructive" });
       return;
     }
-
-    if (!churchId || !confirm('Are you sure you want to delete this church?')) {
-      return;
-    }
+    if (!churchId || !confirm('Are you sure you want to delete this church?')) return;
 
     try {
       await api.delete(`/churches/${churchId}`);
-
-      toast({
-        title: "Church Deleted",
-        description: "Local church has been successfully deleted.",
-      });
-
+      toast({ title: "Church Deleted", description: "Local church has been successfully deleted." });
       fetchChurches();
     } catch (error) {
-      console.error('Error deleting church:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete church. Please try again.",
-        variant: "destructive"
-      });
+      toast({ title: "Error", description: "Failed to delete church. Please try again.", variant: "destructive" });
     }
   };
 
   const openCreateDialog = () => {
-    resetForm();
+    form.reset();
+    setEditingChurch(null);
     setIsDialogOpen(true);
   };
 
@@ -174,7 +113,6 @@ const CreateChurch = () => {
 
   return (
     <div className="space-y-6">
-      {/* Church Table */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="flex items-center gap-2">
@@ -195,28 +133,23 @@ const CreateChurch = () => {
                     {editingChurch ? 'Edit Church' : 'Create New Church'}
                   </DialogTitle>
                 </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="name">Church Name</Label>
                       <Input
                         id="name"
-                        name="name"
-                        value={formData.name || ''}
-                        onChange={handleInputChange}
                         placeholder="Enter church name"
-                        required
+                        {...form.getInputProps('name')}
                       />
+                      <FieldError message={form.errors.name} />
                     </div>
                     <div>
                       <Label htmlFor="center">Center</Label>
                       <Input
                         id="center"
-                        name="center"
-                        type="text"
-                        value={formData.center || ''}
-                        onChange={handleInputChange}
                         placeholder="eg. Ikeja Center"
+                        {...form.getInputProps('center')}
                       />
                     </div>
                   </div>
@@ -224,11 +157,9 @@ const CreateChurch = () => {
                     <Label htmlFor="description">Description</Label>
                     <Textarea
                       id="description"
-                      name="description"
-                      value={formData.description || ''}
-                      onChange={handleInputChange}
                       placeholder="Brief description of the church"
                       rows={3}
+                      {...form.getInputProps('description')}
                     />
                   </div>
 
@@ -268,18 +199,10 @@ const CreateChurch = () => {
                   {isAdmin && (
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEdit(church)}
-                        >
+                        <Button variant="outline" size="sm" onClick={() => handleEdit(church)}>
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDelete(church.church_id)}
-                        >
+                        <Button variant="outline" size="sm" onClick={() => handleDelete(church.church_id)}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>

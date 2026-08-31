@@ -5,38 +5,30 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Eye, EyeOff, ShieldCheck } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { useZodForm, FieldError } from '@/hooks/useZodForm';
+import { adminLoginSchema } from '@/lib/schemas/auth';
 
 const AdminLogin = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
   const { login, user } = useAuth();
   const navigate = useNavigate();
 
-  // If already logged in, redirect to home
+  const form = useZodForm({
+    schema: adminLoginSchema,
+    initialValues: { email: '', password: '' },
+  });
+
   useEffect(() => {
     if (user) {
       navigate('/', { replace: true });
     }
   }, [user, navigate]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || !password) {
-      toast({
-        title: "Error",
-        description: "Please enter both email and password.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setLoading(true);
+  const onSubmit = async (data: { email: string; password: string }) => {
     try {
-      await login(email, password);
+      await login(data.email, data.password);
       toast({
         title: "Welcome Admin!",
         description: "Successfully authenticated as administrator."
@@ -49,8 +41,6 @@ const AdminLogin = () => {
         description: errMsg,
         variant: "destructive"
       });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -77,19 +67,18 @@ const AdminLogin = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="admin-email">Admin Email</Label>
                 <Input
                   id="admin-email"
                   type="email"
                   placeholder="admin@hofchurch.org"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
                   className="h-12"
                   autoFocus
-                  required
+                  {...form.getInputProps('email')}
                 />
+                <FieldError message={form.errors.email} />
               </div>
 
               <div className="space-y-2">
@@ -99,10 +88,8 @@ const AdminLogin = () => {
                     id="admin-password"
                     type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
                     className="h-12 pr-10"
-                    required
+                    {...form.getInputProps('password')}
                   />
                   <Button
                     type="button"
@@ -118,10 +105,11 @@ const AdminLogin = () => {
                     )}
                   </Button>
                 </div>
+                <FieldError message={form.errors.password} />
               </div>
 
-              <Button type="submit" className="w-full h-12" disabled={loading}>
-                {loading ? "Authenticating..." : "Authenticate Admin"}
+              <Button type="submit" className="w-full h-12" disabled={form.isSubmitting}>
+                {form.isSubmitting ? "Authenticating..." : "Authenticate Admin"}
               </Button>
             </form>
 

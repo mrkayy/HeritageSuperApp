@@ -1,13 +1,9 @@
-
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
-import { 
+import {
   Table,
   TableBody,
   TableCell,
@@ -16,32 +12,40 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { 
-  Calendar, 
-  MapPin, 
-  Bus, 
-  Clock, 
-  Phone, 
+import { Label } from "@/components/ui/label";
+import {
+  Calendar,
+  MapPin,
+  Bus,
+  Clock,
+  Phone,
   Plus,
   CheckCircle,
   AlertCircle,
   Users
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { useZodForm, FieldError } from '@/hooks/useZodForm';
+import { transportRequestSchema, type TransportRequestFormValues } from '@/lib/schemas/transport';
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 const Transport = () => {
   const { user } = useAuth();
-  const [formData, setFormData] = useState({
-    soulName: '',
-    pickupAddress: '',
-    contactPhone: '',
-    eventDate: '',
-    specialNeeds: '',
-    notes: ''
+
+  const form = useZodForm({
+    schema: transportRequestSchema,
+    initialValues: {
+      soulName: '',
+      pickupAddress: '',
+      contactPhone: '',
+      eventDate: '',
+      specialNeeds: '',
+      notes: '',
+    },
   });
 
-  // Mock data - in real app this would come from Supabase
+  // Mock data - in real app this would come from API
   const transportRequests = [
     {
       id: 1,
@@ -94,7 +98,7 @@ const Transport = () => {
     { id: 4, name: "Route D - Southside", capacity: 32, driver: "Maria Garcia" }
   ];
 
-  const getStatusColor = (status) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
       case "Confirmed":
         return "bg-green-100 text-green-800";
@@ -109,30 +113,14 @@ const Transport = () => {
     }
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    
-    // In real app, this would be a Supabase mutation
+  const onSubmit = (data: TransportRequestFormValues) => {
     console.log('Creating transport request:', {
-      ...formData,
+      ...data,
       requestedBy: user?.name,
       requestDate: new Date(),
       status: 'Pending'
     });
-    
-    // Reset form
-    setFormData({
-      soulName: '',
-      pickupAddress: '',
-      contactPhone: '',
-      eventDate: '',
-      specialNeeds: '',
-      notes: ''
-    });
-  };
-
-  const updateFormData = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    form.reset();
   };
 
   const pendingRequests = transportRequests.filter(req => req.status === 'Pending');
@@ -140,7 +128,6 @@ const Transport = () => {
 
   return (
     <div className="p-6 space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Church Transport</h1>
@@ -157,16 +144,15 @@ const Transport = () => {
             <DialogHeader>
               <DialogTitle>New Transport Request</DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="soulName">Soul Name *</Label>
                 <Input
                   id="soulName"
                   placeholder="Enter name"
-                  value={formData.soulName}
-                  onChange={(e) => updateFormData('soulName', e.target.value)}
-                  required
+                  {...form.getInputProps('soulName')}
                 />
+                <FieldError message={form.errors.soulName} />
               </div>
 
               <div className="space-y-2">
@@ -175,10 +161,9 @@ const Transport = () => {
                   id="contactPhone"
                   type="tel"
                   placeholder="Enter phone number"
-                  value={formData.contactPhone}
-                  onChange={(e) => updateFormData('contactPhone', e.target.value)}
-                  required
+                  {...form.getInputProps('contactPhone')}
                 />
+                <FieldError message={form.errors.contactPhone} />
               </div>
 
               <div className="space-y-2">
@@ -186,10 +171,9 @@ const Transport = () => {
                 <Textarea
                   id="pickupAddress"
                   placeholder="Enter full pickup address"
-                  value={formData.pickupAddress}
-                  onChange={(e) => updateFormData('pickupAddress', e.target.value)}
-                  required
+                  {...form.getInputProps('pickupAddress')}
                 />
+                <FieldError message={form.errors.pickupAddress} />
               </div>
 
               <div className="space-y-2">
@@ -197,10 +181,9 @@ const Transport = () => {
                 <Input
                   id="eventDate"
                   type="date"
-                  value={formData.eventDate}
-                  onChange={(e) => updateFormData('eventDate', e.target.value)}
-                  required
+                  {...form.getInputProps('eventDate')}
                 />
+                <FieldError message={form.errors.eventDate} />
               </div>
 
               <div className="space-y-2">
@@ -208,8 +191,7 @@ const Transport = () => {
                 <Textarea
                   id="specialNeeds"
                   placeholder="Any special transportation needs?"
-                  value={formData.specialNeeds}
-                  onChange={(e) => updateFormData('specialNeeds', e.target.value)}
+                  {...form.getInputProps('specialNeeds')}
                 />
               </div>
 
@@ -218,8 +200,7 @@ const Transport = () => {
                 <Textarea
                   id="notes"
                   placeholder="Any additional information"
-                  value={formData.notes}
-                  onChange={(e) => updateFormData('notes', e.target.value)}
+                  {...form.getInputProps('notes')}
                 />
               </div>
 
@@ -231,7 +212,6 @@ const Transport = () => {
         </Dialog>
       </div>
 
-      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4">
@@ -292,7 +272,6 @@ const Transport = () => {
         </Card>
       </div>
 
-      {/* Transport Requests */}
       <Card>
         <CardHeader>
           <CardTitle>Transport Requests</CardTitle>
@@ -363,7 +342,6 @@ const Transport = () => {
         </CardContent>
       </Card>
 
-      {/* Bus Routes Overview */}
       {user?.role !== 'guest' && (
         <Card>
           <CardHeader>

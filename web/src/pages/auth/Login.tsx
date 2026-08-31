@@ -6,15 +6,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from '@/hooks/use-toast';
+import { useZodForm, FieldError } from '@/hooks/useZodForm';
+import { loginSchema } from '@/lib/schemas/auth';
 
 const Login = () => {
   const [showGooglePrompt, setShowGooglePrompt] = useState(false);
-  const [googleEmail, setGoogleEmail] = useState('');
   const { user } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  // Handle OAuth redirect errors
+  const form = useZodForm({
+    schema: loginSchema,
+    initialValues: { googleEmail: '' },
+  });
+
   useEffect(() => {
     const err = searchParams.get('error');
     if (err === 'not_profiled') {
@@ -38,25 +43,15 @@ const Login = () => {
     }
   }, [searchParams]);
 
-  // If already logged in, redirect to home/dashboard
   useEffect(() => {
     if (user) {
       navigate('/', { replace: true });
     }
   }, [user, navigate]);
 
-  const handleGoogleSignIn = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!googleEmail.trim()) {
-      toast({
-        title: "Error",
-        description: "Please enter your email to continue with Google.",
-        variant: "destructive"
-      });
-      return;
-    }
+  const onSubmit = (data: { googleEmail: string }) => {
     const apiBase = import.meta.env.VITE_API_BASE_URL || "/api";
-    window.location.href = `${apiBase}/auth/login/google?email=${encodeURIComponent(googleEmail.trim())}`;
+    window.location.href = `${apiBase}/auth/login/google?email=${encodeURIComponent(data.googleEmail.trim())}`;
   };
 
   return (
@@ -99,18 +94,18 @@ const Login = () => {
                 </Button>
               </div>
             ) : (
-              <form onSubmit={handleGoogleSignIn} className="space-y-4">
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="email">Church Email</Label>
                   <Input
                     id="email"
                     type="email"
                     placeholder="your.name@hofchurch.org"
-                    value={googleEmail}
-                    onChange={(e) => setGoogleEmail(e.target.value)}
                     className="h-12"
                     autoFocus
+                    {...form.getInputProps('googleEmail')}
                   />
+                  <FieldError message={form.errors.googleEmail} />
                 </div>
 
                 <div className="flex gap-4">
@@ -120,7 +115,7 @@ const Login = () => {
                     className="w-full h-12"
                     onClick={() => {
                       setShowGooglePrompt(false);
-                      setGoogleEmail('');
+                      form.reset();
                     }}
                   >
                     Cancel

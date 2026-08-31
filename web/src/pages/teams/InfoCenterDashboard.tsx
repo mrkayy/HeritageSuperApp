@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { MembershipService, Member } from '@/services/membershipService';
 import { AdminBackOfficeServices } from '@/services/AdminBackOfficeServices';
@@ -13,43 +13,24 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import CsvPreviewModal from '@/components/layout/CsvPreviewModal';
-import { 
-  Building, 
-  UserPlus, 
-  Users, 
-  TrendingUp, 
-  Search, 
-  ArrowRight, 
-  RefreshCw, 
-  CheckCircle2, 
+import {
+  Building,
+  UserPlus,
+  Users,
+  TrendingUp,
+  Search,
+  ArrowRight,
+  RefreshCw,
+  CheckCircle2,
   ShieldAlert,
   FolderPlus,
   FileSpreadsheet,
   Upload
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-
-const MEMBERSHIP_STAGES = [
-  { value: 'first_time_guest', label: 'First Time Guest' },
-  { value: 'foundation_class', label: 'Foundation Class' },
-  { value: 'sunday_school_module_1', label: 'Sunday School Module 1' },
-  { value: 'sunday_school_module_2', label: 'Sunday School Module 2' },
-  { value: 'sunday_school_module_3', label: 'Sunday School Module 3' },
-  { value: 'membership_class', label: 'Membership Class' },
-  { value: 'stewardship', label: 'Stewardship' },
-  { value: 'mit', label: 'Minister In Training' },
-  { value: 'resident_pastor', label: 'Resident Pastor' },
-];
-
-const USER_ROLES = [
-  { value: 'church_admin', label: 'Church Admin' },
-  { value: 'resident_pastor', label: 'Resident Pastor' },
-  { value: 'team_lead', label: 'Team Lead' },
-  { value: 'steward', label: 'Steward' },
-  { value: 'member', label: 'Member' },
-  { value: 'first_timer', label: 'First Timer' },
-  { value: 'guest', label: 'Guest' },
-];
+import { useZodForm, FieldError } from '@/hooks/useZodForm';
+import { memberInfoCenterSchema, type MemberInfoCenterFormValues } from '@/lib/schemas/member';
+import { MEMBERSHIP_STAGES, USER_ROLES } from '@/lib/constants';
 
 interface LocalChurch { id: string; name: string; }
 interface Sector { id: string; name: string; }
@@ -59,7 +40,6 @@ export default function InfoCenterDashboard() {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
 
   // Aux state for dropdowns
   const [churches, setChurches] = useState<LocalChurch[]>([]);
@@ -69,17 +49,23 @@ export default function InfoCenterDashboard() {
   // CSV Upload State
   const [csvModalOpen, setCsvModalOpen] = useState(false);
 
-  // Form State
-  const [profileData, setProfileData] = useState({
+  // Form State (useZodForm)
+  const defaultValues: MemberInfoCenterFormValues = {
     firstName: '',
     surname: '',
     email: '',
     phoneNumber: '',
     role: 'member',
     currentStage: 'first_time_guest',
-    churchId: '',
     sectorId: '',
     teamId: '',
+    gender: '',
+    homeAddress: '',
+  };
+
+  const form = useZodForm({
+    schema: memberInfoCenterSchema,
+    initialValues: defaultValues,
   });
 
   const loadData = useCallback(async () => {
@@ -111,28 +97,16 @@ export default function InfoCenterDashboard() {
     loadData();
   }, [loadData]);
 
-  const handleProfileSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!profileData.firstName.trim() || !profileData.surname.trim() || !profileData.email.trim()) {
-      toast({
-        title: "Validation Error",
-        description: "First Name, Surname, and Email are required.",
-        variant: "destructive",
-      });
-      return;
-    }
-
+  const onProfileSubmit = async (data: MemberInfoCenterFormValues) => {
     try {
-      setSubmitting(true);
-      const fullName = `${profileData.firstName.trim()} ${profileData.surname.trim()}`;
+      const fullName = `${data.firstName.trim()} ${data.surname.trim()}`;
       await MembershipService.profileMember({
         name: fullName,
-        email: profileData.email.trim(),
-        role: profileData.role,
-        current_stage: profileData.currentStage,
-        church_id: profileData.churchId || undefined,
-        sector_id: profileData.sectorId || undefined,
-        team_id: profileData.teamId || undefined,
+        email: data.email.trim(),
+        role: data.role,
+        current_stage: data.currentStage,
+        sector_id: data.sectorId || undefined,
+        team_id: data.teamId || undefined,
       });
 
       toast({
@@ -140,17 +114,7 @@ export default function InfoCenterDashboard() {
         description: `Successfully registered ${fullName} in system directory.`,
       });
 
-      setProfileData({
-        firstName: '',
-        surname: '',
-        email: '',
-        phoneNumber: '',
-        role: 'member',
-        currentStage: 'first_time_guest',
-        churchId: '',
-        sectorId: '',
-        teamId: '',
-      });
+      form.reset();
       setIsProfileModalOpen(false);
       loadData();
     } catch (err: any) {
@@ -160,8 +124,6 @@ export default function InfoCenterDashboard() {
         description: err.response?.data?.message || err.message || "Failed to profile member",
         variant: "destructive",
       });
-    } finally {
-      setSubmitting(false);
     }
   };
 
@@ -197,9 +159,9 @@ export default function InfoCenterDashboard() {
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button 
-                  onClick={() => setIsProfileModalOpen(true)} 
-                  size="icon" 
+                <Button
+                  onClick={() => { form.reset(); setIsProfileModalOpen(true); }}
+                  size="icon"
                   className="bg-primary text-primary-foreground shadow-md h-9 w-9 rounded-xl"
                 >
                   <UserPlus className="w-4 h-4" />
@@ -405,27 +367,25 @@ export default function InfoCenterDashboard() {
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleProfileSubmit} className="space-y-4 py-2">
+          <form onSubmit={form.handleSubmit(onProfileSubmit)} className="space-y-4 py-2">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="firstName">First Name *</Label>
                 <Input
                   id="firstName"
-                  value={profileData.firstName}
-                  onChange={e => setProfileData({ ...profileData, firstName: e.target.value })}
+                  {...form.getInputProps('firstName')}
                   placeholder="e.g. Samuel"
-                  required
                 />
+                <FieldError message={form.errors.firstName} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="surname">Surname *</Label>
                 <Input
                   id="surname"
-                  value={profileData.surname}
-                  onChange={e => setProfileData({ ...profileData, surname: e.target.value })}
+                  {...form.getInputProps('surname')}
                   placeholder="e.g. Adebayo"
-                  required
                 />
+                <FieldError message={form.errors.surname} />
               </div>
             </div>
 
@@ -435,30 +395,26 @@ export default function InfoCenterDashboard() {
                 <Input
                   id="email"
                   type="email"
-                  value={profileData.email}
-                  onChange={e => setProfileData({ ...profileData, email: e.target.value })}
+                  {...form.getInputProps('email')}
                   placeholder="samuel@example.com"
-                  required
                 />
+                <FieldError message={form.errors.email} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="phoneNumber">Phone Number</Label>
                 <Input
                   id="phoneNumber"
-                  value={profileData.phoneNumber}
-                  onChange={e => setProfileData({ ...profileData, phoneNumber: e.target.value })}
+                  {...form.getInputProps('phoneNumber')}
                   placeholder="+234..."
                 />
+                <FieldError message={form.errors.phoneNumber} />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="role">User Role</Label>
-                <Select
-                  value={profileData.role}
-                  onValueChange={val => setProfileData({ ...profileData, role: val })}
-                >
+                <Select {...form.getSelectProps('role')}>
                   <SelectTrigger id="role">
                     <SelectValue />
                   </SelectTrigger>
@@ -468,14 +424,12 @@ export default function InfoCenterDashboard() {
                     ))}
                   </SelectContent>
                 </Select>
+                <FieldError message={form.errors.role} />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="currentStage">Initial Growth Stage</Label>
-                <Select
-                  value={profileData.currentStage}
-                  onValueChange={val => setProfileData({ ...profileData, currentStage: val })}
-                >
+                <Select {...form.getSelectProps('currentStage')}>
                   <SelectTrigger id="currentStage">
                     <SelectValue />
                   </SelectTrigger>
@@ -485,6 +439,7 @@ export default function InfoCenterDashboard() {
                     ))}
                   </SelectContent>
                 </Select>
+                <FieldError message={form.errors.currentStage} />
               </div>
             </div>
 
@@ -492,10 +447,7 @@ export default function InfoCenterDashboard() {
               {sectors.length > 0 && (
                 <div className="space-y-2">
                   <Label htmlFor="sectorId">Sector / Zone</Label>
-                  <Select
-                    value={profileData.sectorId}
-                    onValueChange={val => setProfileData({ ...profileData, sectorId: val })}
-                  >
+                  <Select {...form.getSelectProps('sectorId')}>
                     <SelectTrigger id="sectorId">
                       <SelectValue placeholder="Select Sector" />
                     </SelectTrigger>
@@ -505,16 +457,14 @@ export default function InfoCenterDashboard() {
                       ))}
                     </SelectContent>
                   </Select>
+                  <FieldError message={form.errors.sectorId} />
                 </div>
               )}
 
               {teams.length > 0 && (
                 <div className="space-y-2">
                   <Label htmlFor="teamId">Assigned Ministry Team</Label>
-                  <Select
-                    value={profileData.teamId}
-                    onValueChange={val => setProfileData({ ...profileData, teamId: val })}
-                  >
+                  <Select {...form.getSelectProps('teamId')}>
                     <SelectTrigger id="teamId">
                       <SelectValue placeholder="Select Team" />
                     </SelectTrigger>
@@ -524,6 +474,7 @@ export default function InfoCenterDashboard() {
                       ))}
                     </SelectContent>
                   </Select>
+                  <FieldError message={form.errors.teamId} />
                 </div>
               )}
             </div>
@@ -532,8 +483,8 @@ export default function InfoCenterDashboard() {
               <Button type="button" variant="outline" onClick={() => setIsProfileModalOpen(false)}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={submitting}>
-                {submitting ? 'Profiling...' : 'Profile Member'}
+              <Button type="submit" disabled={form.isSubmitting}>
+                {form.isSubmitting ? 'Profiling...' : 'Profile Member'}
               </Button>
             </DialogFooter>
           </form>
@@ -544,7 +495,7 @@ export default function InfoCenterDashboard() {
       <CsvPreviewModal 
         open={csvModalOpen} 
         onOpenChange={setCsvModalOpen} 
-        onSuccess={loadData} 
+        onImportComplete={loadData}
       />
     </div>
   );
