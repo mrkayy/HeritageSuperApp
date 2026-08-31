@@ -42,10 +42,17 @@ export function MemberProfileDialog({
     team_id: '',
   };
 
-  const { errors, handleSubmit, reset, getInputProps, getSelectProps } = useZodForm<MemberProfileFormValues>({
+  const { values, errors, handleSubmit, reset, getInputProps, getSelectProps } = useZodForm<MemberProfileFormValues>({
     schema: memberProfileSchema,
     initialValues: defaultValues,
   });
+
+  const hideSectorAndTeam = [
+    'first_time_guest',
+    'foundation_class',
+    'sunday_school_module_1',
+    'sunday_school_module_2',
+  ].includes(values.current_stage);
 
   // Reset form when dialog opens/closes or editingMember changes
   useEffect(() => {
@@ -74,6 +81,10 @@ export function MemberProfileDialog({
   }, [open, editingMember]);
 
   const onFormSubmit = handleSubmit(async (data) => {
+    if (hideSectorAndTeam) {
+      data.sector_id = '';
+      data.team_id = '';
+    }
     await onSave(data);
   });
 
@@ -163,45 +174,48 @@ export function MemberProfileDialog({
             <FieldError message={errors.church_id} />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Sector */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium leading-none">Sector (Optional)</label>
-              <Select {...getSelectProps('sector_id')}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select sector" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">No Sector</SelectItem>
-                  {sectors.map((sector) => (
-                    <SelectItem key={sector.id} value={sector.id}>
-                      {sector.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FieldError message={errors.sector_id} />
-            </div>
+          {/* Sector and Team (Hidden for first timer, foundation class, Sunday school module 1 & 2) */}
+          {!hideSectorAndTeam && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Sector */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium leading-none">Sector (Optional)</label>
+                <Select {...getSelectProps('sector_id')}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select sector" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">No Sector</SelectItem>
+                    {sectors.map((sector) => (
+                      <SelectItem key={sector.id} value={sector.id}>
+                        {sector.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FieldError message={errors.sector_id} />
+              </div>
 
-            {/* Team */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium leading-none">Team (Optional)</label>
-              <Select {...getSelectProps('team_id')}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select team" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">No Team</SelectItem>
-                  {teams.map((team) => (
-                    <SelectItem key={team.id} value={team.id}>
-                      {team.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FieldError message={errors.team_id} />
+              {/* Team */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium leading-none">Team (Optional)</label>
+                <Select {...getSelectProps('team_id')}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select team" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">No Team</SelectItem>
+                    {teams.map((team) => (
+                      <SelectItem key={team.id} value={team.id}>
+                        {team.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FieldError message={errors.team_id} />
+              </div>
             </div>
-          </div>
+          )}
 
           <DialogFooter className="pt-4">
             <Button
