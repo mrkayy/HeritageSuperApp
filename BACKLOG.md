@@ -57,7 +57,7 @@ Any specific API endpoints, filters, or business logic you expect on the server 
 #### 1. Visitor / First-Timer Intake & Profile Capture
 
 **Priority:** High  
-**Status:** Not Started  
+**Status:** Done  
 
 **User Story:**  
 As an Information Center Worker, I want to capture complete details for first-time church visitors on a mobile, tablet, or desktop interface, so that their initial visit is properly documented and ready for membership workflows.
@@ -99,17 +99,17 @@ As an Information Center Worker, I want to capture complete details for first-ti
 - Strict local church tenancy enforcement: workers can only query/create within their own `church_id`.
 
 **Acceptance Criteria:**  
-- [ ] Responsive form works seamlessly on mobile, tablet, and desktop viewports.
-- [ ] Duplicate phone numbers trigger the duplicate prompt with option to record subsequent visit.
-- [ ] "Who invited you" allows searching registered members by name or phone, or typing a guest name.
-- [ ] Submission creates a visitor profile and logs service attendance.
+- [x] Responsive form works seamlessly on mobile, tablet, and desktop viewports.
+- [x] Duplicate phone numbers trigger the duplicate prompt with option to record subsequent visit.
+- [x] "Who invited you" allows searching registered members by name or phone, or typing a guest name.
+- [x] Submission creates a visitor profile and logs service attendance.
 
 ---
 
 #### 2. Visitor Attendance & Service Presence Tracking
 
 **Priority:** High  
-**Status:** Not Started  
+**Status:** Done  
 
 **User Story:**  
 As an Information Center Worker, I want to search and mark returning visitors present during service, so that their attendance count increments accurately and prompts next-step recommendations.
@@ -137,16 +137,16 @@ As an Information Center Worker, I want to search and mark returning visitors pr
 - `GET /api/v1/churches/{church_id}/info-center/visitors?query=...`
 
 **Acceptance Criteria:**  
-- [ ] Worker can quickly search and mark a visitor present in under 3 clicks.
-- [ ] Prevents double-marking attendance for the same visitor on the same service date.
-- [ ] Automatically flags profiles that hit the Foundation Class attendance threshold.
+- [x] Worker can quickly search and mark a visitor present in under 3 clicks.
+- [x] Prevents double-marking attendance for the same visitor on the same service date.
+- [x] Automatically flags profiles that hit the Foundation Class attendance threshold.
 
 ---
 
 #### 3. Foundation Class Recommendation & Membership Handoff
 
 **Priority:** High  
-**Status:** Not Started  
+**Status:** Done  
 
 **User Story:**  
 As an Information Center Worker / Lead, I want to review visitors who have met attendance criteria and recommend them for Foundation Class, so that they automatically appear as actionable tasks for the Membership Team.
@@ -177,9 +177,9 @@ As an Information Center Worker / Lead, I want to review visitors who have met a
 - Triggers creation of `team_todos` record for the Membership team.
 
 **Acceptance Criteria:**  
-- [ ] Church Admin can configure the threshold number of visits in Church Settings.
-- [ ] Eligible visitors appear in the recommendation tab across both Information Center and Membership Team tabs.
-- [ ] Submitting recommendation immediately pushes an actionable To-Do onto the Membership Team dashboard.
+- [x] Church Admin can configure the threshold number of visits in Church Settings.
+- [x] Eligible visitors appear in the recommendation tab across both Information Center and Membership Team tabs.
+- [x] Submitting recommendation immediately pushes an actionable To-Do onto the Membership Team dashboard.
 
 ---
 
