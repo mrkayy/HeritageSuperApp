@@ -33,6 +33,8 @@ import MemberInvites from "./pages/admin/MemberInvites";
 import FollowUpManagement from "./pages/admin/FollowUpManagement";
 import MemberAssignment from "./pages/admin/MemberAssignment";
 import PublicMap from "./pages/PublicMap";
+import TermsOfService from "./pages/legal/TermsOfService";
+import PrivacyPolicy from "./pages/legal/PrivacyPolicy";
 import NotFound from "./pages/NotFound";
 import MembershipDashboard from "./pages/teams/MembershipDashboard";
 import MembershipTeamCRM from "./pages/teams/MembershipTeamCRM";
@@ -86,6 +88,8 @@ const App = () => (
                 </PublicRoute>
               } />
               <Route path="/public-map" element={<PublicMap />} />
+              <Route path="/terms-of-service" element={<TermsOfService />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
 
               {/* Protected routes with sidebar layout */}
               <Route path="/" element={

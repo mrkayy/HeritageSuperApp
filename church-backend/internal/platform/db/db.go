@@ -69,7 +69,7 @@ func Connect(ctx context.Context, url string) (*ent.Client, error) {
 
 func seedDefaultAdmin(ctx context.Context, client *ent.Client) error {
 	existingUser, err := client.User.Query().
-		Where(entuser.EmailEQ("admin@hofchurch.org")).
+		Where(entuser.EmailEQ("josepholukayode05+admin@gmail.com")).
 		Only(ctx)
 	if err == nil && existingUser != nil {
 		if existingUser.Role != entuser.RoleSuperAdmin {
@@ -88,7 +88,7 @@ func seedDefaultAdmin(ctx context.Context, client *ent.Client) error {
 	}
 
 	_, err = client.User.Create().
-		SetEmail("admin@hofchurch.org").
+		SetEmail("josepholukayode05+admin@gmail.com").
 		SetPasswordHash(string(hash)).
 		SetFirstName("Super").
 		SetLastName("Admin").
