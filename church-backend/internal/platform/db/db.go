@@ -62,14 +62,18 @@ func Connect(ctx context.Context, url string) (*ent.Client, error) {
 }
 
 func seedDefaultAdmin(ctx context.Context, client *ent.Client) error {
-	exists, err := client.User.Query().
-		Where(entuser.RoleEQ(entuser.RoleSuperAdmin)).
-		Exist(ctx)
-	if err != nil {
-		return err
-	}
-	if exists {
+	existingUser, err := client.User.Query().
+		Where(entuser.EmailEQ("admin@hofchurch.org")).
+		Only(ctx)
+	if err == nil && existingUser != nil {
+		if existingUser.Role != entuser.RoleSuperAdmin {
+			return existingUser.Update().
+				SetRole(entuser.RoleSuperAdmin).
+				Exec(ctx)
+		}
 		return nil
+	} else if err != nil && !ent.IsNotFound(err) {
+		return err
 	}
 
 	hash, err := bcrypt.GenerateFromPassword([]byte("Password123@"), bcrypt.DefaultCost)
