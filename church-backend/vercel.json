@@ -1,4 +1,9 @@
 {
+  "functions": {
+    "api/index.go": {
+      "runtime": "vercel-go@latest"
+    }
+  },
   "rewrites": [
     { "source": "/(.*)", "destination": "/api/index" }
   ]
