@@ -96,6 +96,11 @@ func PasswordHash(v string) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldPasswordHash, v))
 }
 
+// PinHash applies equality check predicate on the "pin_hash" field. It's identical to PinHashEQ.
+func PinHash(v string) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldPinHash, v))
+}
+
 // PhoneNumber applies equality check predicate on the "phone_number" field. It's identical to PhoneNumberEQ.
 func PhoneNumber(v string) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldPhoneNumber, v))
@@ -549,6 +554,81 @@ func PasswordHashEqualFold(v string) predicate.User {
 // PasswordHashContainsFold applies the ContainsFold predicate on the "password_hash" field.
 func PasswordHashContainsFold(v string) predicate.User {
 	return predicate.User(sql.FieldContainsFold(FieldPasswordHash, v))
+}
+
+// PinHashEQ applies the EQ predicate on the "pin_hash" field.
+func PinHashEQ(v string) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldPinHash, v))
+}
+
+// PinHashNEQ applies the NEQ predicate on the "pin_hash" field.
+func PinHashNEQ(v string) predicate.User {
+	return predicate.User(sql.FieldNEQ(FieldPinHash, v))
+}
+
+// PinHashIn applies the In predicate on the "pin_hash" field.
+func PinHashIn(vs ...string) predicate.User {
+	return predicate.User(sql.FieldIn(FieldPinHash, vs...))
+}
+
+// PinHashNotIn applies the NotIn predicate on the "pin_hash" field.
+func PinHashNotIn(vs ...string) predicate.User {
+	return predicate.User(sql.FieldNotIn(FieldPinHash, vs...))
+}
+
+// PinHashGT applies the GT predicate on the "pin_hash" field.
+func PinHashGT(v string) predicate.User {
+	return predicate.User(sql.FieldGT(FieldPinHash, v))
+}
+
+// PinHashGTE applies the GTE predicate on the "pin_hash" field.
+func PinHashGTE(v string) predicate.User {
+	return predicate.User(sql.FieldGTE(FieldPinHash, v))
+}
+
+// PinHashLT applies the LT predicate on the "pin_hash" field.
+func PinHashLT(v string) predicate.User {
+	return predicate.User(sql.FieldLT(FieldPinHash, v))
+}
+
+// PinHashLTE applies the LTE predicate on the "pin_hash" field.
+func PinHashLTE(v string) predicate.User {
+	return predicate.User(sql.FieldLTE(FieldPinHash, v))
+}
+
+// PinHashContains applies the Contains predicate on the "pin_hash" field.
+func PinHashContains(v string) predicate.User {
+	return predicate.User(sql.FieldContains(FieldPinHash, v))
+}
+
+// PinHashHasPrefix applies the HasPrefix predicate on the "pin_hash" field.
+func PinHashHasPrefix(v string) predicate.User {
+	return predicate.User(sql.FieldHasPrefix(FieldPinHash, v))
+}
+
+// PinHashHasSuffix applies the HasSuffix predicate on the "pin_hash" field.
+func PinHashHasSuffix(v string) predicate.User {
+	return predicate.User(sql.FieldHasSuffix(FieldPinHash, v))
+}
+
+// PinHashIsNil applies the IsNil predicate on the "pin_hash" field.
+func PinHashIsNil() predicate.User {
+	return predicate.User(sql.FieldIsNull(FieldPinHash))
+}
+
+// PinHashNotNil applies the NotNil predicate on the "pin_hash" field.
+func PinHashNotNil() predicate.User {
+	return predicate.User(sql.FieldNotNull(FieldPinHash))
+}
+
+// PinHashEqualFold applies the EqualFold predicate on the "pin_hash" field.
+func PinHashEqualFold(v string) predicate.User {
+	return predicate.User(sql.FieldEqualFold(FieldPinHash, v))
+}
+
+// PinHashContainsFold applies the ContainsFold predicate on the "pin_hash" field.
+func PinHashContainsFold(v string) predicate.User {
+	return predicate.User(sql.FieldContainsFold(FieldPinHash, v))
 }
 
 // PhoneNumberEQ applies the EQ predicate on the "phone_number" field.
@@ -1184,6 +1264,75 @@ func HasUsedInvites() predicate.User {
 func HasUsedInvitesWith(preds ...predicate.OtpInvites) predicate.User {
 	return predicate.User(func(s *sql.Selector) {
 		step := newUsedInvitesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasCreatedVisitors applies the HasEdge predicate on the "created_visitors" edge.
+func HasCreatedVisitors() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, CreatedVisitorsTable, CreatedVisitorsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasCreatedVisitorsWith applies the HasEdge predicate on the "created_visitors" edge with a given conditions (other predicates).
+func HasCreatedVisitorsWith(preds ...predicate.Visitor) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newCreatedVisitorsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasRecordedAttendances applies the HasEdge predicate on the "recorded_attendances" edge.
+func HasRecordedAttendances() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, RecordedAttendancesTable, RecordedAttendancesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasRecordedAttendancesWith applies the HasEdge predicate on the "recorded_attendances" edge with a given conditions (other predicates).
+func HasRecordedAttendancesWith(preds ...predicate.AttendanceRecord) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newRecordedAttendancesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasCreatedTodos applies the HasEdge predicate on the "created_todos" edge.
+func HasCreatedTodos() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, CreatedTodosTable, CreatedTodosColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasCreatedTodosWith applies the HasEdge predicate on the "created_todos" edge with a given conditions (other predicates).
+func HasCreatedTodosWith(preds ...predicate.TeamTodo) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newCreatedTodosStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

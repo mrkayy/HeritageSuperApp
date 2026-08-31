@@ -136,6 +136,21 @@ func IsPlaceholder(v bool) predicate.Member {
 	return predicate.Member(sql.FieldEQ(FieldIsPlaceholder, v))
 }
 
+// IsProfiled applies equality check predicate on the "is_profiled" field. It's identical to IsProfiledEQ.
+func IsProfiled(v bool) predicate.Member {
+	return predicate.Member(sql.FieldEQ(FieldIsProfiled, v))
+}
+
+// ProfiledByUserID applies equality check predicate on the "profiled_by_user_id" field. It's identical to ProfiledByUserIDEQ.
+func ProfiledByUserID(v uuid.UUID) predicate.Member {
+	return predicate.Member(sql.FieldEQ(FieldProfiledByUserID, v))
+}
+
+// ProfiledAt applies equality check predicate on the "profiled_at" field. It's identical to ProfiledAtEQ.
+func ProfiledAt(v time.Time) predicate.Member {
+	return predicate.Member(sql.FieldEQ(FieldProfiledAt, v))
+}
+
 // SourceTeam applies equality check predicate on the "source_team" field. It's identical to SourceTeamEQ.
 func SourceTeam(v string) predicate.Member {
 	return predicate.Member(sql.FieldEQ(FieldSourceTeam, v))
@@ -159,6 +174,11 @@ func SectorID(v uuid.UUID) predicate.Member {
 // TeamID applies equality check predicate on the "team_id" field. It's identical to TeamIDEQ.
 func TeamID(v uuid.UUID) predicate.Member {
 	return predicate.Member(sql.FieldEQ(FieldTeamID, v))
+}
+
+// VolunteeringTeamID applies equality check predicate on the "volunteering_team_id" field. It's identical to VolunteeringTeamIDEQ.
+func VolunteeringTeamID(v uuid.UUID) predicate.Member {
+	return predicate.Member(sql.FieldEQ(FieldVolunteeringTeamID, v))
 }
 
 // JoinedAt applies equality check predicate on the "joined_at" field. It's identical to JoinedAtEQ.
@@ -1271,6 +1291,116 @@ func IsPlaceholderNEQ(v bool) predicate.Member {
 	return predicate.Member(sql.FieldNEQ(FieldIsPlaceholder, v))
 }
 
+// IsProfiledEQ applies the EQ predicate on the "is_profiled" field.
+func IsProfiledEQ(v bool) predicate.Member {
+	return predicate.Member(sql.FieldEQ(FieldIsProfiled, v))
+}
+
+// IsProfiledNEQ applies the NEQ predicate on the "is_profiled" field.
+func IsProfiledNEQ(v bool) predicate.Member {
+	return predicate.Member(sql.FieldNEQ(FieldIsProfiled, v))
+}
+
+// ProfiledByUserIDEQ applies the EQ predicate on the "profiled_by_user_id" field.
+func ProfiledByUserIDEQ(v uuid.UUID) predicate.Member {
+	return predicate.Member(sql.FieldEQ(FieldProfiledByUserID, v))
+}
+
+// ProfiledByUserIDNEQ applies the NEQ predicate on the "profiled_by_user_id" field.
+func ProfiledByUserIDNEQ(v uuid.UUID) predicate.Member {
+	return predicate.Member(sql.FieldNEQ(FieldProfiledByUserID, v))
+}
+
+// ProfiledByUserIDIn applies the In predicate on the "profiled_by_user_id" field.
+func ProfiledByUserIDIn(vs ...uuid.UUID) predicate.Member {
+	return predicate.Member(sql.FieldIn(FieldProfiledByUserID, vs...))
+}
+
+// ProfiledByUserIDNotIn applies the NotIn predicate on the "profiled_by_user_id" field.
+func ProfiledByUserIDNotIn(vs ...uuid.UUID) predicate.Member {
+	return predicate.Member(sql.FieldNotIn(FieldProfiledByUserID, vs...))
+}
+
+// ProfiledByUserIDGT applies the GT predicate on the "profiled_by_user_id" field.
+func ProfiledByUserIDGT(v uuid.UUID) predicate.Member {
+	return predicate.Member(sql.FieldGT(FieldProfiledByUserID, v))
+}
+
+// ProfiledByUserIDGTE applies the GTE predicate on the "profiled_by_user_id" field.
+func ProfiledByUserIDGTE(v uuid.UUID) predicate.Member {
+	return predicate.Member(sql.FieldGTE(FieldProfiledByUserID, v))
+}
+
+// ProfiledByUserIDLT applies the LT predicate on the "profiled_by_user_id" field.
+func ProfiledByUserIDLT(v uuid.UUID) predicate.Member {
+	return predicate.Member(sql.FieldLT(FieldProfiledByUserID, v))
+}
+
+// ProfiledByUserIDLTE applies the LTE predicate on the "profiled_by_user_id" field.
+func ProfiledByUserIDLTE(v uuid.UUID) predicate.Member {
+	return predicate.Member(sql.FieldLTE(FieldProfiledByUserID, v))
+}
+
+// ProfiledByUserIDIsNil applies the IsNil predicate on the "profiled_by_user_id" field.
+func ProfiledByUserIDIsNil() predicate.Member {
+	return predicate.Member(sql.FieldIsNull(FieldProfiledByUserID))
+}
+
+// ProfiledByUserIDNotNil applies the NotNil predicate on the "profiled_by_user_id" field.
+func ProfiledByUserIDNotNil() predicate.Member {
+	return predicate.Member(sql.FieldNotNull(FieldProfiledByUserID))
+}
+
+// ProfiledAtEQ applies the EQ predicate on the "profiled_at" field.
+func ProfiledAtEQ(v time.Time) predicate.Member {
+	return predicate.Member(sql.FieldEQ(FieldProfiledAt, v))
+}
+
+// ProfiledAtNEQ applies the NEQ predicate on the "profiled_at" field.
+func ProfiledAtNEQ(v time.Time) predicate.Member {
+	return predicate.Member(sql.FieldNEQ(FieldProfiledAt, v))
+}
+
+// ProfiledAtIn applies the In predicate on the "profiled_at" field.
+func ProfiledAtIn(vs ...time.Time) predicate.Member {
+	return predicate.Member(sql.FieldIn(FieldProfiledAt, vs...))
+}
+
+// ProfiledAtNotIn applies the NotIn predicate on the "profiled_at" field.
+func ProfiledAtNotIn(vs ...time.Time) predicate.Member {
+	return predicate.Member(sql.FieldNotIn(FieldProfiledAt, vs...))
+}
+
+// ProfiledAtGT applies the GT predicate on the "profiled_at" field.
+func ProfiledAtGT(v time.Time) predicate.Member {
+	return predicate.Member(sql.FieldGT(FieldProfiledAt, v))
+}
+
+// ProfiledAtGTE applies the GTE predicate on the "profiled_at" field.
+func ProfiledAtGTE(v time.Time) predicate.Member {
+	return predicate.Member(sql.FieldGTE(FieldProfiledAt, v))
+}
+
+// ProfiledAtLT applies the LT predicate on the "profiled_at" field.
+func ProfiledAtLT(v time.Time) predicate.Member {
+	return predicate.Member(sql.FieldLT(FieldProfiledAt, v))
+}
+
+// ProfiledAtLTE applies the LTE predicate on the "profiled_at" field.
+func ProfiledAtLTE(v time.Time) predicate.Member {
+	return predicate.Member(sql.FieldLTE(FieldProfiledAt, v))
+}
+
+// ProfiledAtIsNil applies the IsNil predicate on the "profiled_at" field.
+func ProfiledAtIsNil() predicate.Member {
+	return predicate.Member(sql.FieldIsNull(FieldProfiledAt))
+}
+
+// ProfiledAtNotNil applies the NotNil predicate on the "profiled_at" field.
+func ProfiledAtNotNil() predicate.Member {
+	return predicate.Member(sql.FieldNotNull(FieldProfiledAt))
+}
+
 // SourceTeamEQ applies the EQ predicate on the "source_team" field.
 func SourceTeamEQ(v string) predicate.Member {
 	return predicate.Member(sql.FieldEQ(FieldSourceTeam, v))
@@ -1484,6 +1614,56 @@ func TeamIDIsNil() predicate.Member {
 // TeamIDNotNil applies the NotNil predicate on the "team_id" field.
 func TeamIDNotNil() predicate.Member {
 	return predicate.Member(sql.FieldNotNull(FieldTeamID))
+}
+
+// VolunteeringTeamIDEQ applies the EQ predicate on the "volunteering_team_id" field.
+func VolunteeringTeamIDEQ(v uuid.UUID) predicate.Member {
+	return predicate.Member(sql.FieldEQ(FieldVolunteeringTeamID, v))
+}
+
+// VolunteeringTeamIDNEQ applies the NEQ predicate on the "volunteering_team_id" field.
+func VolunteeringTeamIDNEQ(v uuid.UUID) predicate.Member {
+	return predicate.Member(sql.FieldNEQ(FieldVolunteeringTeamID, v))
+}
+
+// VolunteeringTeamIDIn applies the In predicate on the "volunteering_team_id" field.
+func VolunteeringTeamIDIn(vs ...uuid.UUID) predicate.Member {
+	return predicate.Member(sql.FieldIn(FieldVolunteeringTeamID, vs...))
+}
+
+// VolunteeringTeamIDNotIn applies the NotIn predicate on the "volunteering_team_id" field.
+func VolunteeringTeamIDNotIn(vs ...uuid.UUID) predicate.Member {
+	return predicate.Member(sql.FieldNotIn(FieldVolunteeringTeamID, vs...))
+}
+
+// VolunteeringTeamIDGT applies the GT predicate on the "volunteering_team_id" field.
+func VolunteeringTeamIDGT(v uuid.UUID) predicate.Member {
+	return predicate.Member(sql.FieldGT(FieldVolunteeringTeamID, v))
+}
+
+// VolunteeringTeamIDGTE applies the GTE predicate on the "volunteering_team_id" field.
+func VolunteeringTeamIDGTE(v uuid.UUID) predicate.Member {
+	return predicate.Member(sql.FieldGTE(FieldVolunteeringTeamID, v))
+}
+
+// VolunteeringTeamIDLT applies the LT predicate on the "volunteering_team_id" field.
+func VolunteeringTeamIDLT(v uuid.UUID) predicate.Member {
+	return predicate.Member(sql.FieldLT(FieldVolunteeringTeamID, v))
+}
+
+// VolunteeringTeamIDLTE applies the LTE predicate on the "volunteering_team_id" field.
+func VolunteeringTeamIDLTE(v uuid.UUID) predicate.Member {
+	return predicate.Member(sql.FieldLTE(FieldVolunteeringTeamID, v))
+}
+
+// VolunteeringTeamIDIsNil applies the IsNil predicate on the "volunteering_team_id" field.
+func VolunteeringTeamIDIsNil() predicate.Member {
+	return predicate.Member(sql.FieldIsNull(FieldVolunteeringTeamID))
+}
+
+// VolunteeringTeamIDNotNil applies the NotNil predicate on the "volunteering_team_id" field.
+func VolunteeringTeamIDNotNil() predicate.Member {
+	return predicate.Member(sql.FieldNotNull(FieldVolunteeringTeamID))
 }
 
 // JoinedAtEQ applies the EQ predicate on the "joined_at" field.

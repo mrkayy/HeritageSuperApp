@@ -16,6 +16,7 @@ import (
 	"github.com/hofchurchng/church-backend/internal/modules/dashboard"
 	"github.com/hofchurchng/church-backend/internal/modules/featureflags"
 	"github.com/hofchurchng/church-backend/internal/modules/followup"
+	"github.com/hofchurchng/church-backend/internal/modules/infocenter"
 	"github.com/hofchurchng/church-backend/internal/modules/membership"
 	"github.com/hofchurchng/church-backend/internal/modules/profile"
 	"github.com/hofchurchng/church-backend/internal/modules/souls"
@@ -68,9 +69,14 @@ func main() {
 	profileSvc := profile.NewService(profileRepo, teamsSvc, teamsSvc, teamsSvc)
 	profileHandler := profile.NewHandler(profileSvc)
 
+	// Info Center module handles visitor intake, attendance tracking, and foundation class
+	infocenterRepo := infocenter.NewRepository(client)
+	infocenterSvc := infocenter.NewService(infocenterRepo)
+	infocenterHandler := infocenter.NewHandler(infocenterSvc)
+
 	// Membership module tracks church membership, registration steps, and onboarding status
 	membershipRepo := membership.NewRepository(client)
-	membershipSvc := membership.NewService(membershipRepo)
+	membershipSvc := membership.NewService(membershipRepo, infocenterSvc, infocenterSvc)
 	membershipHandler := membership.NewHandler(membershipSvc)
 
 	// Souls module handles outreach convert tracking and soul journals
@@ -105,6 +111,8 @@ func main() {
 	var _ contracts.SoulReader = soulsSvc
 	var _ contracts.FollowUpReader = followupSvc
 	var _ contracts.TransportReader = transportSvc
+	var _ contracts.InfoCenterReader = infocenterSvc
+	var _ contracts.InfoCenterProfiler = infocenterSvc
 
 	// --- Echo router ---
 	e := echo.New()
@@ -174,6 +182,9 @@ func main() {
 
 	transportGroup := api.Group("/transportation", requireAuth, middleware.RequireFeature(featureflagsSvc, "feature_transport"))
 	transportHandler.Register(transportGroup)
+
+	infoCenterGroup := api.Group("/info-center", requireAuth, middleware.RequireFeature(featureflagsSvc, "feature_info_center"))
+	infocenterHandler.Register(infoCenterGroup)
 
 	dashboardGroup := api.Group("/dashboard", requireAuth)
 	dashboardHandler.Register(dashboardGroup)

@@ -21,7 +21,10 @@ import {
   LucidePhoneCall,
   FolderEdit,
   LucideSettings,
-  ChevronDown
+  ChevronDown,
+  ClipboardList,
+  GraduationCap,
+  UserCheck
 } from 'lucide-react';
 import {
   Sidebar,
@@ -278,6 +281,14 @@ export function AppSidebar() {
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton asChild isActive={location.pathname === "/teams/membership/profiling-queue"}>
+                        <Link to="/teams/membership/profiling-queue" className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
+                          <UserCheck className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
+                          {!isCollapsed && <span className="text-xs">Profiling Queue</span>}
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
                   </SidebarMenu>
                 </SidebarGroupContent>
               </CollapsibleContent>
@@ -320,6 +331,30 @@ export function AppSidebar() {
                         <Link to="/teams/info-center/journey" className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
                           <Trophy className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
                           {!isCollapsed && <span className="text-xs">Member Journey</span>}
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton asChild isActive={location.pathname === "/teams/info-center/new-visitor"}>
+                        <Link to="/teams/info-center/new-visitor" className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
+                          <UserPlus className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
+                          {!isCollapsed && <span className="text-xs">New Visitor</span>}
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton asChild isActive={location.pathname === "/teams/info-center/attendance"}>
+                        <Link to="/teams/info-center/attendance" className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
+                          <ClipboardList className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
+                          {!isCollapsed && <span className="text-xs">Attendance</span>}
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton asChild isActive={location.pathname === "/teams/info-center/foundation-class"}>
+                        <Link to="/teams/info-center/foundation-class" className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
+                          <GraduationCap className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
+                          {!isCollapsed && <span className="text-xs">Foundation Class</span>}
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>

@@ -23,6 +23,9 @@ type Member struct {
 	Allergies               *string `json:"allergies"`
 	MedicalNotes            *string `json:"medicalNotes"`
 	IsPlaceholder           bool    `json:"isPlaceholder"`
+	IsProfiled              bool    `json:"isProfiled"`
+	ProfiledByUserID        *string `json:"profiledByUserId,omitempty"`
+	ProfiledAt              *string `json:"profiledAt,omitempty"`
 	SourceTeam              *string `json:"sourceTeam"`
 	CreatedBy               *string `json:"createdBy"`
 	LocalChurchID           *string `json:"localChurchId"`
@@ -31,6 +34,8 @@ type Member struct {
 	SectorName              *string `json:"sectorName"`
 	TeamID                  *string `json:"teamId"`
 	TeamName                *string `json:"teamName"`
+	VolunteeringTeamID      *string `json:"volunteeringTeamId,omitempty"`
+	VolunteeringTeamName    *string `json:"volunteeringTeamName,omitempty"`
 	CurrentStage            string   `json:"currentStage"`
 	Role                    string   `json:"role,omitempty"`
 	Roles                   []string `json:"roles,omitempty"`

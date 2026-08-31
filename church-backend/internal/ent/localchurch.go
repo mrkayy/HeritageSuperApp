@@ -50,9 +50,17 @@ type LocalChurchEdges struct {
 	ChurchTeams []*ChurchTeams `json:"church_teams,omitempty"`
 	// ChurchEvents holds the value of the church_events edge.
 	ChurchEvents []*ChurchEvent `json:"church_events,omitempty"`
+	// Visitors holds the value of the visitors edge.
+	Visitors []*Visitor `json:"visitors,omitempty"`
+	// AttendanceRecords holds the value of the attendance_records edge.
+	AttendanceRecords []*AttendanceRecord `json:"attendance_records,omitempty"`
+	// Settings holds the value of the settings edge.
+	Settings []*ChurchSetting `json:"settings,omitempty"`
+	// TeamTodos holds the value of the team_todos edge.
+	TeamTodos []*TeamTodo `json:"team_todos,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [7]bool
+	loadedTypes [11]bool
 }
 
 // MembersOrErr returns the Members value or an error if the edge
@@ -116,6 +124,42 @@ func (e LocalChurchEdges) ChurchEventsOrErr() ([]*ChurchEvent, error) {
 		return e.ChurchEvents, nil
 	}
 	return nil, &NotLoadedError{edge: "church_events"}
+}
+
+// VisitorsOrErr returns the Visitors value or an error if the edge
+// was not loaded in eager-loading.
+func (e LocalChurchEdges) VisitorsOrErr() ([]*Visitor, error) {
+	if e.loadedTypes[7] {
+		return e.Visitors, nil
+	}
+	return nil, &NotLoadedError{edge: "visitors"}
+}
+
+// AttendanceRecordsOrErr returns the AttendanceRecords value or an error if the edge
+// was not loaded in eager-loading.
+func (e LocalChurchEdges) AttendanceRecordsOrErr() ([]*AttendanceRecord, error) {
+	if e.loadedTypes[8] {
+		return e.AttendanceRecords, nil
+	}
+	return nil, &NotLoadedError{edge: "attendance_records"}
+}
+
+// SettingsOrErr returns the Settings value or an error if the edge
+// was not loaded in eager-loading.
+func (e LocalChurchEdges) SettingsOrErr() ([]*ChurchSetting, error) {
+	if e.loadedTypes[9] {
+		return e.Settings, nil
+	}
+	return nil, &NotLoadedError{edge: "settings"}
+}
+
+// TeamTodosOrErr returns the TeamTodos value or an error if the edge
+// was not loaded in eager-loading.
+func (e LocalChurchEdges) TeamTodosOrErr() ([]*TeamTodo, error) {
+	if e.loadedTypes[10] {
+		return e.TeamTodos, nil
+	}
+	return nil, &NotLoadedError{edge: "team_todos"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -227,6 +271,26 @@ func (_m *LocalChurch) QueryChurchTeams() *ChurchTeamsQuery {
 // QueryChurchEvents queries the "church_events" edge of the LocalChurch entity.
 func (_m *LocalChurch) QueryChurchEvents() *ChurchEventQuery {
 	return NewLocalChurchClient(_m.config).QueryChurchEvents(_m)
+}
+
+// QueryVisitors queries the "visitors" edge of the LocalChurch entity.
+func (_m *LocalChurch) QueryVisitors() *VisitorQuery {
+	return NewLocalChurchClient(_m.config).QueryVisitors(_m)
+}
+
+// QueryAttendanceRecords queries the "attendance_records" edge of the LocalChurch entity.
+func (_m *LocalChurch) QueryAttendanceRecords() *AttendanceRecordQuery {
+	return NewLocalChurchClient(_m.config).QueryAttendanceRecords(_m)
+}
+
+// QuerySettings queries the "settings" edge of the LocalChurch entity.
+func (_m *LocalChurch) QuerySettings() *ChurchSettingQuery {
+	return NewLocalChurchClient(_m.config).QuerySettings(_m)
+}
+
+// QueryTeamTodos queries the "team_todos" edge of the LocalChurch entity.
+func (_m *LocalChurch) QueryTeamTodos() *TeamTodoQuery {
+	return NewLocalChurchClient(_m.config).QueryTeamTodos(_m)
 }
 
 // Update returns a builder for updating this LocalChurch.

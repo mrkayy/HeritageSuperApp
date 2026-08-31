@@ -44,6 +44,10 @@ func (LocalChurch) Edges() []ent.Edge {
 		edge.To("otp_invites", OtpInvites.Type),
 		edge.To("church_teams", ChurchTeams.Type),
 		edge.To("church_events", ChurchEvent.Type),
+		edge.To("visitors", Visitor.Type),
+		edge.To("attendance_records", AttendanceRecord.Type),
+		edge.To("settings", ChurchSetting.Type),
+		edge.To("team_todos", TeamTodo.Type),
 	}
 }
 

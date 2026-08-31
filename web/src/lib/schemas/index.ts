@@ -4,3 +4,4 @@ export * from './soul';
 export * from './admin';
 export * from './followup';
 export * from './transport';
+export * from './infocenter';

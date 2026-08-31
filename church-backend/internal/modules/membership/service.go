@@ -9,11 +9,13 @@ import (
 )
 
 type Service struct {
-	repo *Repository
+	repo             *Repository
+	infoCenterReader contracts.InfoCenterReader
+	infoCenterProf   contracts.InfoCenterProfiler
 }
 
-func NewService(repo *Repository) *Service {
-	return &Service{repo: repo}
+func NewService(repo *Repository, icr contracts.InfoCenterReader, icp contracts.InfoCenterProfiler) *Service {
+	return &Service{repo: repo, infoCenterReader: icr, infoCenterProf: icp}
 }
 
 // GetMember satisfies contracts.MembershipReader, so main.go can hand
@@ -95,3 +97,54 @@ func (s *Service) GetGuardianRelationships(ctx context.Context, memberID string)
 func (s *Service) DeleteGuardianRelationship(ctx context.Context, relID string) error {
 	return s.repo.DeleteGuardianRelationship(ctx, relID)
 }
+
+func (s *Service) ListProfilingQueue(ctx context.Context, userID string) ([]contracts.TeamTodoDTO, error) {
+	return s.repo.ListTeamTodos(ctx, userID, "membership", "pending")
+}
+
+func (s *Service) ProfileVisitor(ctx context.Context, visitorID string, userID string) (contracts.Member, error) {
+	visitor, err := s.infoCenterReader.GetVisitor(ctx, visitorID)
+	if err != nil {
+		return contracts.Member{}, fmt.Errorf("visitor not found: %w", err)
+	}
+
+	stage := "foundation_class"
+	email := ""
+	if visitor.Email != nil {
+		email = *visitor.Email
+	}
+
+	creatorUUID, err := uuid.Parse(userID)
+	if err != nil {
+		return contracts.Member{}, fmt.Errorf("invalid user id: %w", err)
+	}
+
+	phone := visitor.PhoneNumber
+	addr := visitor.Address
+
+	member, err := s.repo.Add(ctx, AddMemberInput{
+		FirstName:    visitor.FirstName,
+		Surname:      visitor.LastName,
+		Role:         "member",
+		Email:        &email,
+		PhoneNumber:  &phone,
+		HomeAddress:  &addr,
+		Gender:       &visitor.Gender,
+		CurrentStage: &stage,
+		SourceTeam:   strPtr("info_center"),
+		CreatedBy:    &creatorUUID,
+	})
+	if err != nil {
+		return contracts.Member{}, fmt.Errorf("creating member: %w", err)
+	}
+
+	if err := s.infoCenterProf.MarkVisitorProfiled(ctx, visitorID, member.ID); err != nil {
+		return contracts.Member{}, fmt.Errorf("marking visitor profiled: %w", err)
+	}
+
+	_ = s.repo.CompleteTeamTodo(ctx, visitorID, userID)
+
+	return member, nil
+}
+
+func strPtr(s string) *string { return &s }

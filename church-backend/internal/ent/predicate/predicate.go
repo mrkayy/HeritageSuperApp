@@ -6,8 +6,14 @@ import (
 	"entgo.io/ent/dialect/sql"
 )
 
+// AttendanceRecord is the predicate function for attendancerecord builders.
+type AttendanceRecord func(*sql.Selector)
+
 // ChurchEvent is the predicate function for churchevent builders.
 type ChurchEvent func(*sql.Selector)
+
+// ChurchSetting is the predicate function for churchsetting builders.
+type ChurchSetting func(*sql.Selector)
 
 // ChurchTeams is the predicate function for churchteams builders.
 type ChurchTeams func(*sql.Selector)
@@ -60,6 +66,9 @@ type SoulJournal func(*sql.Selector)
 // Team is the predicate function for team builders.
 type Team func(*sql.Selector)
 
+// TeamTodo is the predicate function for teamtodo builders.
+type TeamTodo func(*sql.Selector)
+
 // TeamVolunteers is the predicate function for teamvolunteers builders.
 type TeamVolunteers func(*sql.Selector)
 
@@ -74,3 +83,6 @@ type UserSector func(*sql.Selector)
 
 // UserTeam is the predicate function for userteam builders.
 type UserTeam func(*sql.Selector)
+
+// Visitor is the predicate function for visitor builders.
+type Visitor func(*sql.Selector)

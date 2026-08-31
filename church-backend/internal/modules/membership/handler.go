@@ -30,6 +30,10 @@ func (h *Handler) Register(g *echo.Group) {
 	g.PUT("/:id", h.update)
 	g.DELETE("/:id", h.delete)
 
+	// Profiling pipeline
+	g.GET("/profiling-queue", h.profilingQueue)
+	g.POST("/profile-visitor/:visitor_id", h.profileVisitor)
+
 	// Guardian Relationships
 	g.GET("/:id/relationships", h.getGuardianRelationships)
 	g.POST("/relationships", h.addGuardianRelationship)
@@ -344,6 +348,34 @@ func (h *Handler) bulkProfile(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, res)
+}
+
+func (h *Handler) profilingQueue(c echo.Context) error {
+	user, ok := contracts.UserFromContext(c.Request().Context())
+	if !ok {
+		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
+	}
+	todos, err := h.svc.ListProfilingQueue(c.Request().Context(), user.ID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	return c.JSON(http.StatusOK, todos)
+}
+
+func (h *Handler) profileVisitor(c echo.Context) error {
+	visitorID := c.Param("visitor_id")
+	if visitorID == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "visitor_id is required")
+	}
+	user, ok := contracts.UserFromContext(c.Request().Context())
+	if !ok {
+		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
+	}
+	member, err := h.svc.ProfileVisitor(c.Request().Context(), visitorID, user.ID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	return c.JSON(http.StatusCreated, member)
 }
 
 func (h *Handler) bulkProfileJSON(c echo.Context) error {

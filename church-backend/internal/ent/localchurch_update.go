@@ -12,7 +12,9 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
+	"github.com/hofchurchng/church-backend/internal/ent/attendancerecord"
 	"github.com/hofchurchng/church-backend/internal/ent/churchevent"
+	"github.com/hofchurchng/church-backend/internal/ent/churchsetting"
 	"github.com/hofchurchng/church-backend/internal/ent/churchteams"
 	"github.com/hofchurchng/church-backend/internal/ent/localchurch"
 	"github.com/hofchurchng/church-backend/internal/ent/member"
@@ -20,7 +22,9 @@ import (
 	"github.com/hofchurchng/church-backend/internal/ent/predicate"
 	"github.com/hofchurchng/church-backend/internal/ent/sector"
 	"github.com/hofchurchng/church-backend/internal/ent/team"
+	"github.com/hofchurchng/church-backend/internal/ent/teamtodo"
 	"github.com/hofchurchng/church-backend/internal/ent/user"
+	"github.com/hofchurchng/church-backend/internal/ent/visitor"
 )
 
 // LocalChurchUpdate is the builder for updating LocalChurch entities.
@@ -217,6 +221,66 @@ func (_u *LocalChurchUpdate) AddChurchEvents(v ...*ChurchEvent) *LocalChurchUpda
 	return _u.AddChurchEventIDs(ids...)
 }
 
+// AddVisitorIDs adds the "visitors" edge to the Visitor entity by IDs.
+func (_u *LocalChurchUpdate) AddVisitorIDs(ids ...uuid.UUID) *LocalChurchUpdate {
+	_u.mutation.AddVisitorIDs(ids...)
+	return _u
+}
+
+// AddVisitors adds the "visitors" edges to the Visitor entity.
+func (_u *LocalChurchUpdate) AddVisitors(v ...*Visitor) *LocalChurchUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddVisitorIDs(ids...)
+}
+
+// AddAttendanceRecordIDs adds the "attendance_records" edge to the AttendanceRecord entity by IDs.
+func (_u *LocalChurchUpdate) AddAttendanceRecordIDs(ids ...uuid.UUID) *LocalChurchUpdate {
+	_u.mutation.AddAttendanceRecordIDs(ids...)
+	return _u
+}
+
+// AddAttendanceRecords adds the "attendance_records" edges to the AttendanceRecord entity.
+func (_u *LocalChurchUpdate) AddAttendanceRecords(v ...*AttendanceRecord) *LocalChurchUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddAttendanceRecordIDs(ids...)
+}
+
+// AddSettingIDs adds the "settings" edge to the ChurchSetting entity by IDs.
+func (_u *LocalChurchUpdate) AddSettingIDs(ids ...uuid.UUID) *LocalChurchUpdate {
+	_u.mutation.AddSettingIDs(ids...)
+	return _u
+}
+
+// AddSettings adds the "settings" edges to the ChurchSetting entity.
+func (_u *LocalChurchUpdate) AddSettings(v ...*ChurchSetting) *LocalChurchUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddSettingIDs(ids...)
+}
+
+// AddTeamTodoIDs adds the "team_todos" edge to the TeamTodo entity by IDs.
+func (_u *LocalChurchUpdate) AddTeamTodoIDs(ids ...uuid.UUID) *LocalChurchUpdate {
+	_u.mutation.AddTeamTodoIDs(ids...)
+	return _u
+}
+
+// AddTeamTodos adds the "team_todos" edges to the TeamTodo entity.
+func (_u *LocalChurchUpdate) AddTeamTodos(v ...*TeamTodo) *LocalChurchUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddTeamTodoIDs(ids...)
+}
+
 // Mutation returns the LocalChurchMutation object of the builder.
 func (_u *LocalChurchUpdate) Mutation() *LocalChurchMutation {
 	return _u.mutation
@@ -367,6 +431,90 @@ func (_u *LocalChurchUpdate) RemoveChurchEvents(v ...*ChurchEvent) *LocalChurchU
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveChurchEventIDs(ids...)
+}
+
+// ClearVisitors clears all "visitors" edges to the Visitor entity.
+func (_u *LocalChurchUpdate) ClearVisitors() *LocalChurchUpdate {
+	_u.mutation.ClearVisitors()
+	return _u
+}
+
+// RemoveVisitorIDs removes the "visitors" edge to Visitor entities by IDs.
+func (_u *LocalChurchUpdate) RemoveVisitorIDs(ids ...uuid.UUID) *LocalChurchUpdate {
+	_u.mutation.RemoveVisitorIDs(ids...)
+	return _u
+}
+
+// RemoveVisitors removes "visitors" edges to Visitor entities.
+func (_u *LocalChurchUpdate) RemoveVisitors(v ...*Visitor) *LocalChurchUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveVisitorIDs(ids...)
+}
+
+// ClearAttendanceRecords clears all "attendance_records" edges to the AttendanceRecord entity.
+func (_u *LocalChurchUpdate) ClearAttendanceRecords() *LocalChurchUpdate {
+	_u.mutation.ClearAttendanceRecords()
+	return _u
+}
+
+// RemoveAttendanceRecordIDs removes the "attendance_records" edge to AttendanceRecord entities by IDs.
+func (_u *LocalChurchUpdate) RemoveAttendanceRecordIDs(ids ...uuid.UUID) *LocalChurchUpdate {
+	_u.mutation.RemoveAttendanceRecordIDs(ids...)
+	return _u
+}
+
+// RemoveAttendanceRecords removes "attendance_records" edges to AttendanceRecord entities.
+func (_u *LocalChurchUpdate) RemoveAttendanceRecords(v ...*AttendanceRecord) *LocalChurchUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveAttendanceRecordIDs(ids...)
+}
+
+// ClearSettings clears all "settings" edges to the ChurchSetting entity.
+func (_u *LocalChurchUpdate) ClearSettings() *LocalChurchUpdate {
+	_u.mutation.ClearSettings()
+	return _u
+}
+
+// RemoveSettingIDs removes the "settings" edge to ChurchSetting entities by IDs.
+func (_u *LocalChurchUpdate) RemoveSettingIDs(ids ...uuid.UUID) *LocalChurchUpdate {
+	_u.mutation.RemoveSettingIDs(ids...)
+	return _u
+}
+
+// RemoveSettings removes "settings" edges to ChurchSetting entities.
+func (_u *LocalChurchUpdate) RemoveSettings(v ...*ChurchSetting) *LocalChurchUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveSettingIDs(ids...)
+}
+
+// ClearTeamTodos clears all "team_todos" edges to the TeamTodo entity.
+func (_u *LocalChurchUpdate) ClearTeamTodos() *LocalChurchUpdate {
+	_u.mutation.ClearTeamTodos()
+	return _u
+}
+
+// RemoveTeamTodoIDs removes the "team_todos" edge to TeamTodo entities by IDs.
+func (_u *LocalChurchUpdate) RemoveTeamTodoIDs(ids ...uuid.UUID) *LocalChurchUpdate {
+	_u.mutation.RemoveTeamTodoIDs(ids...)
+	return _u
+}
+
+// RemoveTeamTodos removes "team_todos" edges to TeamTodo entities.
+func (_u *LocalChurchUpdate) RemoveTeamTodos(v ...*TeamTodo) *LocalChurchUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveTeamTodoIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -738,6 +886,186 @@ func (_u *LocalChurchUpdate) sqlSave(ctx context.Context) (_node int, err error)
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.VisitorsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   localchurch.VisitorsTable,
+			Columns: []string{localchurch.VisitorsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(visitor.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedVisitorsIDs(); len(nodes) > 0 && !_u.mutation.VisitorsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   localchurch.VisitorsTable,
+			Columns: []string{localchurch.VisitorsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(visitor.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.VisitorsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   localchurch.VisitorsTable,
+			Columns: []string{localchurch.VisitorsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(visitor.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.AttendanceRecordsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   localchurch.AttendanceRecordsTable,
+			Columns: []string{localchurch.AttendanceRecordsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(attendancerecord.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedAttendanceRecordsIDs(); len(nodes) > 0 && !_u.mutation.AttendanceRecordsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   localchurch.AttendanceRecordsTable,
+			Columns: []string{localchurch.AttendanceRecordsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(attendancerecord.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.AttendanceRecordsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   localchurch.AttendanceRecordsTable,
+			Columns: []string{localchurch.AttendanceRecordsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(attendancerecord.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.SettingsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   localchurch.SettingsTable,
+			Columns: []string{localchurch.SettingsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(churchsetting.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedSettingsIDs(); len(nodes) > 0 && !_u.mutation.SettingsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   localchurch.SettingsTable,
+			Columns: []string{localchurch.SettingsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(churchsetting.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.SettingsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   localchurch.SettingsTable,
+			Columns: []string{localchurch.SettingsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(churchsetting.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.TeamTodosCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   localchurch.TeamTodosTable,
+			Columns: []string{localchurch.TeamTodosColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(teamtodo.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedTeamTodosIDs(); len(nodes) > 0 && !_u.mutation.TeamTodosCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   localchurch.TeamTodosTable,
+			Columns: []string{localchurch.TeamTodosColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(teamtodo.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.TeamTodosIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   localchurch.TeamTodosTable,
+			Columns: []string{localchurch.TeamTodosColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(teamtodo.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{localchurch.Label}
@@ -939,6 +1267,66 @@ func (_u *LocalChurchUpdateOne) AddChurchEvents(v ...*ChurchEvent) *LocalChurchU
 	return _u.AddChurchEventIDs(ids...)
 }
 
+// AddVisitorIDs adds the "visitors" edge to the Visitor entity by IDs.
+func (_u *LocalChurchUpdateOne) AddVisitorIDs(ids ...uuid.UUID) *LocalChurchUpdateOne {
+	_u.mutation.AddVisitorIDs(ids...)
+	return _u
+}
+
+// AddVisitors adds the "visitors" edges to the Visitor entity.
+func (_u *LocalChurchUpdateOne) AddVisitors(v ...*Visitor) *LocalChurchUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddVisitorIDs(ids...)
+}
+
+// AddAttendanceRecordIDs adds the "attendance_records" edge to the AttendanceRecord entity by IDs.
+func (_u *LocalChurchUpdateOne) AddAttendanceRecordIDs(ids ...uuid.UUID) *LocalChurchUpdateOne {
+	_u.mutation.AddAttendanceRecordIDs(ids...)
+	return _u
+}
+
+// AddAttendanceRecords adds the "attendance_records" edges to the AttendanceRecord entity.
+func (_u *LocalChurchUpdateOne) AddAttendanceRecords(v ...*AttendanceRecord) *LocalChurchUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddAttendanceRecordIDs(ids...)
+}
+
+// AddSettingIDs adds the "settings" edge to the ChurchSetting entity by IDs.
+func (_u *LocalChurchUpdateOne) AddSettingIDs(ids ...uuid.UUID) *LocalChurchUpdateOne {
+	_u.mutation.AddSettingIDs(ids...)
+	return _u
+}
+
+// AddSettings adds the "settings" edges to the ChurchSetting entity.
+func (_u *LocalChurchUpdateOne) AddSettings(v ...*ChurchSetting) *LocalChurchUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddSettingIDs(ids...)
+}
+
+// AddTeamTodoIDs adds the "team_todos" edge to the TeamTodo entity by IDs.
+func (_u *LocalChurchUpdateOne) AddTeamTodoIDs(ids ...uuid.UUID) *LocalChurchUpdateOne {
+	_u.mutation.AddTeamTodoIDs(ids...)
+	return _u
+}
+
+// AddTeamTodos adds the "team_todos" edges to the TeamTodo entity.
+func (_u *LocalChurchUpdateOne) AddTeamTodos(v ...*TeamTodo) *LocalChurchUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddTeamTodoIDs(ids...)
+}
+
 // Mutation returns the LocalChurchMutation object of the builder.
 func (_u *LocalChurchUpdateOne) Mutation() *LocalChurchMutation {
 	return _u.mutation
@@ -1089,6 +1477,90 @@ func (_u *LocalChurchUpdateOne) RemoveChurchEvents(v ...*ChurchEvent) *LocalChur
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveChurchEventIDs(ids...)
+}
+
+// ClearVisitors clears all "visitors" edges to the Visitor entity.
+func (_u *LocalChurchUpdateOne) ClearVisitors() *LocalChurchUpdateOne {
+	_u.mutation.ClearVisitors()
+	return _u
+}
+
+// RemoveVisitorIDs removes the "visitors" edge to Visitor entities by IDs.
+func (_u *LocalChurchUpdateOne) RemoveVisitorIDs(ids ...uuid.UUID) *LocalChurchUpdateOne {
+	_u.mutation.RemoveVisitorIDs(ids...)
+	return _u
+}
+
+// RemoveVisitors removes "visitors" edges to Visitor entities.
+func (_u *LocalChurchUpdateOne) RemoveVisitors(v ...*Visitor) *LocalChurchUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveVisitorIDs(ids...)
+}
+
+// ClearAttendanceRecords clears all "attendance_records" edges to the AttendanceRecord entity.
+func (_u *LocalChurchUpdateOne) ClearAttendanceRecords() *LocalChurchUpdateOne {
+	_u.mutation.ClearAttendanceRecords()
+	return _u
+}
+
+// RemoveAttendanceRecordIDs removes the "attendance_records" edge to AttendanceRecord entities by IDs.
+func (_u *LocalChurchUpdateOne) RemoveAttendanceRecordIDs(ids ...uuid.UUID) *LocalChurchUpdateOne {
+	_u.mutation.RemoveAttendanceRecordIDs(ids...)
+	return _u
+}
+
+// RemoveAttendanceRecords removes "attendance_records" edges to AttendanceRecord entities.
+func (_u *LocalChurchUpdateOne) RemoveAttendanceRecords(v ...*AttendanceRecord) *LocalChurchUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveAttendanceRecordIDs(ids...)
+}
+
+// ClearSettings clears all "settings" edges to the ChurchSetting entity.
+func (_u *LocalChurchUpdateOne) ClearSettings() *LocalChurchUpdateOne {
+	_u.mutation.ClearSettings()
+	return _u
+}
+
+// RemoveSettingIDs removes the "settings" edge to ChurchSetting entities by IDs.
+func (_u *LocalChurchUpdateOne) RemoveSettingIDs(ids ...uuid.UUID) *LocalChurchUpdateOne {
+	_u.mutation.RemoveSettingIDs(ids...)
+	return _u
+}
+
+// RemoveSettings removes "settings" edges to ChurchSetting entities.
+func (_u *LocalChurchUpdateOne) RemoveSettings(v ...*ChurchSetting) *LocalChurchUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveSettingIDs(ids...)
+}
+
+// ClearTeamTodos clears all "team_todos" edges to the TeamTodo entity.
+func (_u *LocalChurchUpdateOne) ClearTeamTodos() *LocalChurchUpdateOne {
+	_u.mutation.ClearTeamTodos()
+	return _u
+}
+
+// RemoveTeamTodoIDs removes the "team_todos" edge to TeamTodo entities by IDs.
+func (_u *LocalChurchUpdateOne) RemoveTeamTodoIDs(ids ...uuid.UUID) *LocalChurchUpdateOne {
+	_u.mutation.RemoveTeamTodoIDs(ids...)
+	return _u
+}
+
+// RemoveTeamTodos removes "team_todos" edges to TeamTodo entities.
+func (_u *LocalChurchUpdateOne) RemoveTeamTodos(v ...*TeamTodo) *LocalChurchUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveTeamTodoIDs(ids...)
 }
 
 // Where appends a list predicates to the LocalChurchUpdate builder.
@@ -1483,6 +1955,186 @@ func (_u *LocalChurchUpdateOne) sqlSave(ctx context.Context) (_node *LocalChurch
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(churchevent.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.VisitorsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   localchurch.VisitorsTable,
+			Columns: []string{localchurch.VisitorsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(visitor.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedVisitorsIDs(); len(nodes) > 0 && !_u.mutation.VisitorsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   localchurch.VisitorsTable,
+			Columns: []string{localchurch.VisitorsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(visitor.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.VisitorsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   localchurch.VisitorsTable,
+			Columns: []string{localchurch.VisitorsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(visitor.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.AttendanceRecordsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   localchurch.AttendanceRecordsTable,
+			Columns: []string{localchurch.AttendanceRecordsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(attendancerecord.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedAttendanceRecordsIDs(); len(nodes) > 0 && !_u.mutation.AttendanceRecordsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   localchurch.AttendanceRecordsTable,
+			Columns: []string{localchurch.AttendanceRecordsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(attendancerecord.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.AttendanceRecordsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   localchurch.AttendanceRecordsTable,
+			Columns: []string{localchurch.AttendanceRecordsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(attendancerecord.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.SettingsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   localchurch.SettingsTable,
+			Columns: []string{localchurch.SettingsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(churchsetting.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedSettingsIDs(); len(nodes) > 0 && !_u.mutation.SettingsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   localchurch.SettingsTable,
+			Columns: []string{localchurch.SettingsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(churchsetting.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.SettingsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   localchurch.SettingsTable,
+			Columns: []string{localchurch.SettingsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(churchsetting.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.TeamTodosCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   localchurch.TeamTodosTable,
+			Columns: []string{localchurch.TeamTodosColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(teamtodo.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedTeamTodosIDs(); len(nodes) > 0 && !_u.mutation.TeamTodosCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   localchurch.TeamTodosTable,
+			Columns: []string{localchurch.TeamTodosColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(teamtodo.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.TeamTodosIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   localchurch.TeamTodosTable,
+			Columns: []string{localchurch.TeamTodosColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(teamtodo.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

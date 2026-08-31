@@ -63,7 +63,7 @@ func Connect(ctx context.Context, url string) (*ent.Client, error) {
 
 func seedDefaultAdmin(ctx context.Context, client *ent.Client) error {
 	exists, err := client.User.Query().
-		Where(entuser.RoleEQ(entuser.RoleChurchAdmin)).
+		Where(entuser.RoleEQ(entuser.RoleSuperAdmin)).
 		Exist(ctx)
 	if err != nil {
 		return err
@@ -82,7 +82,7 @@ func seedDefaultAdmin(ctx context.Context, client *ent.Client) error {
 		SetPasswordHash(string(hash)).
 		SetFirstName("Super").
 		SetLastName("Admin").
-		SetRole(entuser.RoleChurchAdmin).
+		SetRole(entuser.RoleSuperAdmin).
 		SetAccountStatus(entuser.AccountStatusActive).
 		SetIsProfileComplete(true).
 		Save(ctx)

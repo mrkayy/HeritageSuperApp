@@ -12,7 +12,9 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/hofchurchng/church-backend/internal/ent/attendancerecord"
 	"github.com/hofchurchng/church-backend/internal/ent/churchevent"
+	"github.com/hofchurchng/church-backend/internal/ent/churchsetting"
 	"github.com/hofchurchng/church-backend/internal/ent/churchteams"
 	"github.com/hofchurchng/church-backend/internal/ent/districts"
 	"github.com/hofchurchng/church-backend/internal/ent/featureflag"
@@ -30,11 +32,13 @@ import (
 	"github.com/hofchurchng/church-backend/internal/ent/soul"
 	"github.com/hofchurchng/church-backend/internal/ent/souljournal"
 	"github.com/hofchurchng/church-backend/internal/ent/team"
+	"github.com/hofchurchng/church-backend/internal/ent/teamtodo"
 	"github.com/hofchurchng/church-backend/internal/ent/teamvolunteers"
 	"github.com/hofchurchng/church-backend/internal/ent/transportrequest"
 	"github.com/hofchurchng/church-backend/internal/ent/user"
 	"github.com/hofchurchng/church-backend/internal/ent/usersector"
 	"github.com/hofchurchng/church-backend/internal/ent/userteam"
+	"github.com/hofchurchng/church-backend/internal/ent/visitor"
 )
 
 // ent aliases to avoid import conflicts in user's code.
@@ -95,7 +99,9 @@ var (
 func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
+			attendancerecord.Table:       attendancerecord.ValidColumn,
 			churchevent.Table:            churchevent.ValidColumn,
+			churchsetting.Table:          churchsetting.ValidColumn,
 			churchteams.Table:            churchteams.ValidColumn,
 			districts.Table:              districts.ValidColumn,
 			featureflag.Table:            featureflag.ValidColumn,
@@ -113,11 +119,13 @@ func checkColumn(t, c string) error {
 			soul.Table:                   soul.ValidColumn,
 			souljournal.Table:            souljournal.ValidColumn,
 			team.Table:                   team.ValidColumn,
+			teamtodo.Table:               teamtodo.ValidColumn,
 			teamvolunteers.Table:         teamvolunteers.ValidColumn,
 			transportrequest.Table:       transportrequest.ValidColumn,
 			user.Table:                   user.ValidColumn,
 			usersector.Table:             usersector.ValidColumn,
 			userteam.Table:               userteam.ValidColumn,
+			visitor.Table:                visitor.ValidColumn,
 		})
 	})
 	return columnCheck(t, c)

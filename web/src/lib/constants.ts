@@ -11,9 +11,19 @@ export const MEMBERSHIP_STAGES = [
 ] as const;
 
 export const USER_ROLES = [
-  { value: 'church_admin', label: 'Church Admin' },
+  { value: 'super_admin', label: 'Super Admin' },
+  { value: 'general_overseer', label: 'General Overseer' },
   { value: 'resident_pastor', label: 'Resident Pastor' },
+  { value: 'church_admin', label: 'Church Admin' },
+  { value: 'sector_lead', label: 'Sector Lead' },
   { value: 'team_lead', label: 'Team Lead' },
+  { value: 'assistant_team_lead', label: 'Assistant Team Lead' },
+  { value: 'membership_team_lead', label: 'Membership Team Lead' },
+  { value: 'membership_assistant_team_lead', label: 'Membership Assistant Team Lead' },
+  { value: 'info_center_lead', label: 'Information Center Lead' },
+  { value: 'info_center_worker', label: 'Information Center Worker' },
+  { value: 'training_coordinator', label: 'Training Coordinator' },
+  { value: 'class_teacher', label: 'Class Teacher' },
   { value: 'steward', label: 'Steward' },
   { value: 'member', label: 'Member' },
   { value: 'first_timer', label: 'First Timer' },

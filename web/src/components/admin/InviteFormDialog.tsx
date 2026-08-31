@@ -51,7 +51,6 @@ export function InviteFormDialog({
 }: InviteFormDialogProps) {
   const defaultValues: InviteFormValues = {
     email: '',
-    otp_code: '',
     role: 'member',
     used: false,
     expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),

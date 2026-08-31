@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
+	"github.com/hofchurchng/church-backend/internal/ent/attendancerecord"
 	"github.com/hofchurchng/church-backend/internal/ent/followup"
 	"github.com/hofchurchng/church-backend/internal/ent/localchurch"
 	"github.com/hofchurchng/church-backend/internal/ent/otpinvites"
@@ -20,10 +21,12 @@ import (
 	"github.com/hofchurchng/church-backend/internal/ent/soul"
 	"github.com/hofchurchng/church-backend/internal/ent/souljournal"
 	"github.com/hofchurchng/church-backend/internal/ent/team"
+	"github.com/hofchurchng/church-backend/internal/ent/teamtodo"
 	"github.com/hofchurchng/church-backend/internal/ent/teamvolunteers"
 	"github.com/hofchurchng/church-backend/internal/ent/user"
 	"github.com/hofchurchng/church-backend/internal/ent/usersector"
 	"github.com/hofchurchng/church-backend/internal/ent/userteam"
+	"github.com/hofchurchng/church-backend/internal/ent/visitor"
 )
 
 // UserCreate is the builder for creating a User entity.
@@ -110,6 +113,20 @@ func (_c *UserCreate) SetEmail(v string) *UserCreate {
 // SetPasswordHash sets the "password_hash" field.
 func (_c *UserCreate) SetPasswordHash(v string) *UserCreate {
 	_c.mutation.SetPasswordHash(v)
+	return _c
+}
+
+// SetPinHash sets the "pin_hash" field.
+func (_c *UserCreate) SetPinHash(v string) *UserCreate {
+	_c.mutation.SetPinHash(v)
+	return _c
+}
+
+// SetNillablePinHash sets the "pin_hash" field if the given value is not nil.
+func (_c *UserCreate) SetNillablePinHash(v *string) *UserCreate {
+	if v != nil {
+		_c.SetPinHash(*v)
+	}
 	return _c
 }
 
@@ -389,6 +406,51 @@ func (_c *UserCreate) AddUsedInvites(v ...*OtpInvites) *UserCreate {
 	return _c.AddUsedInviteIDs(ids...)
 }
 
+// AddCreatedVisitorIDs adds the "created_visitors" edge to the Visitor entity by IDs.
+func (_c *UserCreate) AddCreatedVisitorIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddCreatedVisitorIDs(ids...)
+	return _c
+}
+
+// AddCreatedVisitors adds the "created_visitors" edges to the Visitor entity.
+func (_c *UserCreate) AddCreatedVisitors(v ...*Visitor) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddCreatedVisitorIDs(ids...)
+}
+
+// AddRecordedAttendanceIDs adds the "recorded_attendances" edge to the AttendanceRecord entity by IDs.
+func (_c *UserCreate) AddRecordedAttendanceIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddRecordedAttendanceIDs(ids...)
+	return _c
+}
+
+// AddRecordedAttendances adds the "recorded_attendances" edges to the AttendanceRecord entity.
+func (_c *UserCreate) AddRecordedAttendances(v ...*AttendanceRecord) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddRecordedAttendanceIDs(ids...)
+}
+
+// AddCreatedTodoIDs adds the "created_todos" edge to the TeamTodo entity by IDs.
+func (_c *UserCreate) AddCreatedTodoIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddCreatedTodoIDs(ids...)
+	return _c
+}
+
+// AddCreatedTodos adds the "created_todos" edges to the TeamTodo entity.
+func (_c *UserCreate) AddCreatedTodos(v ...*TeamTodo) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddCreatedTodoIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (_c *UserCreate) Mutation() *UserMutation {
 	return _c.mutation
@@ -536,6 +598,10 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.PasswordHash(); ok {
 		_spec.SetField(user.FieldPasswordHash, field.TypeString, value)
 		_node.PasswordHash = value
+	}
+	if value, ok := _c.mutation.PinHash(); ok {
+		_spec.SetField(user.FieldPinHash, field.TypeString, value)
+		_node.PinHash = &value
 	}
 	if value, ok := _c.mutation.PhoneNumber(); ok {
 		_spec.SetField(user.FieldPhoneNumber, field.TypeString, value)
@@ -757,6 +823,54 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(otpinvites.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.CreatedVisitorsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CreatedVisitorsTable,
+			Columns: []string{user.CreatedVisitorsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(visitor.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.RecordedAttendancesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RecordedAttendancesTable,
+			Columns: []string{user.RecordedAttendancesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(attendancerecord.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.CreatedTodosIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CreatedTodosTable,
+			Columns: []string{user.CreatedTodosColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(teamtodo.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

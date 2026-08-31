@@ -6,7 +6,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/hofchurchng/church-backend/internal/ent/attendancerecord"
 	"github.com/hofchurchng/church-backend/internal/ent/churchevent"
+	"github.com/hofchurchng/church-backend/internal/ent/churchsetting"
 	"github.com/hofchurchng/church-backend/internal/ent/churchteams"
 	"github.com/hofchurchng/church-backend/internal/ent/districts"
 	"github.com/hofchurchng/church-backend/internal/ent/featureflag"
@@ -25,17 +27,29 @@ import (
 	"github.com/hofchurchng/church-backend/internal/ent/soul"
 	"github.com/hofchurchng/church-backend/internal/ent/souljournal"
 	"github.com/hofchurchng/church-backend/internal/ent/team"
+	"github.com/hofchurchng/church-backend/internal/ent/teamtodo"
 	"github.com/hofchurchng/church-backend/internal/ent/teamvolunteers"
 	"github.com/hofchurchng/church-backend/internal/ent/transportrequest"
 	"github.com/hofchurchng/church-backend/internal/ent/user"
 	"github.com/hofchurchng/church-backend/internal/ent/usersector"
 	"github.com/hofchurchng/church-backend/internal/ent/userteam"
+	"github.com/hofchurchng/church-backend/internal/ent/visitor"
 )
 
 // The init function reads all schema descriptors with runtime code
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	attendancerecordFields := schema.AttendanceRecord{}.Fields()
+	_ = attendancerecordFields
+	// attendancerecordDescCreatedAt is the schema descriptor for created_at field.
+	attendancerecordDescCreatedAt := attendancerecordFields[6].Descriptor()
+	// attendancerecord.DefaultCreatedAt holds the default value on creation for the created_at field.
+	attendancerecord.DefaultCreatedAt = attendancerecordDescCreatedAt.Default.(func() time.Time)
+	// attendancerecordDescID is the schema descriptor for id field.
+	attendancerecordDescID := attendancerecordFields[0].Descriptor()
+	// attendancerecord.DefaultID holds the default value on creation for the id field.
+	attendancerecord.DefaultID = attendancerecordDescID.Default.(func() uuid.UUID)
 	churcheventFields := schema.ChurchEvent{}.Fields()
 	_ = churcheventFields
 	// churcheventDescCreatedAt is the schema descriptor for created_at field.
@@ -52,6 +66,26 @@ func init() {
 	churcheventDescID := churcheventFields[0].Descriptor()
 	// churchevent.DefaultID holds the default value on creation for the id field.
 	churchevent.DefaultID = churcheventDescID.Default.(func() uuid.UUID)
+	churchsettingFields := schema.ChurchSetting{}.Fields()
+	_ = churchsettingFields
+	// churchsettingDescFoundationClassMinAttendance is the schema descriptor for foundation_class_min_attendance field.
+	churchsettingDescFoundationClassMinAttendance := churchsettingFields[2].Descriptor()
+	// churchsetting.DefaultFoundationClassMinAttendance holds the default value on creation for the foundation_class_min_attendance field.
+	churchsetting.DefaultFoundationClassMinAttendance = churchsettingDescFoundationClassMinAttendance.Default.(int)
+	// churchsettingDescCreatedAt is the schema descriptor for created_at field.
+	churchsettingDescCreatedAt := churchsettingFields[3].Descriptor()
+	// churchsetting.DefaultCreatedAt holds the default value on creation for the created_at field.
+	churchsetting.DefaultCreatedAt = churchsettingDescCreatedAt.Default.(func() time.Time)
+	// churchsettingDescUpdatedAt is the schema descriptor for updated_at field.
+	churchsettingDescUpdatedAt := churchsettingFields[4].Descriptor()
+	// churchsetting.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	churchsetting.DefaultUpdatedAt = churchsettingDescUpdatedAt.Default.(func() time.Time)
+	// churchsetting.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	churchsetting.UpdateDefaultUpdatedAt = churchsettingDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// churchsettingDescID is the schema descriptor for id field.
+	churchsettingDescID := churchsettingFields[0].Descriptor()
+	// churchsetting.DefaultID holds the default value on creation for the id field.
+	churchsetting.DefaultID = churchsettingDescID.Default.(func() uuid.UUID)
 	churchteamsFields := schema.ChurchTeams{}.Fields()
 	_ = churchteamsFields
 	// churchteamsDescCreatedAt is the schema descriptor for created_at field.
@@ -160,16 +194,20 @@ func init() {
 	memberDescIsPlaceholder := memberFields[18].Descriptor()
 	// member.DefaultIsPlaceholder holds the default value on creation for the is_placeholder field.
 	member.DefaultIsPlaceholder = memberDescIsPlaceholder.Default.(bool)
+	// memberDescIsProfiled is the schema descriptor for is_profiled field.
+	memberDescIsProfiled := memberFields[19].Descriptor()
+	// member.DefaultIsProfiled holds the default value on creation for the is_profiled field.
+	member.DefaultIsProfiled = memberDescIsProfiled.Default.(bool)
 	// memberDescJoinedAt is the schema descriptor for joined_at field.
-	memberDescJoinedAt := memberFields[24].Descriptor()
+	memberDescJoinedAt := memberFields[28].Descriptor()
 	// member.DefaultJoinedAt holds the default value on creation for the joined_at field.
 	member.DefaultJoinedAt = memberDescJoinedAt.Default.(func() time.Time)
 	// memberDescCreatedAt is the schema descriptor for created_at field.
-	memberDescCreatedAt := memberFields[25].Descriptor()
+	memberDescCreatedAt := memberFields[29].Descriptor()
 	// member.DefaultCreatedAt holds the default value on creation for the created_at field.
 	member.DefaultCreatedAt = memberDescCreatedAt.Default.(func() time.Time)
 	// memberDescUpdatedAt is the schema descriptor for updated_at field.
-	memberDescUpdatedAt := memberFields[26].Descriptor()
+	memberDescUpdatedAt := memberFields[30].Descriptor()
 	// member.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	member.DefaultUpdatedAt = memberDescUpdatedAt.Default.(func() time.Time)
 	// member.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
@@ -294,6 +332,28 @@ func init() {
 	teamDescID := teamFields[0].Descriptor()
 	// team.DefaultID holds the default value on creation for the id field.
 	team.DefaultID = teamDescID.Default.(func() uuid.UUID)
+	teamtodoFields := schema.TeamTodo{}.Fields()
+	_ = teamtodoFields
+	// teamtodoDescTargetTeam is the schema descriptor for target_team field.
+	teamtodoDescTargetTeam := teamtodoFields[2].Descriptor()
+	// teamtodo.TargetTeamValidator is a validator for the "target_team" field. It is called by the builders before save.
+	teamtodo.TargetTeamValidator = teamtodoDescTargetTeam.Validators[0].(func(string) error)
+	// teamtodoDescTitle is the schema descriptor for title field.
+	teamtodoDescTitle := teamtodoFields[3].Descriptor()
+	// teamtodo.TitleValidator is a validator for the "title" field. It is called by the builders before save.
+	teamtodo.TitleValidator = teamtodoDescTitle.Validators[0].(func(string) error)
+	// teamtodoDescEntityType is the schema descriptor for entity_type field.
+	teamtodoDescEntityType := teamtodoFields[5].Descriptor()
+	// teamtodo.EntityTypeValidator is a validator for the "entity_type" field. It is called by the builders before save.
+	teamtodo.EntityTypeValidator = teamtodoDescEntityType.Validators[0].(func(string) error)
+	// teamtodoDescCreatedAt is the schema descriptor for created_at field.
+	teamtodoDescCreatedAt := teamtodoFields[10].Descriptor()
+	// teamtodo.DefaultCreatedAt holds the default value on creation for the created_at field.
+	teamtodo.DefaultCreatedAt = teamtodoDescCreatedAt.Default.(func() time.Time)
+	// teamtodoDescID is the schema descriptor for id field.
+	teamtodoDescID := teamtodoFields[0].Descriptor()
+	// teamtodo.DefaultID holds the default value on creation for the id field.
+	teamtodo.DefaultID = teamtodoDescID.Default.(func() uuid.UUID)
 	teamvolunteersFields := schema.TeamVolunteers{}.Fields()
 	_ = teamvolunteersFields
 	// teamvolunteersDescCreatedAt is the schema descriptor for created_at field.
@@ -327,11 +387,11 @@ func init() {
 	userFields := schema.User{}.Fields()
 	_ = userFields
 	// userDescIsProfileComplete is the schema descriptor for is_profile_complete field.
-	userDescIsProfileComplete := userFields[15].Descriptor()
+	userDescIsProfileComplete := userFields[16].Descriptor()
 	// user.DefaultIsProfileComplete holds the default value on creation for the is_profile_complete field.
 	user.DefaultIsProfileComplete = userDescIsProfileComplete.Default.(bool)
 	// userDescCreatedAt is the schema descriptor for created_at field.
-	userDescCreatedAt := userFields[16].Descriptor()
+	userDescCreatedAt := userFields[17].Descriptor()
 	// user.DefaultCreatedAt holds the default value on creation for the created_at field.
 	user.DefaultCreatedAt = userDescCreatedAt.Default.(func() time.Time)
 	// userDescID is the schema descriptor for id field.
@@ -364,4 +424,48 @@ func init() {
 	userteamDescID := userteamFields[0].Descriptor()
 	// userteam.DefaultID holds the default value on creation for the id field.
 	userteam.DefaultID = userteamDescID.Default.(func() uuid.UUID)
+	visitorFields := schema.Visitor{}.Fields()
+	_ = visitorFields
+	// visitorDescFirstName is the schema descriptor for first_name field.
+	visitorDescFirstName := visitorFields[2].Descriptor()
+	// visitor.FirstNameValidator is a validator for the "first_name" field. It is called by the builders before save.
+	visitor.FirstNameValidator = visitorDescFirstName.Validators[0].(func(string) error)
+	// visitorDescLastName is the schema descriptor for last_name field.
+	visitorDescLastName := visitorFields[3].Descriptor()
+	// visitor.LastNameValidator is a validator for the "last_name" field. It is called by the builders before save.
+	visitor.LastNameValidator = visitorDescLastName.Validators[0].(func(string) error)
+	// visitorDescPhoneNumber is the schema descriptor for phone_number field.
+	visitorDescPhoneNumber := visitorFields[4].Descriptor()
+	// visitor.PhoneNumberValidator is a validator for the "phone_number" field. It is called by the builders before save.
+	visitor.PhoneNumberValidator = visitorDescPhoneNumber.Validators[0].(func(string) error)
+	// visitorDescAddress is the schema descriptor for address field.
+	visitorDescAddress := visitorFields[7].Descriptor()
+	// visitor.AddressValidator is a validator for the "address" field. It is called by the builders before save.
+	visitor.AddressValidator = visitorDescAddress.Validators[0].(func(string) error)
+	// visitorDescFirstAttendanceDate is the schema descriptor for first_attendance_date field.
+	visitorDescFirstAttendanceDate := visitorFields[8].Descriptor()
+	// visitor.DefaultFirstAttendanceDate holds the default value on creation for the first_attendance_date field.
+	visitor.DefaultFirstAttendanceDate = visitorDescFirstAttendanceDate.Default.(func() time.Time)
+	// visitorDescVisitCount is the schema descriptor for visit_count field.
+	visitorDescVisitCount := visitorFields[12].Descriptor()
+	// visitor.DefaultVisitCount holds the default value on creation for the visit_count field.
+	visitor.DefaultVisitCount = visitorDescVisitCount.Default.(int)
+	// visitorDescLastAttendedDate is the schema descriptor for last_attended_date field.
+	visitorDescLastAttendedDate := visitorFields[13].Descriptor()
+	// visitor.DefaultLastAttendedDate holds the default value on creation for the last_attended_date field.
+	visitor.DefaultLastAttendedDate = visitorDescLastAttendedDate.Default.(func() time.Time)
+	// visitorDescCreatedAt is the schema descriptor for created_at field.
+	visitorDescCreatedAt := visitorFields[18].Descriptor()
+	// visitor.DefaultCreatedAt holds the default value on creation for the created_at field.
+	visitor.DefaultCreatedAt = visitorDescCreatedAt.Default.(func() time.Time)
+	// visitorDescUpdatedAt is the schema descriptor for updated_at field.
+	visitorDescUpdatedAt := visitorFields[19].Descriptor()
+	// visitor.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	visitor.DefaultUpdatedAt = visitorDescUpdatedAt.Default.(func() time.Time)
+	// visitor.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	visitor.UpdateDefaultUpdatedAt = visitorDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// visitorDescID is the schema descriptor for id field.
+	visitorDescID := visitorFields[0].Descriptor()
+	// visitor.DefaultID holds the default value on creation for the id field.
+	visitor.DefaultID = visitorDescID.Default.(func() uuid.UUID)
 }

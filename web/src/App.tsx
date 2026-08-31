@@ -35,6 +35,10 @@ import AnniversaryTracker from "./pages/teams/AnniversaryTracker";
 import MemberJourney from "./pages/teams/MemberJourney";
 import InfoCenterDashboard from "./pages/teams/InfoCenterDashboard";
 import InfoCenterMembers from "./pages/teams/InfoCenterMembers";
+import VisitorIntake from "./pages/teams/VisitorIntake";
+import AttendanceTracking from "./pages/teams/AttendanceTracking";
+import FoundationCandidates from "./pages/teams/FoundationCandidates";
+import ProfilingQueue from "./pages/teams/ProfilingQueue";
 
 import { FeatureFlagProvider } from "./contexts/FeatureFlagContext";
 import FeatureFlagGate from "./components/auth/FeatureFlagGate";
@@ -157,7 +161,12 @@ const App = () => (
                     <MemberJourney />
                   </FeatureFlagGate>
                 } />
-                
+                <Route path="teams/membership/profiling-queue" element={
+                  <FeatureFlagGate flagKey="feature_membership_team">
+                    <ProfilingQueue />
+                  </FeatureFlagGate>
+                } />
+
                 {/* Information Center routes */}
                 <Route path="teams/info-center" element={
                   <FeatureFlagGate flagKey="feature_info_center">
@@ -172,6 +181,21 @@ const App = () => (
                 <Route path="teams/info-center/journey" element={
                   <FeatureFlagGate flagKey="feature_info_center">
                     <MemberJourney />
+                  </FeatureFlagGate>
+                } />
+                <Route path="teams/info-center/new-visitor" element={
+                  <FeatureFlagGate flagKey="feature_info_center">
+                    <VisitorIntake />
+                  </FeatureFlagGate>
+                } />
+                <Route path="teams/info-center/attendance" element={
+                  <FeatureFlagGate flagKey="feature_info_center">
+                    <AttendanceTracking />
+                  </FeatureFlagGate>
+                } />
+                <Route path="teams/info-center/foundation-class" element={
+                  <FeatureFlagGate flagKey="feature_info_center">
+                    <FoundationCandidates />
                   </FeatureFlagGate>
                 } />
               </Route>

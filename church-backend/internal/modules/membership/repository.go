@@ -14,6 +14,7 @@ import (
 	"github.com/hofchurchng/church-backend/internal/ent/member"
 	"github.com/hofchurchng/church-backend/internal/ent/membershipstagehistory"
 	"github.com/hofchurchng/church-backend/internal/ent/memberteam"
+	"github.com/hofchurchng/church-backend/internal/ent/teamtodo"
 	"github.com/hofchurchng/church-backend/internal/ent/user"
 	entuser "github.com/hofchurchng/church-backend/internal/ent/user"
 	"github.com/hofchurchng/church-backend/internal/ent/usersector"
@@ -708,6 +709,24 @@ func mapEntMemberToContract(m *ent.Member, userRole ...string) contracts.Member 
 		teamID = &id
 	}
 
+	var profiledBy *string
+	if m.ProfiledByUserID != nil {
+		p := m.ProfiledByUserID.String()
+		profiledBy = &p
+	}
+
+	var profiledAt *string
+	if m.ProfiledAt != nil {
+		pa := m.ProfiledAt.Format(time.RFC3339)
+		profiledAt = &pa
+	}
+
+	var volunteeringTeamID *string
+	if m.VolunteeringTeamID != nil {
+		vt := m.VolunteeringTeamID.String()
+		volunteeringTeamID = &vt
+	}
+
 	return contracts.Member{
 		ID:                      m.ID.String(),
 		FirstName:               m.FirstName,
@@ -728,6 +747,9 @@ func mapEntMemberToContract(m *ent.Member, userRole ...string) contracts.Member 
 		Allergies:               m.Allergies,
 		MedicalNotes:            m.MedicalNotes,
 		IsPlaceholder:           m.IsPlaceholder,
+		IsProfiled:              m.IsProfiled,
+		ProfiledByUserID:        profiledBy,
+		ProfiledAt:              profiledAt,
 		SourceTeam:              m.SourceTeam,
 		CreatedBy:               createdBy,
 		LocalChurchID:           localChurchID,
@@ -736,6 +758,7 @@ func mapEntMemberToContract(m *ent.Member, userRole ...string) contracts.Member 
 		SectorName:              sectorName,
 		TeamID:                  teamID,
 		TeamName:                teamName,
+		VolunteeringTeamID:      volunteeringTeamID,
 		CurrentStage:            string(m.CurrentStage),
 		Role:                    role,
 		Roles:                   []string{role},
@@ -1000,4 +1023,84 @@ func (r *Repository) DeleteGuardianRelationship(ctx context.Context, relID strin
 		return err
 	}
 	return r.db.GuardianRelationship.DeleteOneID(rID).Exec(ctx)
+}
+
+func (r *Repository) ListTeamTodos(ctx context.Context, userID string, targetTeam string, status string) ([]contracts.TeamTodoDTO, error) {
+	uid, err := uuid.Parse(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	u, err := r.db.User.Get(ctx, uid)
+	if err != nil {
+		return nil, fmt.Errorf("user not found: %w", err)
+	}
+
+	query := r.db.TeamTodo.Query().
+		Where(teamtodo.TargetTeamEQ(targetTeam))
+
+	if u.ChurchID != nil {
+		query = query.Where(teamtodo.ChurchIDEQ(*u.ChurchID))
+	}
+
+	if status != "" {
+		query = query.Where(teamtodo.StatusEQ(teamtodo.Status(status)))
+	}
+
+	todos, err := query.Order(ent.Desc(teamtodo.FieldCreatedAt)).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]contracts.TeamTodoDTO, 0, len(todos))
+	for _, t := range todos {
+		var completedBy *string
+		if t.CompletedBy != nil {
+			cb := t.CompletedBy.String()
+			completedBy = &cb
+		}
+		var desc *string
+		if t.Description != nil {
+			desc = t.Description
+		}
+
+		out = append(out, contracts.TeamTodoDTO{
+			ID:          t.ID.String(),
+			ChurchID:    t.ChurchID.String(),
+			TargetTeam:  t.TargetTeam,
+			Title:       t.Title,
+			Description: desc,
+			EntityType:  t.EntityType,
+			EntityID:    t.EntityID.String(),
+			Status:      string(t.Status),
+			CreatedBy:   t.CreatedBy.String(),
+			CompletedBy: completedBy,
+			CreatedAt:   t.CreatedAt,
+			CompletedAt: t.CompletedAt,
+		})
+	}
+	return out, nil
+}
+
+func (r *Repository) CompleteTeamTodo(ctx context.Context, entityID string, completedByUserID string) error {
+	eid, err := uuid.Parse(entityID)
+	if err != nil {
+		return err
+	}
+	cid, err := uuid.Parse(completedByUserID)
+	if err != nil {
+		return err
+	}
+
+	now := time.Now()
+	_, err = r.db.TeamTodo.Update().
+		Where(
+			teamtodo.EntityIDEQ(eid),
+			teamtodo.StatusEQ(teamtodo.StatusPending),
+		).
+		SetStatus(teamtodo.StatusCompleted).
+		SetCompletedBy(cid).
+		SetCompletedAt(now).
+		Save(ctx)
+	return err
 }
