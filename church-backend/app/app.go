@@ -92,10 +92,15 @@ func New(cfg config.Config, client *ent.Client, logWriter io.Writer) *echo.Echo 
 	// --- Echo router ---
 	e := echo.New()
 
-	origins := []string{"http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173"}
+	origins := []string{
+		"http://localhost:5173",
+		"http://localhost:3000",
+		"http://127.0.0.1:5173",
+		"https://heritage-mm-web-protal.vercel.app",
+	}
 	if cfg.FrontendURL != "" {
 		for _, o := range strings.Split(cfg.FrontendURL, ",") {
-			trimmed := strings.TrimSpace(o)
+			trimmed := strings.TrimRight(strings.TrimSpace(o), "/")
 			if trimmed != "" {
 				origins = append(origins, trimmed)
 			}
@@ -105,15 +110,46 @@ func New(cfg config.Config, client *ent.Client, logWriter io.Writer) *echo.Echo 
 	e.Use(middleware.RequestResponseLogger(logWriter))
 	e.Use(echoMiddleware.Recover())
 	e.Use(echoMiddleware.CORSWithConfig(echoMiddleware.CORSConfig{
-		AllowOrigins:     origins,
-		AllowMethods:     []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete, http.MethodOptions},
-		AllowHeaders:     []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept, echo.HeaderAuthorization},
+		AllowOrigins: origins,
+		AllowMethods: []string{
+			http.MethodGet,
+			http.MethodPost,
+			http.MethodPut,
+			http.MethodPatch,
+			http.MethodDelete,
+			http.MethodOptions,
+			http.MethodHead,
+		},
+		AllowHeaders: []string{
+			echo.HeaderOrigin,
+			echo.HeaderContentType,
+			echo.HeaderAccept,
+			echo.HeaderAuthorization,
+			"X-Requested-With",
+			"Accept-Encoding",
+			"Accept-Language",
+		},
 		AllowCredentials: true,
+		MaxAge:           86400,
 	}))
 
 	requireAuth := middleware.RequireAuth(cfg.JWTSecret)
 
+	e.GET("/", func(c echo.Context) error {
+		return c.JSON(http.StatusOK, map[string]string{
+			"status":  "ok",
+			"service": "Heritage SuperApp Backend",
+		})
+	})
+
 	api := e.Group("/api")
+
+	api.GET("", func(c echo.Context) error {
+		return c.JSON(http.StatusOK, map[string]string{
+			"status":  "ok",
+			"service": "Heritage SuperApp Backend API",
+		})
+	})
 
 	api.GET("/health-check", func(c echo.Context) error {
 		if _, err := client.User.Query().Count(c.Request().Context()); err != nil {
