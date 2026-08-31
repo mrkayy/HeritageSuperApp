@@ -181,7 +181,7 @@ export function AppSidebar() {
         <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-2 md:gap-3'}`}>
           <div className="w-6 h-6 md:w-8 md:h-8 lg:w-12 lg:h-12 flex items-center justify-center">
             <img 
-              src="/lovable-uploads/e1aa47db-ce0d-41de-acc4-3fd9d77b6b39.png" 
+              src="/logo-design.png" 
               alt="Soul Bank Logo" 
               className="w-6 h-6 md:w-8 md:h-8 lg:w-12 lg:h-12 object-contain"
             />
