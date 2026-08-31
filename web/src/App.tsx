@@ -20,9 +20,12 @@ import Leaderboard from "./pages/Leaderboard";
 import Admin from "./pages/admin/Admin";
 import AdminManagement from "./pages/admin/AdminManagement";
 import SuperAdmin from "./pages/admin/SuperAdmin";
-import SuperAdminDenominations from "./pages/admin/SuperAdminDenominations";
+import SuperAdminChurches from "./pages/admin/SuperAdminChurches";
 import SuperAdminInvites from "./pages/admin/SuperAdminInvites";
 import SuperAdminSettings from "./pages/admin/SuperAdminSettings";
+import SuperAdminAuditLogs from "./pages/admin/SuperAdminAuditLogs";
+import GeneralOverseerDossier from "./pages/admin/GeneralOverseerDossier";
+import ExecutiveAnalytics from "./pages/admin/ExecutiveAnalytics";
 import MemberInvites from "./pages/admin/MemberInvites";
 import FollowUpManagement from "./pages/admin/FollowUpManagement";
 import MemberAssignment from "./pages/admin/MemberAssignment";
@@ -131,9 +134,12 @@ const App = () => (
                   </FeatureFlagGate>
                 } />
                 <Route path="super-admin" element={<SuperAdmin />} />
-                <Route path="super-admin/denominations" element={<SuperAdminDenominations />} />
-                <Route path="super-admin/invites" element={<SuperAdminInvites />} />
+                <Route path="super-admin/churches" element={<SuperAdminChurches />} />
+                <Route path="super-admin/leadership-invites" element={<SuperAdminInvites />} />
+                <Route path="super-admin/audit-logs" element={<SuperAdminAuditLogs />} />
                 <Route path="super-admin/settings" element={<SuperAdminSettings />} />
+                <Route path="general-overseer/dossier" element={<GeneralOverseerDossier />} />
+                <Route path="analytics/executive" element={<ExecutiveAnalytics />} />
 
                 {/* Team specific capability routes */}
                 <Route path="teams/membership" element={

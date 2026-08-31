@@ -24,10 +24,38 @@ func (OtpInvites) Fields() []ent.Field {
 		field.Text("email"),
 		field.Text("otp_code").
 			Unique(),
-		field.UUID("sector_id", uuid.UUID{}),
-		field.UUID("church_id", uuid.UUID{}),
+		field.Text("first_name").
+			Optional().
+			Default(""),
+		field.Text("last_name").
+			Optional().
+			Default(""),
+		field.UUID("sector_id", uuid.UUID{}).
+			Optional().
+			Nillable(),
+		field.UUID("church_id", uuid.UUID{}).
+			Optional().
+			Nillable(),
 		field.Enum("role").
-			Values("church_admin", "team_lead", "resident_pastor", "steward", "member", "first_timer", "guest"),
+			Values(
+				"super_admin",
+				"general_overseer",
+				"resident_pastor",
+				"church_admin",
+				"sector_lead",
+				"team_lead",
+				"assistant_team_lead",
+				"membership_team_lead",
+				"membership_assistant_team_lead",
+				"info_center_lead",
+				"info_center_worker",
+				"training_coordinator",
+				"class_teacher",
+				"steward",
+				"member",
+				"first_timer",
+				"guest",
+			),
 		field.UUID("used_by_user_id", uuid.UUID{}).
 			Optional().
 			Nillable(),
@@ -46,13 +74,11 @@ func (OtpInvites) Edges() []ent.Edge {
 		edge.From("sector", Sector.Type).
 			Ref("otp_invites").
 			Unique().
-			Field("sector_id").
-			Required(),
+			Field("sector_id"),
 		edge.From("church", LocalChurch.Type).
 			Ref("otp_invites").
 			Unique().
-			Field("church_id").
-			Required(),
+			Field("church_id"),
 		edge.From("used_by_user", User.Type).
 			Ref("used_invites").
 			Unique().

@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/hofchurchng/church-backend/internal/ent/attendancerecord"
+	"github.com/hofchurchng/church-backend/internal/ent/auditlog"
 	"github.com/hofchurchng/church-backend/internal/ent/churchevent"
 	"github.com/hofchurchng/church-backend/internal/ent/churchsetting"
 	"github.com/hofchurchng/church-backend/internal/ent/churchteams"
@@ -50,6 +51,44 @@ func init() {
 	attendancerecordDescID := attendancerecordFields[0].Descriptor()
 	// attendancerecord.DefaultID holds the default value on creation for the id field.
 	attendancerecord.DefaultID = attendancerecordDescID.Default.(func() uuid.UUID)
+	auditlogFields := schema.AuditLog{}.Fields()
+	_ = auditlogFields
+	// auditlogDescActorName is the schema descriptor for actor_name field.
+	auditlogDescActorName := auditlogFields[2].Descriptor()
+	// auditlog.DefaultActorName holds the default value on creation for the actor_name field.
+	auditlog.DefaultActorName = auditlogDescActorName.Default.(string)
+	// auditlogDescActorEmail is the schema descriptor for actor_email field.
+	auditlogDescActorEmail := auditlogFields[3].Descriptor()
+	// auditlog.DefaultActorEmail holds the default value on creation for the actor_email field.
+	auditlog.DefaultActorEmail = auditlogDescActorEmail.Default.(string)
+	// auditlogDescActorRole is the schema descriptor for actor_role field.
+	auditlogDescActorRole := auditlogFields[4].Descriptor()
+	// auditlog.DefaultActorRole holds the default value on creation for the actor_role field.
+	auditlog.DefaultActorRole = auditlogDescActorRole.Default.(string)
+	// auditlogDescResourceID is the schema descriptor for resource_id field.
+	auditlogDescResourceID := auditlogFields[8].Descriptor()
+	// auditlog.DefaultResourceID holds the default value on creation for the resource_id field.
+	auditlog.DefaultResourceID = auditlogDescResourceID.Default.(string)
+	// auditlogDescDetails is the schema descriptor for details field.
+	auditlogDescDetails := auditlogFields[9].Descriptor()
+	// auditlog.DefaultDetails holds the default value on creation for the details field.
+	auditlog.DefaultDetails = auditlogDescDetails.Default.(string)
+	// auditlogDescIPAddress is the schema descriptor for ip_address field.
+	auditlogDescIPAddress := auditlogFields[10].Descriptor()
+	// auditlog.DefaultIPAddress holds the default value on creation for the ip_address field.
+	auditlog.DefaultIPAddress = auditlogDescIPAddress.Default.(string)
+	// auditlogDescUserAgent is the schema descriptor for user_agent field.
+	auditlogDescUserAgent := auditlogFields[11].Descriptor()
+	// auditlog.DefaultUserAgent holds the default value on creation for the user_agent field.
+	auditlog.DefaultUserAgent = auditlogDescUserAgent.Default.(string)
+	// auditlogDescCreatedAt is the schema descriptor for created_at field.
+	auditlogDescCreatedAt := auditlogFields[12].Descriptor()
+	// auditlog.DefaultCreatedAt holds the default value on creation for the created_at field.
+	auditlog.DefaultCreatedAt = auditlogDescCreatedAt.Default.(func() time.Time)
+	// auditlogDescID is the schema descriptor for id field.
+	auditlogDescID := auditlogFields[0].Descriptor()
+	// auditlog.DefaultID holds the default value on creation for the id field.
+	auditlog.DefaultID = auditlogDescID.Default.(func() uuid.UUID)
 	churcheventFields := schema.ChurchEvent{}.Fields()
 	_ = churcheventFields
 	// churcheventDescCreatedAt is the schema descriptor for created_at field.
@@ -172,8 +211,12 @@ func init() {
 	kidsministryprofile.DefaultID = kidsministryprofileDescID.Default.(func() uuid.UUID)
 	localchurchFields := schema.LocalChurch{}.Fields()
 	_ = localchurchFields
+	// localchurchDescIsActive is the schema descriptor for is_active field.
+	localchurchDescIsActive := localchurchFields[10].Descriptor()
+	// localchurch.DefaultIsActive holds the default value on creation for the is_active field.
+	localchurch.DefaultIsActive = localchurchDescIsActive.Default.(bool)
 	// localchurchDescCreatedAt is the schema descriptor for created_at field.
-	localchurchDescCreatedAt := localchurchFields[5].Descriptor()
+	localchurchDescCreatedAt := localchurchFields[11].Descriptor()
 	// localchurch.DefaultCreatedAt holds the default value on creation for the created_at field.
 	localchurch.DefaultCreatedAt = localchurchDescCreatedAt.Default.(func() time.Time)
 	// localchurchDescID is the schema descriptor for id field.
@@ -242,12 +285,20 @@ func init() {
 	membershipstagehistory.DefaultID = membershipstagehistoryDescID.Default.(func() uuid.UUID)
 	otpinvitesFields := schema.OtpInvites{}.Fields()
 	_ = otpinvitesFields
+	// otpinvitesDescFirstName is the schema descriptor for first_name field.
+	otpinvitesDescFirstName := otpinvitesFields[3].Descriptor()
+	// otpinvites.DefaultFirstName holds the default value on creation for the first_name field.
+	otpinvites.DefaultFirstName = otpinvitesDescFirstName.Default.(string)
+	// otpinvitesDescLastName is the schema descriptor for last_name field.
+	otpinvitesDescLastName := otpinvitesFields[4].Descriptor()
+	// otpinvites.DefaultLastName holds the default value on creation for the last_name field.
+	otpinvites.DefaultLastName = otpinvitesDescLastName.Default.(string)
 	// otpinvitesDescUsed is the schema descriptor for used field.
-	otpinvitesDescUsed := otpinvitesFields[7].Descriptor()
+	otpinvitesDescUsed := otpinvitesFields[9].Descriptor()
 	// otpinvites.DefaultUsed holds the default value on creation for the used field.
 	otpinvites.DefaultUsed = otpinvitesDescUsed.Default.(bool)
 	// otpinvitesDescCreatedAt is the schema descriptor for created_at field.
-	otpinvitesDescCreatedAt := otpinvitesFields[10].Descriptor()
+	otpinvitesDescCreatedAt := otpinvitesFields[12].Descriptor()
 	// otpinvites.DefaultCreatedAt holds the default value on creation for the created_at field.
 	otpinvites.DefaultCreatedAt = otpinvitesDescCreatedAt.Default.(func() time.Time)
 	// otpinvitesDescID is the schema descriptor for id field.

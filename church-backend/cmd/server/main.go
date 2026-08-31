@@ -12,6 +12,7 @@ import (
 	"os"
 
 	"github.com/hofchurchng/church-backend/internal/contracts"
+	"github.com/hofchurchng/church-backend/internal/modules/admin"
 	"github.com/hofchurchng/church-backend/internal/modules/auth"
 	"github.com/hofchurchng/church-backend/internal/modules/dashboard"
 	"github.com/hofchurchng/church-backend/internal/modules/featureflags"
@@ -102,6 +103,11 @@ func main() {
 	// Dashboard module handles admin dashboard aggregations
 	dashboardHandler := dashboard.NewHandler(client)
 
+	// Admin module handles branch management, leadership invites, 360 dossiers, audit logs & analytics
+	adminRepo := admin.NewRepository(client)
+	adminSvc := admin.NewService(adminRepo)
+	adminHandler := admin.NewHandler(adminSvc)
+
 	// Compile-time checks for cross-module contract compliance
 	var _ contracts.MembershipReader = membershipSvc
 	var _ contracts.ProfileReader = profileSvc
@@ -188,6 +194,26 @@ func main() {
 
 	dashboardGroup := api.Group("/dashboard", requireAuth)
 	dashboardHandler.Register(dashboardGroup)
+
+	// Super Admin routes
+	superAdminRole := middleware.RequireAnyRole(string(contracts.RoleSuperAdmin))
+	superAdminGroup := api.Group("/super-admin", requireAuth, superAdminRole)
+	adminHandler.RegisterSuperAdminRoutes(superAdminGroup)
+
+	// General Overseer Universal Member Intelligence routes
+	goRole := middleware.RequireAnyRole(string(contracts.RoleSuperAdmin), string(contracts.RoleGeneralOverseer))
+	goGroup := api.Group("/general-overseer", requireAuth, goRole)
+	adminHandler.RegisterGeneralOverseerRoutes(goGroup)
+
+	// Executive Analytics routes
+	execRole := middleware.RequireAnyRole(
+		string(contracts.RoleSuperAdmin),
+		string(contracts.RoleGeneralOverseer),
+		string(contracts.RoleResidentPastor),
+		string(contracts.RoleChurchAdmin),
+	)
+	analyticsGroup := api.Group("/analytics", requireAuth, execRole)
+	adminHandler.RegisterAnalyticsRoutes(analyticsGroup)
 
 	log.Printf("HOF Church backend listening on :%s", config.Port)
 	log.Fatal(e.Start(":" + config.Port))

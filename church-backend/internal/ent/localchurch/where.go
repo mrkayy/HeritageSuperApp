@@ -76,6 +76,36 @@ func Slug(v string) predicate.LocalChurch {
 	return predicate.LocalChurch(sql.FieldEQ(FieldSlug, v))
 }
 
+// Address applies equality check predicate on the "address" field. It's identical to AddressEQ.
+func Address(v string) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldEQ(FieldAddress, v))
+}
+
+// City applies equality check predicate on the "city" field. It's identical to CityEQ.
+func City(v string) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldEQ(FieldCity, v))
+}
+
+// State applies equality check predicate on the "state" field. It's identical to StateEQ.
+func State(v string) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldEQ(FieldState, v))
+}
+
+// ResidentPastorID applies equality check predicate on the "resident_pastor_id" field. It's identical to ResidentPastorIDEQ.
+func ResidentPastorID(v uuid.UUID) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldEQ(FieldResidentPastorID, v))
+}
+
+// ChurchAdminID applies equality check predicate on the "church_admin_id" field. It's identical to ChurchAdminIDEQ.
+func ChurchAdminID(v uuid.UUID) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldEQ(FieldChurchAdminID, v))
+}
+
+// IsActive applies equality check predicate on the "is_active" field. It's identical to IsActiveEQ.
+func IsActive(v bool) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldEQ(FieldIsActive, v))
+}
+
 // CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
 func CreatedAt(v time.Time) predicate.LocalChurch {
 	return predicate.LocalChurch(sql.FieldEQ(FieldCreatedAt, v))
@@ -349,6 +379,341 @@ func SlugEqualFold(v string) predicate.LocalChurch {
 // SlugContainsFold applies the ContainsFold predicate on the "slug" field.
 func SlugContainsFold(v string) predicate.LocalChurch {
 	return predicate.LocalChurch(sql.FieldContainsFold(FieldSlug, v))
+}
+
+// AddressEQ applies the EQ predicate on the "address" field.
+func AddressEQ(v string) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldEQ(FieldAddress, v))
+}
+
+// AddressNEQ applies the NEQ predicate on the "address" field.
+func AddressNEQ(v string) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldNEQ(FieldAddress, v))
+}
+
+// AddressIn applies the In predicate on the "address" field.
+func AddressIn(vs ...string) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldIn(FieldAddress, vs...))
+}
+
+// AddressNotIn applies the NotIn predicate on the "address" field.
+func AddressNotIn(vs ...string) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldNotIn(FieldAddress, vs...))
+}
+
+// AddressGT applies the GT predicate on the "address" field.
+func AddressGT(v string) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldGT(FieldAddress, v))
+}
+
+// AddressGTE applies the GTE predicate on the "address" field.
+func AddressGTE(v string) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldGTE(FieldAddress, v))
+}
+
+// AddressLT applies the LT predicate on the "address" field.
+func AddressLT(v string) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldLT(FieldAddress, v))
+}
+
+// AddressLTE applies the LTE predicate on the "address" field.
+func AddressLTE(v string) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldLTE(FieldAddress, v))
+}
+
+// AddressContains applies the Contains predicate on the "address" field.
+func AddressContains(v string) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldContains(FieldAddress, v))
+}
+
+// AddressHasPrefix applies the HasPrefix predicate on the "address" field.
+func AddressHasPrefix(v string) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldHasPrefix(FieldAddress, v))
+}
+
+// AddressHasSuffix applies the HasSuffix predicate on the "address" field.
+func AddressHasSuffix(v string) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldHasSuffix(FieldAddress, v))
+}
+
+// AddressIsNil applies the IsNil predicate on the "address" field.
+func AddressIsNil() predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldIsNull(FieldAddress))
+}
+
+// AddressNotNil applies the NotNil predicate on the "address" field.
+func AddressNotNil() predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldNotNull(FieldAddress))
+}
+
+// AddressEqualFold applies the EqualFold predicate on the "address" field.
+func AddressEqualFold(v string) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldEqualFold(FieldAddress, v))
+}
+
+// AddressContainsFold applies the ContainsFold predicate on the "address" field.
+func AddressContainsFold(v string) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldContainsFold(FieldAddress, v))
+}
+
+// CityEQ applies the EQ predicate on the "city" field.
+func CityEQ(v string) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldEQ(FieldCity, v))
+}
+
+// CityNEQ applies the NEQ predicate on the "city" field.
+func CityNEQ(v string) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldNEQ(FieldCity, v))
+}
+
+// CityIn applies the In predicate on the "city" field.
+func CityIn(vs ...string) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldIn(FieldCity, vs...))
+}
+
+// CityNotIn applies the NotIn predicate on the "city" field.
+func CityNotIn(vs ...string) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldNotIn(FieldCity, vs...))
+}
+
+// CityGT applies the GT predicate on the "city" field.
+func CityGT(v string) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldGT(FieldCity, v))
+}
+
+// CityGTE applies the GTE predicate on the "city" field.
+func CityGTE(v string) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldGTE(FieldCity, v))
+}
+
+// CityLT applies the LT predicate on the "city" field.
+func CityLT(v string) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldLT(FieldCity, v))
+}
+
+// CityLTE applies the LTE predicate on the "city" field.
+func CityLTE(v string) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldLTE(FieldCity, v))
+}
+
+// CityContains applies the Contains predicate on the "city" field.
+func CityContains(v string) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldContains(FieldCity, v))
+}
+
+// CityHasPrefix applies the HasPrefix predicate on the "city" field.
+func CityHasPrefix(v string) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldHasPrefix(FieldCity, v))
+}
+
+// CityHasSuffix applies the HasSuffix predicate on the "city" field.
+func CityHasSuffix(v string) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldHasSuffix(FieldCity, v))
+}
+
+// CityIsNil applies the IsNil predicate on the "city" field.
+func CityIsNil() predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldIsNull(FieldCity))
+}
+
+// CityNotNil applies the NotNil predicate on the "city" field.
+func CityNotNil() predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldNotNull(FieldCity))
+}
+
+// CityEqualFold applies the EqualFold predicate on the "city" field.
+func CityEqualFold(v string) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldEqualFold(FieldCity, v))
+}
+
+// CityContainsFold applies the ContainsFold predicate on the "city" field.
+func CityContainsFold(v string) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldContainsFold(FieldCity, v))
+}
+
+// StateEQ applies the EQ predicate on the "state" field.
+func StateEQ(v string) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldEQ(FieldState, v))
+}
+
+// StateNEQ applies the NEQ predicate on the "state" field.
+func StateNEQ(v string) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldNEQ(FieldState, v))
+}
+
+// StateIn applies the In predicate on the "state" field.
+func StateIn(vs ...string) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldIn(FieldState, vs...))
+}
+
+// StateNotIn applies the NotIn predicate on the "state" field.
+func StateNotIn(vs ...string) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldNotIn(FieldState, vs...))
+}
+
+// StateGT applies the GT predicate on the "state" field.
+func StateGT(v string) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldGT(FieldState, v))
+}
+
+// StateGTE applies the GTE predicate on the "state" field.
+func StateGTE(v string) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldGTE(FieldState, v))
+}
+
+// StateLT applies the LT predicate on the "state" field.
+func StateLT(v string) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldLT(FieldState, v))
+}
+
+// StateLTE applies the LTE predicate on the "state" field.
+func StateLTE(v string) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldLTE(FieldState, v))
+}
+
+// StateContains applies the Contains predicate on the "state" field.
+func StateContains(v string) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldContains(FieldState, v))
+}
+
+// StateHasPrefix applies the HasPrefix predicate on the "state" field.
+func StateHasPrefix(v string) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldHasPrefix(FieldState, v))
+}
+
+// StateHasSuffix applies the HasSuffix predicate on the "state" field.
+func StateHasSuffix(v string) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldHasSuffix(FieldState, v))
+}
+
+// StateIsNil applies the IsNil predicate on the "state" field.
+func StateIsNil() predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldIsNull(FieldState))
+}
+
+// StateNotNil applies the NotNil predicate on the "state" field.
+func StateNotNil() predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldNotNull(FieldState))
+}
+
+// StateEqualFold applies the EqualFold predicate on the "state" field.
+func StateEqualFold(v string) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldEqualFold(FieldState, v))
+}
+
+// StateContainsFold applies the ContainsFold predicate on the "state" field.
+func StateContainsFold(v string) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldContainsFold(FieldState, v))
+}
+
+// ResidentPastorIDEQ applies the EQ predicate on the "resident_pastor_id" field.
+func ResidentPastorIDEQ(v uuid.UUID) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldEQ(FieldResidentPastorID, v))
+}
+
+// ResidentPastorIDNEQ applies the NEQ predicate on the "resident_pastor_id" field.
+func ResidentPastorIDNEQ(v uuid.UUID) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldNEQ(FieldResidentPastorID, v))
+}
+
+// ResidentPastorIDIn applies the In predicate on the "resident_pastor_id" field.
+func ResidentPastorIDIn(vs ...uuid.UUID) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldIn(FieldResidentPastorID, vs...))
+}
+
+// ResidentPastorIDNotIn applies the NotIn predicate on the "resident_pastor_id" field.
+func ResidentPastorIDNotIn(vs ...uuid.UUID) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldNotIn(FieldResidentPastorID, vs...))
+}
+
+// ResidentPastorIDGT applies the GT predicate on the "resident_pastor_id" field.
+func ResidentPastorIDGT(v uuid.UUID) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldGT(FieldResidentPastorID, v))
+}
+
+// ResidentPastorIDGTE applies the GTE predicate on the "resident_pastor_id" field.
+func ResidentPastorIDGTE(v uuid.UUID) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldGTE(FieldResidentPastorID, v))
+}
+
+// ResidentPastorIDLT applies the LT predicate on the "resident_pastor_id" field.
+func ResidentPastorIDLT(v uuid.UUID) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldLT(FieldResidentPastorID, v))
+}
+
+// ResidentPastorIDLTE applies the LTE predicate on the "resident_pastor_id" field.
+func ResidentPastorIDLTE(v uuid.UUID) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldLTE(FieldResidentPastorID, v))
+}
+
+// ResidentPastorIDIsNil applies the IsNil predicate on the "resident_pastor_id" field.
+func ResidentPastorIDIsNil() predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldIsNull(FieldResidentPastorID))
+}
+
+// ResidentPastorIDNotNil applies the NotNil predicate on the "resident_pastor_id" field.
+func ResidentPastorIDNotNil() predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldNotNull(FieldResidentPastorID))
+}
+
+// ChurchAdminIDEQ applies the EQ predicate on the "church_admin_id" field.
+func ChurchAdminIDEQ(v uuid.UUID) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldEQ(FieldChurchAdminID, v))
+}
+
+// ChurchAdminIDNEQ applies the NEQ predicate on the "church_admin_id" field.
+func ChurchAdminIDNEQ(v uuid.UUID) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldNEQ(FieldChurchAdminID, v))
+}
+
+// ChurchAdminIDIn applies the In predicate on the "church_admin_id" field.
+func ChurchAdminIDIn(vs ...uuid.UUID) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldIn(FieldChurchAdminID, vs...))
+}
+
+// ChurchAdminIDNotIn applies the NotIn predicate on the "church_admin_id" field.
+func ChurchAdminIDNotIn(vs ...uuid.UUID) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldNotIn(FieldChurchAdminID, vs...))
+}
+
+// ChurchAdminIDGT applies the GT predicate on the "church_admin_id" field.
+func ChurchAdminIDGT(v uuid.UUID) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldGT(FieldChurchAdminID, v))
+}
+
+// ChurchAdminIDGTE applies the GTE predicate on the "church_admin_id" field.
+func ChurchAdminIDGTE(v uuid.UUID) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldGTE(FieldChurchAdminID, v))
+}
+
+// ChurchAdminIDLT applies the LT predicate on the "church_admin_id" field.
+func ChurchAdminIDLT(v uuid.UUID) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldLT(FieldChurchAdminID, v))
+}
+
+// ChurchAdminIDLTE applies the LTE predicate on the "church_admin_id" field.
+func ChurchAdminIDLTE(v uuid.UUID) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldLTE(FieldChurchAdminID, v))
+}
+
+// ChurchAdminIDIsNil applies the IsNil predicate on the "church_admin_id" field.
+func ChurchAdminIDIsNil() predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldIsNull(FieldChurchAdminID))
+}
+
+// ChurchAdminIDNotNil applies the NotNil predicate on the "church_admin_id" field.
+func ChurchAdminIDNotNil() predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldNotNull(FieldChurchAdminID))
+}
+
+// IsActiveEQ applies the EQ predicate on the "is_active" field.
+func IsActiveEQ(v bool) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldEQ(FieldIsActive, v))
+}
+
+// IsActiveNEQ applies the NEQ predicate on the "is_active" field.
+func IsActiveNEQ(v bool) predicate.LocalChurch {
+	return predicate.LocalChurch(sql.FieldNEQ(FieldIsActive, v))
 }
 
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.

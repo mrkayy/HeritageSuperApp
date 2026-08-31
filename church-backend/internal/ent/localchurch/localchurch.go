@@ -23,6 +23,18 @@ const (
 	FieldDescription = "description"
 	// FieldSlug holds the string denoting the slug field in the database.
 	FieldSlug = "slug"
+	// FieldAddress holds the string denoting the address field in the database.
+	FieldAddress = "address"
+	// FieldCity holds the string denoting the city field in the database.
+	FieldCity = "city"
+	// FieldState holds the string denoting the state field in the database.
+	FieldState = "state"
+	// FieldResidentPastorID holds the string denoting the resident_pastor_id field in the database.
+	FieldResidentPastorID = "resident_pastor_id"
+	// FieldChurchAdminID holds the string denoting the church_admin_id field in the database.
+	FieldChurchAdminID = "church_admin_id"
+	// FieldIsActive holds the string denoting the is_active field in the database.
+	FieldIsActive = "is_active"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
 	// EdgeMembers holds the string denoting the members edge name in mutations.
@@ -157,6 +169,12 @@ var Columns = []string{
 	FieldCenter,
 	FieldDescription,
 	FieldSlug,
+	FieldAddress,
+	FieldCity,
+	FieldState,
+	FieldResidentPastorID,
+	FieldChurchAdminID,
+	FieldIsActive,
 	FieldCreatedAt,
 }
 
@@ -171,6 +189,8 @@ func ValidColumn(column string) bool {
 }
 
 var (
+	// DefaultIsActive holds the default value on creation for the "is_active" field.
+	DefaultIsActive bool
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
 	// DefaultID holds the default value on creation for the "id" field.
@@ -203,6 +223,36 @@ func ByDescription(opts ...sql.OrderTermOption) OrderOption {
 // BySlug orders the results by the slug field.
 func BySlug(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldSlug, opts...).ToFunc()
+}
+
+// ByAddress orders the results by the address field.
+func ByAddress(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAddress, opts...).ToFunc()
+}
+
+// ByCity orders the results by the city field.
+func ByCity(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCity, opts...).ToFunc()
+}
+
+// ByState orders the results by the state field.
+func ByState(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldState, opts...).ToFunc()
+}
+
+// ByResidentPastorID orders the results by the resident_pastor_id field.
+func ByResidentPastorID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldResidentPastorID, opts...).ToFunc()
+}
+
+// ByChurchAdminID orders the results by the church_admin_id field.
+func ByChurchAdminID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldChurchAdminID, opts...).ToFunc()
+}
+
+// ByIsActive orders the results by the is_active field.
+func ByIsActive(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldIsActive, opts...).ToFunc()
 }
 
 // ByCreatedAt orders the results by the created_at field.

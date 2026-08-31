@@ -14,6 +14,8 @@ type Tx struct {
 	config
 	// AttendanceRecord is the client for interacting with the AttendanceRecord builders.
 	AttendanceRecord *AttendanceRecordClient
+	// AuditLog is the client for interacting with the AuditLog builders.
+	AuditLog *AuditLogClient
 	// ChurchEvent is the client for interacting with the ChurchEvent builders.
 	ChurchEvent *ChurchEventClient
 	// ChurchSetting is the client for interacting with the ChurchSetting builders.
@@ -198,6 +200,7 @@ func (tx *Tx) Client() *Client {
 
 func (tx *Tx) init() {
 	tx.AttendanceRecord = NewAttendanceRecordClient(tx.config)
+	tx.AuditLog = NewAuditLogClient(tx.config)
 	tx.ChurchEvent = NewChurchEventClient(tx.config)
 	tx.ChurchSetting = NewChurchSettingClient(tx.config)
 	tx.ChurchTeams = NewChurchTeamsClient(tx.config)

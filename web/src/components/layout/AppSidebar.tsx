@@ -15,6 +15,7 @@ import {
   LogOut,
   Shield,
   Building,
+  Building2,
   Users2,
   Cake,
   UserPlus,
@@ -24,7 +25,11 @@ import {
   ChevronDown,
   ClipboardList,
   GraduationCap,
-  UserCheck
+  UserCheck,
+  KeyRound,
+  ShieldAlert,
+  Sparkles,
+  BarChart3
 } from 'lucide-react';
 import {
   Sidebar,
@@ -53,7 +58,7 @@ interface MenuItemConfig {
 const menuItems: MenuItemConfig[] = [
   {
     title: "Dashboard",
-    url: "/",
+    url: "/dashboard",
     icon: Home,
   },
   {
@@ -88,57 +93,47 @@ const adminItems = [
     url: "/admin",
     icon: Settings,
   },
-  /*
-  // Commented out: No backend endpoints currently for Management, Follow-up Management, Member Management
-  {
-    title: "Management",
-    url: "/admin/management",
-    icon: Building,
-  },
-  */
   {
     title: "Member Invites",
     url: "/admin/member-invites",
     icon: Users2,
   },
-  /*
-  {
-    title: "Follow-up Management",
-    url: "/admin/follow-up-management",
-    icon: LucidePhoneCall,
-  },
-  {
-    title: "Member Management",
-    url: "/admin/member-assignment",
-    icon: FolderEdit,
-  }
-  */
 ];
 
 const superAdminItems = [
-  /*
-  // Commented out: Super Admin endpoints (denominations, invites, settings) not currently implemented in backend
   {
-    title: "Super Admin",
-    url: "/super-admin",
-    icon: Shield,
+    title: "Local Churches",
+    url: "/super-admin/churches",
+    icon: Building2,
   },
   {
-    title: "Denominations",
-    url: "/super-admin/denominations",
-    icon: Building,
+    title: "Leadership Invites",
+    url: "/super-admin/leadership-invites",
+    icon: KeyRound,
   },
   {
-    title: "Admin Invites",
-    url: "/super-admin/invites",
-    icon: Users2,
-  },
-  {
-    title: "App Settings",
+    title: "Feature Flags & Matrix",
     url: "/super-admin/settings",
     icon: LucideSettings,
-  }
-  */
+  },
+  {
+    title: "Security Audit Logs",
+    url: "/super-admin/audit-logs",
+    icon: ShieldAlert,
+  },
+];
+
+const executiveItems = [
+  {
+    title: "360° Member Dossier",
+    url: "/general-overseer/dossier",
+    icon: Sparkles,
+  },
+  {
+    title: "Executive Analytics",
+    url: "/analytics/executive",
+    icon: BarChart3,
+  },
 ];
 
 export function AppSidebar() {
@@ -365,7 +360,29 @@ export function AppSidebar() {
           </Collapsible>
         )}
 
-        {user?.role === 'super_admin' || user?.role === 'church_admin' && superAdminItems.length > 0 && (
+        {/* Universal Intelligence & Executive Analytics (GO, Super Admin, Resident Pastor, Church Admin) */}
+        {['super_admin', 'general_overseer', 'resident_pastor', 'church_admin'].includes(user?.role || '') && (
+          <SidebarGroup className="border-[0.75px] border-primary/30 rounded-xl p-1.5 mb-3 bg-card/30">
+            <SidebarGroupLabel className={isCollapsed ? "sr-only" : ""}>Executive Intelligence</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {executiveItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild isActive={location.pathname === item.url}>
+                      <Link to={item.url} className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
+                        <item.icon className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0 text-amber-500" />
+                        {!isCollapsed && <span className="text-xs">{item.title}</span>}
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {/* Super Administration (Platform Level Multi-Branch & Governance) */}
+        {user?.role === 'super_admin' && (
           <SidebarGroup className="border-[0.75px] border-primary/30 rounded-xl p-1.5 mb-3 bg-card/30">
             <SidebarGroupLabel className={isCollapsed ? "sr-only" : ""}>Super Administration</SidebarGroupLabel>
             <SidebarGroupContent>

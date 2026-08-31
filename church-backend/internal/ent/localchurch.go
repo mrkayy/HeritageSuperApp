@@ -26,6 +26,18 @@ type LocalChurch struct {
 	Description *string `json:"description,omitempty"`
 	// Slug holds the value of the "slug" field.
 	Slug string `json:"slug,omitempty"`
+	// Address holds the value of the "address" field.
+	Address *string `json:"address,omitempty"`
+	// City holds the value of the "city" field.
+	City *string `json:"city,omitempty"`
+	// State holds the value of the "state" field.
+	State *string `json:"state,omitempty"`
+	// ResidentPastorID holds the value of the "resident_pastor_id" field.
+	ResidentPastorID *uuid.UUID `json:"resident_pastor_id,omitempty"`
+	// ChurchAdminID holds the value of the "church_admin_id" field.
+	ChurchAdminID *uuid.UUID `json:"church_admin_id,omitempty"`
+	// IsActive holds the value of the "is_active" field.
+	IsActive bool `json:"is_active,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -167,7 +179,11 @@ func (*LocalChurch) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case localchurch.FieldName, localchurch.FieldCenter, localchurch.FieldDescription, localchurch.FieldSlug:
+		case localchurch.FieldResidentPastorID, localchurch.FieldChurchAdminID:
+			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
+		case localchurch.FieldIsActive:
+			values[i] = new(sql.NullBool)
+		case localchurch.FieldName, localchurch.FieldCenter, localchurch.FieldDescription, localchurch.FieldSlug, localchurch.FieldAddress, localchurch.FieldCity, localchurch.FieldState:
 			values[i] = new(sql.NullString)
 		case localchurch.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
@@ -218,6 +234,47 @@ func (_m *LocalChurch) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field slug", values[i])
 			} else if value.Valid {
 				_m.Slug = value.String
+			}
+		case localchurch.FieldAddress:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field address", values[i])
+			} else if value.Valid {
+				_m.Address = new(string)
+				*_m.Address = value.String
+			}
+		case localchurch.FieldCity:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field city", values[i])
+			} else if value.Valid {
+				_m.City = new(string)
+				*_m.City = value.String
+			}
+		case localchurch.FieldState:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field state", values[i])
+			} else if value.Valid {
+				_m.State = new(string)
+				*_m.State = value.String
+			}
+		case localchurch.FieldResidentPastorID:
+			if value, ok := values[i].(*sql.NullScanner); !ok {
+				return fmt.Errorf("unexpected type %T for field resident_pastor_id", values[i])
+			} else if value.Valid {
+				_m.ResidentPastorID = new(uuid.UUID)
+				*_m.ResidentPastorID = *value.S.(*uuid.UUID)
+			}
+		case localchurch.FieldChurchAdminID:
+			if value, ok := values[i].(*sql.NullScanner); !ok {
+				return fmt.Errorf("unexpected type %T for field church_admin_id", values[i])
+			} else if value.Valid {
+				_m.ChurchAdminID = new(uuid.UUID)
+				*_m.ChurchAdminID = *value.S.(*uuid.UUID)
+			}
+		case localchurch.FieldIsActive:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field is_active", values[i])
+			} else if value.Valid {
+				_m.IsActive = value.Bool
 			}
 		case localchurch.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -329,6 +386,34 @@ func (_m *LocalChurch) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("slug=")
 	builder.WriteString(_m.Slug)
+	builder.WriteString(", ")
+	if v := _m.Address; v != nil {
+		builder.WriteString("address=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.City; v != nil {
+		builder.WriteString("city=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.State; v != nil {
+		builder.WriteString("state=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.ResidentPastorID; v != nil {
+		builder.WriteString("resident_pastor_id=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.ChurchAdminID; v != nil {
+		builder.WriteString("church_admin_id=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	builder.WriteString("is_active=")
+	builder.WriteString(fmt.Sprintf("%v", _m.IsActive))
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
 	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))

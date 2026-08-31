@@ -695,7 +695,7 @@ As a Membership Team Lead / Church Admin, I want to transfer a member who has re
 #### 1. Local Church Branch Provisioning, Archival & Leadership Assignment
 
 **Priority:** High  
-**Status:** Not Started  
+**Status:** Done  
 
 **User Story:**  
 As a Super Admin, I want to create, configure, and manage Local Church branches under Heritage of Faith International Church, and assign or reassign their Resident Pastors and Church Admins, so that each branch operates with its own isolated local tenant data.
@@ -729,17 +729,17 @@ As a Super Admin, I want to create, configure, and manage Local Church branches 
 - `POST /api/v1/super-admin/churches/{id}/reassign-pastor`
 
 **Acceptance Criteria:**  
-- [ ] Super Admin can provision new local churches and assign leadership.
-- [ ] Dispatches leadership invitation magic links automatically.
-- [ ] Supports reassigning/transferring Resident Pastors between branches.
-- [ ] Allows archiving branches without data loss.
+- [x] Super Admin can provision new local churches and assign leadership.
+- [x] Dispatches leadership invitation magic links automatically.
+- [x] Supports reassigning/transferring Resident Pastors between branches.
+- [x] Allows archiving branches without data loss.
 
 ---
 
 #### 2. Executive Leadership Magic Link Invitation & Management Engine
 
 **Priority:** High  
-**Status:** Not Started  
+**Status:** Done  
 
 **User Story:**  
 As a Super Admin, I want to send secure Magic Link invitations to appoint new Super Admins, General Overseer accounts, Resident Pastors, and Church Admins, so that leadership onboarding is handled securely without manual password creation.
@@ -766,16 +766,16 @@ As a Super Admin, I want to send secure Magic Link invitations to appoint new Su
 - `DELETE /api/v1/super-admin/leadership/revoke/{id}`
 
 **Acceptance Criteria:**  
-- [ ] Dedicated invitation pipeline for platform and branch leadership separate from general member onboarding.
-- [ ] Single-use token validation with automatic expiration and revoke capability.
-- [ ] Sets up Security PIN on initial acceptance.
+- [x] Dedicated invitation pipeline for platform and branch leadership separate from general member onboarding.
+- [x] Single-use token validation with automatic expiration and revoke capability.
+- [x] Sets up Security PIN on initial acceptance.
 
 ---
 
 #### 3. Granular Branch & Global Feature Flag Management
 
 **Priority:** Medium  
-**Status:** Not Started  
+**Status:** Done  
 
 **User Story:**  
 As a Super Admin, I want to enable or disable specific modules per local church (e.g. Transport, Books/Merch) as well as global platform flags (e.g. V3 QR Self-Service Kiosks, System Maintenance Mode), so that features roll out safely and adapt to individual branch capacities.
@@ -805,15 +805,15 @@ As a Super Admin, I want to enable or disable specific modules per local church 
 - `GET/PUT /api/v1/super-admin/feature-flags/churches/{church_id}`
 
 **Acceptance Criteria:**  
-- [ ] Allows toggling specific feature modules per branch and globally.
-- [ ] Enforces immediate frontend menu hiding and backend route gating when a module is disabled.
+- [x] Allows toggling specific feature modules per branch and globally.
+- [x] Enforces immediate frontend menu hiding and backend route gating when a module is disabled.
 
 ---
 
 #### 4. General Overseer 360° Universal Member Intelligence Dossier & Cross-Branch Search
 
 **Priority:** High  
-**Status:** Not Started  
+**Status:** Done  
 
 **User Story:**  
 As the General Overseer or Super Admin, I want to search and query any church member across all branches by name to view their complete 360-degree spiritual dossier, discipleship milestones, lifetime Situation Reports, and past team engagements without managing day-to-day branch clerical work.
@@ -845,16 +845,16 @@ As the General Overseer or Super Admin, I want to search and query any church me
 - `GET /api/v1/general-overseer/members/{id}/360-dossier`
 
 **Acceptance Criteria:**  
-- [ ] General Overseer can search and view complete dossiers for members in any local church.
-- [ ] Aggregates all lifetime SitReps, academy grades, and spiritual milestones across all branch transfers.
-- [ ] Read-only executive perspective without cluttering local team queues.
+- [x] General Overseer can search and view complete dossiers for members in any local church.
+- [x] Aggregates all lifetime SitReps, academy grades, and spiritual milestones across all branch transfers.
+- [x] Read-only executive perspective without cluttering local team queues.
 
 ---
 
 #### 5. Cross-Branch Executive Analytics & Report Generator (PDF/CSV)
 
 **Priority:** High  
-**Status:** Not Started  
+**Status:** Done  
 
 **User Story:**  
 As the General Overseer, Super Admin, or Resident Pastor, I want an executive analytics dashboard with exportable PDF/CSV reports, so that leadership can evaluate global and branch-level church health, first-timer retention, discipleship funnel efficiency, and evangelism growth.
@@ -890,16 +890,16 @@ As the General Overseer, Super Admin, or Resident Pastor, I want an executive an
 - `POST /api/v1/analytics/export/csv`
 
 **Acceptance Criteria:**  
-- [ ] General Overseer & Super Admin see aggregated data across all branches; Resident Pastors see data scoped to their branch.
-- [ ] Visualizes discipleship pipeline conversion and retention rates.
-- [ ] Generates clean, downloadable PDF and CSV executive reports.
+- [x] General Overseer & Super Admin see aggregated data across all branches; Resident Pastors see data scoped to their branch.
+- [x] Visualizes discipleship pipeline conversion and retention rates.
+- [x] Generates clean, downloadable PDF and CSV executive reports.
 
 ---
 
 #### 6. Platform Security Center & Immutable Audit Trail
 
 **Priority:** High  
-**Status:** Not Started  
+**Status:** Done  
 
 **User Story:**  
 As a Super Admin, I want an immutable, tamper-evident audit log tracking all high-privilege operations (branch creation, leadership appointments, inter-branch transfers, role elevations, PIN resets), so that platform security and accountability are strictly maintained.
@@ -924,8 +924,8 @@ As a Super Admin, I want an immutable, tamper-evident audit log tracking all hig
 - Middleware automatically logs all state-changing mutations on administrative endpoints.
 
 **Acceptance Criteria:**  
-- [ ] Automatically records all high-privilege actions with actor, IP, timestamp, and payload diffs.
-- [ ] Read-only view with rich search and filtering.
+- [x] Automatically records all high-privilege actions with actor, IP, timestamp, and payload diffs.
+- [x] Read-only view with rich search and filtering.
 
 
 ---

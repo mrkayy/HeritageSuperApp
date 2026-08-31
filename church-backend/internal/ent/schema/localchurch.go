@@ -29,6 +29,24 @@ func (LocalChurch) Fields() []ent.Field {
 			Nillable(),
 		field.Text("slug").
 			Unique(),
+		field.Text("address").
+			Optional().
+			Nillable(),
+		field.Text("city").
+			Optional().
+			Nillable(),
+		field.Text("state").
+			Optional().
+			Nillable(),
+		field.UUID("resident_pastor_id", uuid.UUID{}).
+			Optional().
+			Nillable(),
+		field.UUID("church_admin_id", uuid.UUID{}).
+			Optional().
+			Nillable(),
+		field.Bool("is_active").
+			Default(true).
+			Annotations(entsql.Default("true")),
 		field.Time("created_at").
 			Default(time.Now),
 	}

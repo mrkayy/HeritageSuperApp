@@ -102,6 +102,120 @@ func (_u *LocalChurchUpdate) SetNillableSlug(v *string) *LocalChurchUpdate {
 	return _u
 }
 
+// SetAddress sets the "address" field.
+func (_u *LocalChurchUpdate) SetAddress(v string) *LocalChurchUpdate {
+	_u.mutation.SetAddress(v)
+	return _u
+}
+
+// SetNillableAddress sets the "address" field if the given value is not nil.
+func (_u *LocalChurchUpdate) SetNillableAddress(v *string) *LocalChurchUpdate {
+	if v != nil {
+		_u.SetAddress(*v)
+	}
+	return _u
+}
+
+// ClearAddress clears the value of the "address" field.
+func (_u *LocalChurchUpdate) ClearAddress() *LocalChurchUpdate {
+	_u.mutation.ClearAddress()
+	return _u
+}
+
+// SetCity sets the "city" field.
+func (_u *LocalChurchUpdate) SetCity(v string) *LocalChurchUpdate {
+	_u.mutation.SetCity(v)
+	return _u
+}
+
+// SetNillableCity sets the "city" field if the given value is not nil.
+func (_u *LocalChurchUpdate) SetNillableCity(v *string) *LocalChurchUpdate {
+	if v != nil {
+		_u.SetCity(*v)
+	}
+	return _u
+}
+
+// ClearCity clears the value of the "city" field.
+func (_u *LocalChurchUpdate) ClearCity() *LocalChurchUpdate {
+	_u.mutation.ClearCity()
+	return _u
+}
+
+// SetState sets the "state" field.
+func (_u *LocalChurchUpdate) SetState(v string) *LocalChurchUpdate {
+	_u.mutation.SetState(v)
+	return _u
+}
+
+// SetNillableState sets the "state" field if the given value is not nil.
+func (_u *LocalChurchUpdate) SetNillableState(v *string) *LocalChurchUpdate {
+	if v != nil {
+		_u.SetState(*v)
+	}
+	return _u
+}
+
+// ClearState clears the value of the "state" field.
+func (_u *LocalChurchUpdate) ClearState() *LocalChurchUpdate {
+	_u.mutation.ClearState()
+	return _u
+}
+
+// SetResidentPastorID sets the "resident_pastor_id" field.
+func (_u *LocalChurchUpdate) SetResidentPastorID(v uuid.UUID) *LocalChurchUpdate {
+	_u.mutation.SetResidentPastorID(v)
+	return _u
+}
+
+// SetNillableResidentPastorID sets the "resident_pastor_id" field if the given value is not nil.
+func (_u *LocalChurchUpdate) SetNillableResidentPastorID(v *uuid.UUID) *LocalChurchUpdate {
+	if v != nil {
+		_u.SetResidentPastorID(*v)
+	}
+	return _u
+}
+
+// ClearResidentPastorID clears the value of the "resident_pastor_id" field.
+func (_u *LocalChurchUpdate) ClearResidentPastorID() *LocalChurchUpdate {
+	_u.mutation.ClearResidentPastorID()
+	return _u
+}
+
+// SetChurchAdminID sets the "church_admin_id" field.
+func (_u *LocalChurchUpdate) SetChurchAdminID(v uuid.UUID) *LocalChurchUpdate {
+	_u.mutation.SetChurchAdminID(v)
+	return _u
+}
+
+// SetNillableChurchAdminID sets the "church_admin_id" field if the given value is not nil.
+func (_u *LocalChurchUpdate) SetNillableChurchAdminID(v *uuid.UUID) *LocalChurchUpdate {
+	if v != nil {
+		_u.SetChurchAdminID(*v)
+	}
+	return _u
+}
+
+// ClearChurchAdminID clears the value of the "church_admin_id" field.
+func (_u *LocalChurchUpdate) ClearChurchAdminID() *LocalChurchUpdate {
+	_u.mutation.ClearChurchAdminID()
+	return _u
+}
+
+// SetIsActive sets the "is_active" field.
+func (_u *LocalChurchUpdate) SetIsActive(v bool) *LocalChurchUpdate {
+	_u.mutation.SetIsActive(v)
+	return _u
+}
+
+// SetNillableIsActive sets the "is_active" field if the given value is not nil.
+func (_u *LocalChurchUpdate) SetNillableIsActive(v *bool) *LocalChurchUpdate {
+	if v != nil {
+		_u.SetIsActive(*v)
+	}
+	return _u
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (_u *LocalChurchUpdate) SetCreatedAt(v time.Time) *LocalChurchUpdate {
 	_u.mutation.SetCreatedAt(v)
@@ -567,6 +681,39 @@ func (_u *LocalChurchUpdate) sqlSave(ctx context.Context) (_node int, err error)
 	}
 	if value, ok := _u.mutation.Slug(); ok {
 		_spec.SetField(localchurch.FieldSlug, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.Address(); ok {
+		_spec.SetField(localchurch.FieldAddress, field.TypeString, value)
+	}
+	if _u.mutation.AddressCleared() {
+		_spec.ClearField(localchurch.FieldAddress, field.TypeString)
+	}
+	if value, ok := _u.mutation.City(); ok {
+		_spec.SetField(localchurch.FieldCity, field.TypeString, value)
+	}
+	if _u.mutation.CityCleared() {
+		_spec.ClearField(localchurch.FieldCity, field.TypeString)
+	}
+	if value, ok := _u.mutation.State(); ok {
+		_spec.SetField(localchurch.FieldState, field.TypeString, value)
+	}
+	if _u.mutation.StateCleared() {
+		_spec.ClearField(localchurch.FieldState, field.TypeString)
+	}
+	if value, ok := _u.mutation.ResidentPastorID(); ok {
+		_spec.SetField(localchurch.FieldResidentPastorID, field.TypeUUID, value)
+	}
+	if _u.mutation.ResidentPastorIDCleared() {
+		_spec.ClearField(localchurch.FieldResidentPastorID, field.TypeUUID)
+	}
+	if value, ok := _u.mutation.ChurchAdminID(); ok {
+		_spec.SetField(localchurch.FieldChurchAdminID, field.TypeUUID, value)
+	}
+	if _u.mutation.ChurchAdminIDCleared() {
+		_spec.ClearField(localchurch.FieldChurchAdminID, field.TypeUUID)
+	}
+	if value, ok := _u.mutation.IsActive(); ok {
+		_spec.SetField(localchurch.FieldIsActive, field.TypeBool, value)
 	}
 	if value, ok := _u.mutation.CreatedAt(); ok {
 		_spec.SetField(localchurch.FieldCreatedAt, field.TypeTime, value)
@@ -1148,6 +1295,120 @@ func (_u *LocalChurchUpdateOne) SetNillableSlug(v *string) *LocalChurchUpdateOne
 	return _u
 }
 
+// SetAddress sets the "address" field.
+func (_u *LocalChurchUpdateOne) SetAddress(v string) *LocalChurchUpdateOne {
+	_u.mutation.SetAddress(v)
+	return _u
+}
+
+// SetNillableAddress sets the "address" field if the given value is not nil.
+func (_u *LocalChurchUpdateOne) SetNillableAddress(v *string) *LocalChurchUpdateOne {
+	if v != nil {
+		_u.SetAddress(*v)
+	}
+	return _u
+}
+
+// ClearAddress clears the value of the "address" field.
+func (_u *LocalChurchUpdateOne) ClearAddress() *LocalChurchUpdateOne {
+	_u.mutation.ClearAddress()
+	return _u
+}
+
+// SetCity sets the "city" field.
+func (_u *LocalChurchUpdateOne) SetCity(v string) *LocalChurchUpdateOne {
+	_u.mutation.SetCity(v)
+	return _u
+}
+
+// SetNillableCity sets the "city" field if the given value is not nil.
+func (_u *LocalChurchUpdateOne) SetNillableCity(v *string) *LocalChurchUpdateOne {
+	if v != nil {
+		_u.SetCity(*v)
+	}
+	return _u
+}
+
+// ClearCity clears the value of the "city" field.
+func (_u *LocalChurchUpdateOne) ClearCity() *LocalChurchUpdateOne {
+	_u.mutation.ClearCity()
+	return _u
+}
+
+// SetState sets the "state" field.
+func (_u *LocalChurchUpdateOne) SetState(v string) *LocalChurchUpdateOne {
+	_u.mutation.SetState(v)
+	return _u
+}
+
+// SetNillableState sets the "state" field if the given value is not nil.
+func (_u *LocalChurchUpdateOne) SetNillableState(v *string) *LocalChurchUpdateOne {
+	if v != nil {
+		_u.SetState(*v)
+	}
+	return _u
+}
+
+// ClearState clears the value of the "state" field.
+func (_u *LocalChurchUpdateOne) ClearState() *LocalChurchUpdateOne {
+	_u.mutation.ClearState()
+	return _u
+}
+
+// SetResidentPastorID sets the "resident_pastor_id" field.
+func (_u *LocalChurchUpdateOne) SetResidentPastorID(v uuid.UUID) *LocalChurchUpdateOne {
+	_u.mutation.SetResidentPastorID(v)
+	return _u
+}
+
+// SetNillableResidentPastorID sets the "resident_pastor_id" field if the given value is not nil.
+func (_u *LocalChurchUpdateOne) SetNillableResidentPastorID(v *uuid.UUID) *LocalChurchUpdateOne {
+	if v != nil {
+		_u.SetResidentPastorID(*v)
+	}
+	return _u
+}
+
+// ClearResidentPastorID clears the value of the "resident_pastor_id" field.
+func (_u *LocalChurchUpdateOne) ClearResidentPastorID() *LocalChurchUpdateOne {
+	_u.mutation.ClearResidentPastorID()
+	return _u
+}
+
+// SetChurchAdminID sets the "church_admin_id" field.
+func (_u *LocalChurchUpdateOne) SetChurchAdminID(v uuid.UUID) *LocalChurchUpdateOne {
+	_u.mutation.SetChurchAdminID(v)
+	return _u
+}
+
+// SetNillableChurchAdminID sets the "church_admin_id" field if the given value is not nil.
+func (_u *LocalChurchUpdateOne) SetNillableChurchAdminID(v *uuid.UUID) *LocalChurchUpdateOne {
+	if v != nil {
+		_u.SetChurchAdminID(*v)
+	}
+	return _u
+}
+
+// ClearChurchAdminID clears the value of the "church_admin_id" field.
+func (_u *LocalChurchUpdateOne) ClearChurchAdminID() *LocalChurchUpdateOne {
+	_u.mutation.ClearChurchAdminID()
+	return _u
+}
+
+// SetIsActive sets the "is_active" field.
+func (_u *LocalChurchUpdateOne) SetIsActive(v bool) *LocalChurchUpdateOne {
+	_u.mutation.SetIsActive(v)
+	return _u
+}
+
+// SetNillableIsActive sets the "is_active" field if the given value is not nil.
+func (_u *LocalChurchUpdateOne) SetNillableIsActive(v *bool) *LocalChurchUpdateOne {
+	if v != nil {
+		_u.SetIsActive(*v)
+	}
+	return _u
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (_u *LocalChurchUpdateOne) SetCreatedAt(v time.Time) *LocalChurchUpdateOne {
 	_u.mutation.SetCreatedAt(v)
@@ -1643,6 +1904,39 @@ func (_u *LocalChurchUpdateOne) sqlSave(ctx context.Context) (_node *LocalChurch
 	}
 	if value, ok := _u.mutation.Slug(); ok {
 		_spec.SetField(localchurch.FieldSlug, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.Address(); ok {
+		_spec.SetField(localchurch.FieldAddress, field.TypeString, value)
+	}
+	if _u.mutation.AddressCleared() {
+		_spec.ClearField(localchurch.FieldAddress, field.TypeString)
+	}
+	if value, ok := _u.mutation.City(); ok {
+		_spec.SetField(localchurch.FieldCity, field.TypeString, value)
+	}
+	if _u.mutation.CityCleared() {
+		_spec.ClearField(localchurch.FieldCity, field.TypeString)
+	}
+	if value, ok := _u.mutation.State(); ok {
+		_spec.SetField(localchurch.FieldState, field.TypeString, value)
+	}
+	if _u.mutation.StateCleared() {
+		_spec.ClearField(localchurch.FieldState, field.TypeString)
+	}
+	if value, ok := _u.mutation.ResidentPastorID(); ok {
+		_spec.SetField(localchurch.FieldResidentPastorID, field.TypeUUID, value)
+	}
+	if _u.mutation.ResidentPastorIDCleared() {
+		_spec.ClearField(localchurch.FieldResidentPastorID, field.TypeUUID)
+	}
+	if value, ok := _u.mutation.ChurchAdminID(); ok {
+		_spec.SetField(localchurch.FieldChurchAdminID, field.TypeUUID, value)
+	}
+	if _u.mutation.ChurchAdminIDCleared() {
+		_spec.ClearField(localchurch.FieldChurchAdminID, field.TypeUUID)
+	}
+	if value, ok := _u.mutation.IsActive(); ok {
+		_spec.SetField(localchurch.FieldIsActive, field.TypeBool, value)
 	}
 	if value, ok := _u.mutation.CreatedAt(); ok {
 		_spec.SetField(localchurch.FieldCreatedAt, field.TypeTime, value)

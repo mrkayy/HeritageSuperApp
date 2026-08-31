@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/hofchurchng/church-backend/internal/ent/attendancerecord"
+	"github.com/hofchurchng/church-backend/internal/ent/auditlog"
 	"github.com/hofchurchng/church-backend/internal/ent/churchevent"
 	"github.com/hofchurchng/church-backend/internal/ent/churchsetting"
 	"github.com/hofchurchng/church-backend/internal/ent/churchteams"
@@ -100,6 +101,7 @@ func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
 			attendancerecord.Table:       attendancerecord.ValidColumn,
+			auditlog.Table:               auditlog.ValidColumn,
 			churchevent.Table:            churchevent.ValidColumn,
 			churchsetting.Table:          churchsetting.ValidColumn,
 			churchteams.Table:            churchteams.ValidColumn,
