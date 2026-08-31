@@ -11,11 +11,14 @@ import (
 )
 
 func main() {
-	logFile, err := os.OpenFile("app.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	var logFile *os.File
+	var err error
+	logFile, err = os.OpenFile("app.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
-		log.Fatalf("failed to open log file: %v", err)
+		log.Printf("warning: could not open app.log (%v), logging to stdout only", err)
+	} else {
+		defer logFile.Close()
 	}
-	defer logFile.Close()
 
 	ctx := context.Background()
 	cfg := config.Load()
