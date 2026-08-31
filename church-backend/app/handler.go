@@ -4,6 +4,8 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"net/url"
+	"strings"
 	"sync"
 
 	"github.com/hofchurchng/church-backend/internal/platform/config"
@@ -29,12 +31,18 @@ func ServerlessHandler(w http.ResponseWriter, r *http.Request) {
 	// Vercel rewrites overwrite r.URL.Path with "/api/index.go".
 	// The original path is forwarded via the __original_path query parameter
 	// set in vercel.json: /:path* -> /api/index.go?__original_path=/:path*
-	if path := r.URL.Query().Get("__original_path"); path != "" {
-		r.URL.Path = path
-		q := r.URL.Query()
-		q.Del("__original_path")
-		r.URL.RawQuery = q.Encode()
-		r.RequestURI = r.URL.RequestURI()
+	// Parse from r.RequestURI because Vercel's runtime may not populate r.URL.RawQuery.
+	if strings.Contains(r.RequestURI, "__original_path=") {
+		if parsed, err := url.Parse(r.RequestURI); err == nil {
+			if path := parsed.Query().Get("__original_path"); path != "" {
+				r.URL.Path = path
+				q := parsed.Query()
+				q.Del("__original_path")
+				q.Del("path")
+				r.URL.RawQuery = q.Encode()
+				r.RequestURI = r.URL.RequestURI()
+			}
+		}
 	}
 
 	e.ServeHTTP(w, r)
