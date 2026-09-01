@@ -29,13 +29,11 @@ func ServerlessHandler(w http.ResponseWriter, r *http.Request) {
 		engine = New(cfg, client, nil)
 	})
 
-	// Debug: dump raw request properties to identify what Vercel exposes
-	log.Printf("[DEBUG-RAW] RequestURI=%q URL.Path=%q URL.RawQuery=%q URL.RawPath=%q",
-		r.RequestURI, r.URL.Path, r.URL.RawQuery, r.URL.RawPath)
-	for k, v := range r.Header {
-		log.Printf("[DEBUG-RAW] Header %s=%v", k, v)
-	}
-
+	// Check all sources for the original path:
+	// 1. __original_path query parameter (from vercel.json)
+	// 2. path query parameter (from vercel.json /:path*)
+	// 3. x-matched-path header (from Vercel edge router)
+	// 4. x-forwarded-uri header
 	origPath := ""
 
 	q := r.URL.Query()
@@ -45,6 +43,7 @@ func ServerlessHandler(w http.ResponseWriter, r *http.Request) {
 		origPath = p
 	}
 
+	// Also check RequestURI if query param on URL wasn't parsed yet
 	if origPath == "" && strings.Contains(r.RequestURI, "__original_path=") {
 		if parsed, err := url.Parse(r.RequestURI); err == nil {
 			if p := parsed.Query().Get("__original_path"); p != "" {
@@ -53,6 +52,7 @@ func ServerlessHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Fallback to headers
 	if origPath == "" {
 		if h := r.Header.Get("x-matched-path"); h != "" && h != "/api/index.go" && h != "/api/index" {
 			origPath = h
@@ -62,14 +62,17 @@ func ServerlessHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if origPath != "" {
+		// Ensure leading slash
 		if !strings.HasPrefix(origPath, "/") {
 			origPath = "/" + origPath
 		}
+		// Strip query parameters if origPath included them
 		if idx := strings.Index(origPath, "?"); idx != -1 {
 			origPath = origPath[:idx]
 		}
 		r.URL.Path = origPath
 
+		// Clean internal Vercel routing parameters from query
 		q.Del("__original_path")
 		q.Del("path")
 		r.URL.RawQuery = q.Encode()
