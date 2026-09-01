@@ -3,8 +3,8 @@ package souls
 import (
 	"net/http"
 
+	"github.com/gin-gonic/gin"
 	"github.com/hofchurchng/church-backend/internal/contracts"
-	"github.com/labstack/echo/v4"
 )
 
 type Handler struct {
@@ -15,7 +15,7 @@ func NewHandler(svc *Service) *Handler {
 	return &Handler{svc: svc}
 }
 
-func (h *Handler) Register(g *echo.Group) {
+func (h *Handler) Register(g *gin.RouterGroup) {
 	g.POST("", h.createSoul)
 	g.GET("", h.listSouls)
 	g.GET("/:id", h.getSoul)
@@ -29,105 +29,115 @@ type journalPayload struct {
 	Note string `json:"note"`
 }
 
-func (h *Handler) createSoul(c echo.Context) error {
+func (h *Handler) createSoul(c *gin.Context) {
 	var input contracts.CreateSoulDTO
-	if err := c.Bind(&input); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		return
 	}
 
-	user, ok := contracts.UserFromContext(c.Request().Context())
+	user, ok := contracts.UserFromContext(c.Request.Context())
 	addedByUserID := ""
 	if ok {
 		addedByUserID = user.ID
 	}
 
-	soul, err := h.svc.CreateSoul(c.Request().Context(), input, addedByUserID)
+	soul, err := h.svc.CreateSoul(c.Request.Context(), input, addedByUserID)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
-	return c.JSON(http.StatusCreated, soul)
+	c.JSON(http.StatusCreated, soul)
 }
 
-func (h *Handler) listSouls(c echo.Context) error {
+func (h *Handler) listSouls(c *gin.Context) {
 	var filter contracts.SoulFilter
 
-	if uid := c.QueryParam("user_id"); uid != "" {
+	if uid := c.Query("user_id"); uid != "" {
 		filter.UserID = &uid
 	}
-	if status := c.QueryParam("response_status"); status != "" {
+	if status := c.Query("response_status"); status != "" {
 		s := contracts.ResponseStatus(status)
 		filter.ResponseStatus = &s
 	}
-	if sectorID := c.QueryParam("sector_id"); sectorID != "" {
+	if sectorID := c.Query("sector_id"); sectorID != "" {
 		filter.SectorID = &sectorID
 	}
-	if teamID := c.QueryParam("team_id"); teamID != "" {
+	if teamID := c.Query("team_id"); teamID != "" {
 		filter.TeamID = &teamID
 	}
 
-	souls, err := h.svc.ListSouls(c.Request().Context(), filter)
+	souls, err := h.svc.ListSouls(c.Request.Context(), filter)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
-	return c.JSON(http.StatusOK, souls)
+	c.JSON(http.StatusOK, souls)
 }
 
-func (h *Handler) getSoul(c echo.Context) error {
+func (h *Handler) getSoul(c *gin.Context) {
 	id := c.Param("id")
-	soul, err := h.svc.GetSoul(c.Request().Context(), id)
+	soul, err := h.svc.GetSoul(c.Request.Context(), id)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
 	}
-	return c.JSON(http.StatusOK, soul)
+	c.JSON(http.StatusOK, soul)
 }
 
-func (h *Handler) updateSoul(c echo.Context) error {
+func (h *Handler) updateSoul(c *gin.Context) {
 	id := c.Param("id")
 	var input contracts.UpdateSoulDTO
-	if err := c.Bind(&input); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		return
 	}
 
-	soul, err := h.svc.UpdateSoul(c.Request().Context(), id, input)
+	soul, err := h.svc.UpdateSoul(c.Request.Context(), id, input)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
-	return c.JSON(http.StatusOK, soul)
+	c.JSON(http.StatusOK, soul)
 }
 
-func (h *Handler) deleteSoul(c echo.Context) error {
+func (h *Handler) deleteSoul(c *gin.Context) {
 	id := c.Param("id")
-	if err := h.svc.DeleteSoul(c.Request().Context(), id); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	if err := h.svc.DeleteSoul(c.Request.Context(), id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
-	return c.NoContent(http.StatusNoContent)
+	c.Status(http.StatusNoContent)
 }
 
-func (h *Handler) addJournal(c echo.Context) error {
+func (h *Handler) addJournal(c *gin.Context) {
 	soulID := c.Param("id")
 	var payload journalPayload
-	if err := c.Bind(&payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		return
 	}
 
 	var userIDPtr *string
-	if user, ok := contracts.UserFromContext(c.Request().Context()); ok && user.ID != "" {
+	if user, ok := contracts.UserFromContext(c.Request.Context()); ok && user.ID != "" {
 		uid := user.ID
 		userIDPtr = &uid
 	}
 
-	journal, err := h.svc.AddSoulJournal(c.Request().Context(), soulID, userIDPtr, payload.Note)
+	journal, err := h.svc.AddSoulJournal(c.Request.Context(), soulID, userIDPtr, payload.Note)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
-	return c.JSON(http.StatusCreated, journal)
+	c.JSON(http.StatusCreated, journal)
 }
 
-func (h *Handler) getJournals(c echo.Context) error {
+func (h *Handler) getJournals(c *gin.Context) {
 	soulID := c.Param("id")
-	journals, err := h.svc.GetSoulJournals(c.Request().Context(), soulID)
+	journals, err := h.svc.GetSoulJournals(c.Request.Context(), soulID)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
-	return c.JSON(http.StatusOK, journals)
+	c.JSON(http.StatusOK, journals)
 }

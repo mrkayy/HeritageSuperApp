@@ -29,8 +29,8 @@ func main() {
 	}
 	defer client.Close()
 
-	e := app.New(cfg, client, logFile)
+	engine := app.New(cfg, client, logFile)
 
 	log.Printf("HOF Church backend listening on :%s", cfg.Port)
-	log.Fatal(e.Start(":" + cfg.Port))
+	log.Fatal(engine.Run(":" + cfg.Port))
 }

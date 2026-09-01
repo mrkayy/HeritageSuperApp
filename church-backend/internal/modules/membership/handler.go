@@ -5,9 +5,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/hofchurchng/church-backend/internal/contracts"
-	"github.com/labstack/echo/v4"
 )
 
 type Handler struct {
@@ -19,7 +19,7 @@ func NewHandler(svc *Service) *Handler {
 }
 
 // Register defines this module's endpoints on the group.
-func (h *Handler) Register(g *echo.Group) {
+func (h *Handler) Register(g *gin.RouterGroup) {
 	g.GET("", h.list)
 	g.GET("/stage-counts", h.stageCounts)
 	g.GET("/:id", h.get)
@@ -40,14 +40,14 @@ func (h *Handler) Register(g *echo.Group) {
 	g.DELETE("/relationships/:rel_id", h.deleteGuardianRelationship)
 }
 
-func (h *Handler) list(c echo.Context) error {
-	pageStr := c.QueryParam("page")
+func (h *Handler) list(c *gin.Context) {
+	pageStr := c.Query("page")
 	if pageStr != "" {
 		page, _ := strconv.Atoi(pageStr)
-		limit, _ := strconv.Atoi(c.QueryParam("limit"))
-		search := c.QueryParam("search")
-		stage := c.QueryParam("stage")
-		teamID := c.QueryParam("teamId")
+		limit, _ := strconv.Atoi(c.Query("limit"))
+		search := c.Query("search")
+		stage := c.Query("stage")
+		teamID := c.Query("teamId")
 
 		if page < 1 {
 			page = 1
@@ -56,45 +56,50 @@ func (h *Handler) list(c echo.Context) error {
 			limit = 50
 		}
 
-		members, total, err := h.svc.ListMembersPaginated(c.Request().Context(), page, limit, search, stage, teamID)
+		members, total, err := h.svc.ListMembersPaginated(c.Request.Context(), page, limit, search, stage, teamID)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
 		}
 
 		totalPages := (total + limit - 1) / limit
 
-		return c.JSON(http.StatusOK, echo.Map{
+		c.JSON(http.StatusOK, gin.H{
 			"members":    members,
 			"total":      total,
 			"page":       page,
 			"limit":      limit,
 			"totalPages": totalPages,
 		})
+		return
 	}
 
-	teamID := c.QueryParam("teamId")
-	members, err := h.svc.ListMembers(c.Request().Context(), teamID)
+	teamID := c.Query("teamId")
+	members, err := h.svc.ListMembers(c.Request.Context(), teamID)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
-	return c.JSON(http.StatusOK, members)
+	c.JSON(http.StatusOK, members)
 }
 
-func (h *Handler) stageCounts(c echo.Context) error {
-	counts, err := h.svc.GetStageCounts(c.Request().Context())
+func (h *Handler) stageCounts(c *gin.Context) {
+	counts, err := h.svc.GetStageCounts(c.Request.Context())
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
-	return c.JSON(http.StatusOK, counts)
+	c.JSON(http.StatusOK, counts)
 }
 
-func (h *Handler) get(c echo.Context) error {
+func (h *Handler) get(c *gin.Context) {
 	id := c.Param("id")
-	member, err := h.svc.GetMember(c.Request().Context(), id)
+	member, err := h.svc.GetMember(c.Request.Context(), id)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
 	}
-	return c.JSON(http.StatusOK, member)
+	c.JSON(http.StatusOK, member)
 }
 
 type createPayload struct {
@@ -124,13 +129,15 @@ type createPayload struct {
 	TeamID                  *string `json:"teamId"`
 }
 
-func (h *Handler) add(c echo.Context) error {
+func (h *Handler) add(c *gin.Context) {
 	var p createPayload
-	if err := c.Bind(&p); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	if err := c.ShouldBindJSON(&p); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
 	if p.FirstName == "" || p.Surname == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "firstName and surname are required")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "firstName and surname are required"})
+		return
 	}
 
 	role := ""
@@ -138,7 +145,7 @@ func (h *Handler) add(c echo.Context) error {
 		role = *p.Role
 	}
 
-	member, err := h.svc.AddMember(c.Request().Context(), AddMemberInput{
+	member, err := h.svc.AddMember(c.Request.Context(), AddMemberInput{
 		FirstName:               p.FirstName,
 		Surname:                 p.Surname,
 		Role:                    role,
@@ -165,19 +172,22 @@ func (h *Handler) add(c echo.Context) error {
 		TeamID:                  p.TeamID,
 	})
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
-	return c.JSON(http.StatusCreated, member)
+	c.JSON(http.StatusCreated, member)
 }
 
-func (h *Handler) update(c echo.Context) error {
+func (h *Handler) update(c *gin.Context) {
 	id := c.Param("id")
 	var p createPayload
-	if err := c.Bind(&p); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	if err := c.ShouldBindJSON(&p); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
 	if p.FirstName == "" || p.Surname == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "firstName and surname are required")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "firstName and surname are required"})
+		return
 	}
 
 	role := ""
@@ -185,7 +195,7 @@ func (h *Handler) update(c echo.Context) error {
 		role = *p.Role
 	}
 
-	member, err := h.svc.UpdateMember(c.Request().Context(), id, AddMemberInput{
+	member, err := h.svc.UpdateMember(c.Request.Context(), id, AddMemberInput{
 		FirstName:               p.FirstName,
 		Surname:                 p.Surname,
 		Role:                    role,
@@ -212,56 +222,64 @@ func (h *Handler) update(c echo.Context) error {
 		TeamID:                  p.TeamID,
 	})
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
-	return c.JSON(http.StatusOK, member)
+	c.JSON(http.StatusOK, member)
 }
 
-func (h *Handler) delete(c echo.Context) error {
-	userCtx, ok := contracts.UserFromContext(c.Request().Context())
+func (h *Handler) delete(c *gin.Context) {
+	userCtx, ok := contracts.UserFromContext(c.Request.Context())
 	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
 	}
 
 	canDelete := userCtx.HasRole("super_admin") || userCtx.HasRole("church_admin") || userCtx.HasRole("resident_pastor") || userCtx.HasRole("team_lead")
 	if !canDelete {
-		return echo.NewHTTPError(http.StatusForbidden, "only team leads and admins can delete member records")
+		c.JSON(http.StatusForbidden, gin.H{"error": "only team leads and admins can delete member records"})
+		return
 	}
 
 	id := c.Param("id")
-	err := h.svc.DeleteMember(c.Request().Context(), id)
+	err := h.svc.DeleteMember(c.Request.Context(), id)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
-	return c.NoContent(http.StatusNoContent)
+	c.Status(http.StatusNoContent)
 }
 
-func (h *Handler) getGuardianRelationships(c echo.Context) error {
+func (h *Handler) getGuardianRelationships(c *gin.Context) {
 	memberID := c.Param("id")
-	rels, err := h.svc.GetGuardianRelationships(c.Request().Context(), memberID)
+	rels, err := h.svc.GetGuardianRelationships(c.Request.Context(), memberID)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
-	return c.JSON(http.StatusOK, rels)
+	c.JSON(http.StatusOK, rels)
 }
 
-func (h *Handler) addGuardianRelationship(c echo.Context) error {
+func (h *Handler) addGuardianRelationship(c *gin.Context) {
 	var in GuardianRelationshipInput
-	if err := c.Bind(&in); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	if err := c.ShouldBindJSON(&in); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
-	if err := h.svc.AddGuardianRelationship(c.Request().Context(), in); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	if err := h.svc.AddGuardianRelationship(c.Request.Context(), in); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
-	return c.NoContent(http.StatusCreated)
+	c.Status(http.StatusCreated)
 }
 
-func (h *Handler) deleteGuardianRelationship(c echo.Context) error {
+func (h *Handler) deleteGuardianRelationship(c *gin.Context) {
 	relID := c.Param("rel_id")
-	if err := h.svc.DeleteGuardianRelationship(c.Request().Context(), relID); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	if err := h.svc.DeleteGuardianRelationship(c.Request.Context(), relID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
-	return c.NoContent(http.StatusNoContent)
+	c.Status(http.StatusNoContent)
 }
 
 type profilePayload struct {
@@ -276,10 +294,11 @@ type profilePayload struct {
 	ChurchID     *string `json:"church_id"`
 }
 
-func (h *Handler) profile(c echo.Context) error {
+func (h *Handler) profile(c *gin.Context) {
 	var p profilePayload
-	if err := c.Bind(&p); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	if err := c.ShouldBindJSON(&p); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
 
 	firstName := strings.TrimSpace(p.FirstName)
@@ -296,26 +315,27 @@ func (h *Handler) profile(c echo.Context) error {
 	}
 
 	if (name == "" && firstName == "") || p.Email == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "name and email are required")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "name and email are required"})
+		return
 	}
 
 	churchID := p.ChurchID
 	var creatorID *uuid.UUID
 	// If church_id not provided in payload, default to creator's church_id from context
-	if creatorUser, ok := contracts.UserFromContext(c.Request().Context()); ok && creatorUser.ID != "" {
+	if creatorUser, ok := contracts.UserFromContext(c.Request.Context()); ok && creatorUser.ID != "" {
 		if cid, err := uuid.Parse(creatorUser.ID); err == nil {
 			creatorID = &cid
 		}
 		if churchID == nil || *churchID == "" {
 			// Find creator's user record to get church_id
-			if u, err := h.svc.repo.db.User.Get(c.Request().Context(), uuid.MustParse(creatorUser.ID)); err == nil && u.ChurchID != nil {
+			if u, err := h.svc.repo.db.User.Get(c.Request.Context(), uuid.MustParse(creatorUser.ID)); err == nil && u.ChurchID != nil {
 				cid := u.ChurchID.String()
 				churchID = &cid
 			}
 		}
 	}
 
-	member, err := h.svc.ProfileMember(c.Request().Context(), ProfileMemberInput{
+	member, err := h.svc.ProfileMember(c.Request.Context(), ProfileMemberInput{
 		FirstName:    firstName,
 		Surname:      surname,
 		Name:         name,
@@ -328,86 +348,97 @@ func (h *Handler) profile(c echo.Context) error {
 		CreatedBy:    creatorID,
 	})
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
-	return c.JSON(http.StatusCreated, member)
+	c.JSON(http.StatusCreated, member)
 }
 
-func (h *Handler) bulkProfile(c echo.Context) error {
+func (h *Handler) bulkProfile(c *gin.Context) {
 	fileHeader, err := c.FormFile("file")
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "a CSV file is required under form field 'file'")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "a CSV file is required under form field 'file'"})
+		return
 	}
 
 	src, err := fileHeader.Open()
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "failed to open uploaded CSV file")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to open uploaded CSV file"})
+		return
 	}
 	defer src.Close()
 
 	var creatorID *uuid.UUID
-	if creatorUser, ok := contracts.UserFromContext(c.Request().Context()); ok && creatorUser.ID != "" {
+	if creatorUser, ok := contracts.UserFromContext(c.Request.Context()); ok && creatorUser.ID != "" {
 		if cid, err := uuid.Parse(creatorUser.ID); err == nil {
 			creatorID = &cid
 		}
 	}
 
-	res, err := h.svc.BulkImportCSV(c.Request().Context(), src, creatorID)
+	res, err := h.svc.BulkImportCSV(c.Request.Context(), src, creatorID)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
 
-	return c.JSON(http.StatusOK, res)
+	c.JSON(http.StatusOK, res)
 }
 
-func (h *Handler) profilingQueue(c echo.Context) error {
-	user, ok := contracts.UserFromContext(c.Request().Context())
+func (h *Handler) profilingQueue(c *gin.Context) {
+	user, ok := contracts.UserFromContext(c.Request.Context())
 	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
 	}
-	todos, err := h.svc.ListProfilingQueue(c.Request().Context(), user.ID)
+	todos, err := h.svc.ListProfilingQueue(c.Request.Context(), user.ID)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
-	return c.JSON(http.StatusOK, todos)
+	c.JSON(http.StatusOK, todos)
 }
 
-func (h *Handler) profileVisitor(c echo.Context) error {
+func (h *Handler) profileVisitor(c *gin.Context) {
 	visitorID := c.Param("visitor_id")
 	if visitorID == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "visitor_id is required")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "visitor_id is required"})
+		return
 	}
-	user, ok := contracts.UserFromContext(c.Request().Context())
+	user, ok := contracts.UserFromContext(c.Request.Context())
 	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
 	}
-	member, err := h.svc.ProfileVisitor(c.Request().Context(), visitorID, user.ID)
+	member, err := h.svc.ProfileVisitor(c.Request.Context(), visitorID, user.ID)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
-	return c.JSON(http.StatusCreated, member)
+	c.JSON(http.StatusCreated, member)
 }
 
-func (h *Handler) bulkProfileJSON(c echo.Context) error {
+func (h *Handler) bulkProfileJSON(c *gin.Context) {
 	var payload struct {
 		Members []AddMemberInput `json:"members"`
 	}
 
-	if err := c.Bind(&payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid request payload")
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request payload"})
+		return
 	}
 
 	var creatorID *uuid.UUID
-	if creatorUser, ok := contracts.UserFromContext(c.Request().Context()); ok && creatorUser.ID != "" {
+	if creatorUser, ok := contracts.UserFromContext(c.Request.Context()); ok && creatorUser.ID != "" {
 		if cid, err := uuid.Parse(creatorUser.ID); err == nil {
 			creatorID = &cid
 		}
 	}
 
-	res, err := h.svc.BulkImportJSON(c.Request().Context(), payload.Members, creatorID)
+	res, err := h.svc.BulkImportJSON(c.Request.Context(), payload.Members, creatorID)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
 
-	return c.JSON(http.StatusOK, res)
+	c.JSON(http.StatusOK, res)
 }

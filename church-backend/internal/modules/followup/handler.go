@@ -3,8 +3,8 @@ package followup
 import (
 	"net/http"
 
+	"github.com/gin-gonic/gin"
 	"github.com/hofchurchng/church-backend/internal/contracts"
-	"github.com/labstack/echo/v4"
 )
 
 type Handler struct {
@@ -15,7 +15,7 @@ func NewHandler(svc *Service) *Handler {
 	return &Handler{svc: svc}
 }
 
-func (h *Handler) Register(g *echo.Group) {
+func (h *Handler) Register(g *gin.RouterGroup) {
 	g.POST("", h.create)
 	g.GET("", h.list)
 	g.GET("/:id", h.get)
@@ -23,54 +23,61 @@ func (h *Handler) Register(g *echo.Group) {
 	g.DELETE("/:id", h.delete)
 }
 
-func (h *Handler) create(c echo.Context) error {
+func (h *Handler) create(c *gin.Context) {
 	var input contracts.CreateFollowUpDTO
-	if err := c.Bind(&input); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		return
 	}
 
-	res, err := h.svc.Create(c.Request().Context(), input)
+	res, err := h.svc.Create(c.Request.Context(), input)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
-	return c.JSON(http.StatusCreated, res)
+	c.JSON(http.StatusCreated, res)
 }
 
-func (h *Handler) list(c echo.Context) error {
-	res, err := h.svc.ListFollowUps(c.Request().Context())
+func (h *Handler) list(c *gin.Context) {
+	res, err := h.svc.ListFollowUps(c.Request.Context())
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
-	return c.JSON(http.StatusOK, res)
+	c.JSON(http.StatusOK, res)
 }
 
-func (h *Handler) get(c echo.Context) error {
+func (h *Handler) get(c *gin.Context) {
 	id := c.Param("id")
-	res, err := h.svc.GetFollowUp(c.Request().Context(), id)
+	res, err := h.svc.GetFollowUp(c.Request.Context(), id)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
 	}
-	return c.JSON(http.StatusOK, res)
+	c.JSON(http.StatusOK, res)
 }
 
-func (h *Handler) update(c echo.Context) error {
+func (h *Handler) update(c *gin.Context) {
 	id := c.Param("id")
 	var input contracts.UpdateFollowUpDTO
-	if err := c.Bind(&input); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		return
 	}
 
-	res, err := h.svc.Update(c.Request().Context(), id, input)
+	res, err := h.svc.Update(c.Request.Context(), id, input)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
-	return c.JSON(http.StatusOK, res)
+	c.JSON(http.StatusOK, res)
 }
 
-func (h *Handler) delete(c echo.Context) error {
+func (h *Handler) delete(c *gin.Context) {
 	id := c.Param("id")
-	if err := h.svc.Delete(c.Request().Context(), id); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	if err := h.svc.Delete(c.Request.Context(), id); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
-	return c.NoContent(http.StatusNoContent)
+	c.Status(http.StatusNoContent)
 }

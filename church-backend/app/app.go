@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/gin-gonic/gin"
 	"github.com/hofchurchng/church-backend/internal/contracts"
 	"github.com/hofchurchng/church-backend/internal/ent"
 	"github.com/hofchurchng/church-backend/internal/modules/admin"
@@ -20,13 +21,36 @@ import (
 	"github.com/hofchurchng/church-backend/internal/modules/transport"
 	"github.com/hofchurchng/church-backend/internal/platform/config"
 	"github.com/hofchurchng/church-backend/internal/platform/middleware"
-	"github.com/labstack/echo/v4"
-	echoMiddleware "github.com/labstack/echo/v4/middleware"
 )
 
-// New builds a fully wired Echo instance with all modules and middleware.
+func corsMiddleware(allowedOrigins []string) gin.HandlerFunc {
+	originMap := make(map[string]bool)
+	for _, o := range allowedOrigins {
+		originMap[o] = true
+	}
+
+	return func(c *gin.Context) {
+		origin := c.GetHeader("Origin")
+		if origin != "" && (originMap[origin] || len(allowedOrigins) == 0) {
+			c.Header("Access-Control-Allow-Origin", origin)
+			c.Header("Access-Control-Allow-Credentials", "true")
+			c.Header("Access-Control-Allow-Headers", "Origin, Content-Type, Accept, Authorization, X-Requested-With, Accept-Encoding, Accept-Language")
+			c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD")
+			c.Header("Access-Control-Max-Age", "86400")
+		}
+
+		if c.Request.Method == http.MethodOptions {
+			c.AbortWithStatus(http.StatusNoContent)
+			return
+		}
+
+		c.Next()
+	}
+}
+
+// New builds a fully wired Gin Engine instance with all modules and middleware.
 // logWriter receives request logs alongside stdout; pass nil for stdout-only logging.
-func New(cfg config.Config, client *ent.Client, logWriter io.Writer) *echo.Echo {
+func New(cfg config.Config, client *ent.Client, logWriter io.Writer) *gin.Engine {
 	// --- build modules ---
 	authRepo := auth.NewRepository(client)
 	authSvc := auth.NewService(authRepo, cfg.JWTSecret)
@@ -89,8 +113,8 @@ func New(cfg config.Config, client *ent.Client, logWriter io.Writer) *echo.Echo 
 	var _ contracts.InfoCenterReader = infocenterSvc
 	var _ contracts.InfoCenterProfiler = infocenterSvc
 
-	// --- Echo router ---
-	e := echo.New()
+	// --- Gin router ---
+	r := gin.New()
 
 	origins := []string{
 		"http://localhost:5173",
@@ -107,51 +131,37 @@ func New(cfg config.Config, client *ent.Client, logWriter io.Writer) *echo.Echo 
 		}
 	}
 
-	e.Use(middleware.RequestResponseLogger(logWriter))
-	e.Use(echoMiddleware.Recover())
-	e.Use(echoMiddleware.CORSWithConfig(echoMiddleware.CORSConfig{
-		AllowOrigins: origins,
-		AllowMethods: []string{
-			http.MethodGet,
-			http.MethodPost,
-			http.MethodPut,
-			http.MethodPatch,
-			http.MethodDelete,
-			http.MethodOptions,
-			http.MethodHead,
-		},
-		AllowHeaders: []string{
-			echo.HeaderOrigin,
-			echo.HeaderContentType,
-			echo.HeaderAccept,
-			echo.HeaderAuthorization,
-			"X-Requested-With",
-			"Accept-Encoding",
-			"Accept-Language",
-		},
-		AllowCredentials: true,
-		MaxAge:           86400,
-	}))
+	r.Use(middleware.RequestResponseLogger(logWriter))
+	r.Use(gin.Recovery())
+	r.Use(corsMiddleware(origins))
 
 	requireAuth := middleware.RequireAuth(cfg.JWTSecret)
 
-	e.GET("/", func(c echo.Context) error {
-		return c.JSON(http.StatusOK, map[string]string{
+	r.GET("/", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
 			"status":  "ok",
 			"service": "Heritage SuperApp Backend",
 		})
 	})
 
-	api := e.Group("/api")
+	api := r.Group("/api")
 
-	api.GET("/health-check", func(c echo.Context) error {
-		if _, err := client.User.Query().Count(c.Request().Context()); err != nil {
-			return c.JSON(http.StatusInternalServerError, map[string]string{
+	api.GET("", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"status":  "ok",
+			"service": "Heritage SuperApp Backend API",
+		})
+	})
+
+	api.GET("/health-check", func(c *gin.Context) {
+		if _, err := client.User.Query().Count(c.Request.Context()); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
 				"status":   "unhealthy",
 				"database": "disconnected",
 			})
+			return
 		}
-		return c.JSON(http.StatusOK, map[string]string{
+		c.JSON(http.StatusOK, gin.H{
 			"status":   "healthy connection established",
 			"database": "connected",
 		})
@@ -222,5 +232,5 @@ func New(cfg config.Config, client *ent.Client, logWriter io.Writer) *echo.Echo 
 	analyticsGroup := api.Group("/analytics", requireAuth, execRole)
 	adminHandler.RegisterAnalyticsRoutes(analyticsGroup)
 
-	return e
+	return r
 }

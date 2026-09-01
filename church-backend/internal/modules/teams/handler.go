@@ -3,7 +3,7 @@ package teams
 import (
 	"net/http"
 
-	"github.com/labstack/echo/v4"
+	"github.com/gin-gonic/gin"
 )
 
 type Handler struct {
@@ -16,7 +16,7 @@ func NewHandler(svc *Service) *Handler {
 
 // --- Route Registration ---
 
-func (h *Handler) RegisterChurches(g *echo.Group) {
+func (h *Handler) RegisterChurches(g *gin.RouterGroup) {
 	g.GET("", h.listChurches)
 	g.GET("/:id", h.getChurch)
 	g.POST("", h.createChurch)
@@ -24,7 +24,7 @@ func (h *Handler) RegisterChurches(g *echo.Group) {
 	g.DELETE("/:id", h.deleteChurch)
 }
 
-func (h *Handler) RegisterTeams(g *echo.Group) {
+func (h *Handler) RegisterTeams(g *gin.RouterGroup) {
 	g.GET("", h.listTeams)
 	g.GET("/:id", h.getTeam)
 	g.POST("", h.createTeam)
@@ -32,7 +32,7 @@ func (h *Handler) RegisterTeams(g *echo.Group) {
 	g.DELETE("/:id", h.deleteTeam)
 }
 
-func (h *Handler) RegisterSectors(g *echo.Group) {
+func (h *Handler) RegisterSectors(g *gin.RouterGroup) {
 	g.GET("", h.listSectors)
 	g.GET("/:id", h.getSector)
 	g.POST("", h.createSector)
@@ -64,183 +64,210 @@ type sectorPayload struct {
 
 // --- LocalChurch Handlers ---
 
-func (h *Handler) listChurches(c echo.Context) error {
-	churches, err := h.svc.ListChurches(c.Request().Context())
+func (h *Handler) listChurches(c *gin.Context) {
+	churches, err := h.svc.ListChurches(c.Request.Context())
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
-	return c.JSON(http.StatusOK, churches)
+	c.JSON(http.StatusOK, churches)
 }
 
-func (h *Handler) getChurch(c echo.Context) error {
+func (h *Handler) getChurch(c *gin.Context) {
 	id := c.Param("id")
-	church, err := h.svc.GetChurch(c.Request().Context(), id)
+	church, err := h.svc.GetChurch(c.Request.Context(), id)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
 	}
-	return c.JSON(http.StatusOK, church)
+	c.JSON(http.StatusOK, church)
 }
 
-func (h *Handler) createChurch(c echo.Context) error {
+func (h *Handler) createChurch(c *gin.Context) {
 	var payload churchPayload
-	if err := c.Bind(&payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "bad request")
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad request"})
+		return
 	}
 	if payload.Name == "" || payload.Center == "" || payload.Slug == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "name, center, and slug are required")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "name, center, and slug are required"})
+		return
 	}
 
-	church, err := h.svc.CreateChurch(c.Request().Context(), payload.Name, payload.Center, payload.Description, payload.Slug)
+	church, err := h.svc.CreateChurch(c.Request.Context(), payload.Name, payload.Center, payload.Description, payload.Slug)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
-	return c.JSON(http.StatusCreated, church)
+	c.JSON(http.StatusCreated, church)
 }
 
-func (h *Handler) updateChurch(c echo.Context) error {
+func (h *Handler) updateChurch(c *gin.Context) {
 	id := c.Param("id")
 	var payload churchPayload
-	if err := c.Bind(&payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "bad request")
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad request"})
+		return
 	}
 	if payload.Name == "" || payload.Center == "" || payload.Slug == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "name, center, and slug are required")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "name, center, and slug are required"})
+		return
 	}
 
-	church, err := h.svc.UpdateChurch(c.Request().Context(), id, payload.Name, payload.Center, payload.Description, payload.Slug)
+	church, err := h.svc.UpdateChurch(c.Request.Context(), id, payload.Name, payload.Center, payload.Description, payload.Slug)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
-	return c.JSON(http.StatusOK, church)
+	c.JSON(http.StatusOK, church)
 }
 
-func (h *Handler) deleteChurch(c echo.Context) error {
+func (h *Handler) deleteChurch(c *gin.Context) {
 	id := c.Param("id")
-	err := h.svc.DeleteChurch(c.Request().Context(), id)
+	err := h.svc.DeleteChurch(c.Request.Context(), id)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
-	return c.NoContent(http.StatusNoContent)
+	c.Status(http.StatusNoContent)
 }
 
 // --- Team Handlers ---
 
-func (h *Handler) listTeams(c echo.Context) error {
-	teams, err := h.svc.ListTeams(c.Request().Context())
+func (h *Handler) listTeams(c *gin.Context) {
+	teams, err := h.svc.ListTeams(c.Request.Context())
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
-	return c.JSON(http.StatusOK, teams)
+	c.JSON(http.StatusOK, teams)
 }
 
-func (h *Handler) getTeam(c echo.Context) error {
+func (h *Handler) getTeam(c *gin.Context) {
 	id := c.Param("id")
-	team, err := h.svc.GetTeam(c.Request().Context(), id)
+	team, err := h.svc.GetTeam(c.Request.Context(), id)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
 	}
-	return c.JSON(http.StatusOK, team)
+	c.JSON(http.StatusOK, team)
 }
 
-func (h *Handler) createTeam(c echo.Context) error {
+func (h *Handler) createTeam(c *gin.Context) {
 	var payload teamPayload
-	if err := c.Bind(&payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "bad request")
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad request"})
+		return
 	}
 	if payload.Name == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "name is required")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "name is required"})
+		return
 	}
 
-	team, err := h.svc.CreateTeamFull(c.Request().Context(), payload.Name, payload.Description, payload.ChurchID, payload.SectorID)
+	team, err := h.svc.CreateTeamFull(c.Request.Context(), payload.Name, payload.Description, payload.ChurchID, payload.SectorID)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
-	return c.JSON(http.StatusCreated, team)
+	c.JSON(http.StatusCreated, team)
 }
 
-func (h *Handler) updateTeam(c echo.Context) error {
+func (h *Handler) updateTeam(c *gin.Context) {
 	id := c.Param("id")
 	var payload teamPayload
-	if err := c.Bind(&payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "bad request")
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad request"})
+		return
 	}
 	if payload.Name == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "name is required")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "name is required"})
+		return
 	}
 
-	team, err := h.svc.UpdateTeam(c.Request().Context(), id, payload.Name, payload.Description, payload.ChurchID, payload.SectorID)
+	team, err := h.svc.UpdateTeam(c.Request.Context(), id, payload.Name, payload.Description, payload.ChurchID, payload.SectorID)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
-	return c.JSON(http.StatusOK, team)
+	c.JSON(http.StatusOK, team)
 }
 
-func (h *Handler) deleteTeam(c echo.Context) error {
+func (h *Handler) deleteTeam(c *gin.Context) {
 	id := c.Param("id")
-	err := h.svc.DeleteTeam(c.Request().Context(), id)
+	err := h.svc.DeleteTeam(c.Request.Context(), id)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
-	return c.NoContent(http.StatusNoContent)
+	c.Status(http.StatusNoContent)
 }
 
 // --- Sector Handlers ---
 
-func (h *Handler) listSectors(c echo.Context) error {
-	sectors, err := h.svc.ListSectors(c.Request().Context())
+func (h *Handler) listSectors(c *gin.Context) {
+	sectors, err := h.svc.ListSectors(c.Request.Context())
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
-	return c.JSON(http.StatusOK, sectors)
+	c.JSON(http.StatusOK, sectors)
 }
 
-func (h *Handler) getSector(c echo.Context) error {
+func (h *Handler) getSector(c *gin.Context) {
 	id := c.Param("id")
-	sector, err := h.svc.GetSector(c.Request().Context(), id)
+	sector, err := h.svc.GetSector(c.Request.Context(), id)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
 	}
-	return c.JSON(http.StatusOK, sector)
+	c.JSON(http.StatusOK, sector)
 }
 
-func (h *Handler) createSector(c echo.Context) error {
+func (h *Handler) createSector(c *gin.Context) {
 	var payload sectorPayload
-	if err := c.Bind(&payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "bad request")
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad request"})
+		return
 	}
 	if payload.Name == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "name is required")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "name is required"})
+		return
 	}
 
-	sector, err := h.svc.CreateSectorFull(c.Request().Context(), payload.Name, payload.Description, payload.ChurchID)
+	sector, err := h.svc.CreateSectorFull(c.Request.Context(), payload.Name, payload.Description, payload.ChurchID)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
-	return c.JSON(http.StatusCreated, sector)
+	c.JSON(http.StatusCreated, sector)
 }
 
-func (h *Handler) updateSector(c echo.Context) error {
+func (h *Handler) updateSector(c *gin.Context) {
 	id := c.Param("id")
 	var payload sectorPayload
-	if err := c.Bind(&payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "bad request")
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad request"})
+		return
 	}
 	if payload.Name == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "name is required")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "name is required"})
+		return
 	}
 
-	sector, err := h.svc.UpdateSector(c.Request().Context(), id, payload.Name, payload.Description, payload.ChurchID)
+	sector, err := h.svc.UpdateSector(c.Request.Context(), id, payload.Name, payload.Description, payload.ChurchID)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
-	return c.JSON(http.StatusOK, sector)
+	c.JSON(http.StatusOK, sector)
 }
 
-func (h *Handler) deleteSector(c echo.Context) error {
+func (h *Handler) deleteSector(c *gin.Context) {
 	id := c.Param("id")
-	err := h.svc.DeleteSector(c.Request().Context(), id)
+	err := h.svc.DeleteSector(c.Request.Context(), id)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
-	return c.NoContent(http.StatusNoContent)
+	c.Status(http.StatusNoContent)
 }
