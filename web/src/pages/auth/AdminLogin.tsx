@@ -4,9 +4,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Eye, EyeOff, ShieldCheck, KeyRound, Building2, Mail, Lock, Loader2, ArrowLeft } from 'lucide-react';
+import { Card, CardContent } from "@/components/ui/card";
+import { Eye, EyeOff, Lock, Mail, Loader2, ArrowLeft } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useZodForm, FieldError } from '@/hooks/useZodForm';
 import { adminLoginSchema } from '@/lib/schemas/auth';
@@ -31,12 +30,12 @@ const AdminLogin = () => {
     try {
       await login(data.email, data.password);
       toast({
-        title: "Welcome Back!",
-        description: "Authenticated successfully with administrative credentials."
+        title: "Welcome Back",
+        description: "Authenticated successfully."
       });
       navigate('/');
     } catch (error: unknown) {
-      const errMsg = error instanceof Error ? error.message : "Invalid credentials or Security PIN.";
+      const errMsg = error instanceof Error ? error.message : "Invalid email or Security PIN.";
       toast({
         title: "Authentication Error",
         description: errMsg,
@@ -47,51 +46,34 @@ const AdminLogin = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center page-background p-4">
-      <div className="w-full max-w-md space-y-6">
-        {/* Church Branding */}
-        <div className="text-center space-y-2">
-          <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto shadow-sm">
-            <Building2 className="w-8 h-8 text-primary" />
+      <div className="w-full max-w-sm space-y-6">
+        {/* Header */}
+        <div className="text-center space-y-1">
+          <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-3 shadow-xs">
+            <Lock className="w-6 h-6 text-primary" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            Heritage of Faith International Church
+            Admin Portal
           </h1>
           <p className="text-xs text-muted-foreground">
-            Executive & Administrative Access Portal
+            Sign in with your administrative Security PIN
           </p>
         </div>
 
-        <Card className="glass-card shadow-xl border border-border/50 rounded-2xl overflow-hidden">
-          <CardHeader className="pb-3 text-center">
-            <div className="flex items-center justify-center gap-1.5 mb-1">
-              <Badge variant="outline" className="text-primary border-primary/30 text-[10px]">
-                <ShieldCheck className="w-3 h-3 mr-1" /> Elevated Access
-              </Badge>
-            </div>
-            <CardTitle className="text-xl font-bold">Admin & Leadership Sign In</CardTitle>
-            <CardDescription className="text-xs">
-              Sign in with your registered email and Security PIN / Password
-            </CardDescription>
-          </CardHeader>
-
-          <CardContent className="space-y-4">
-            <div className="p-3 rounded-xl bg-primary/5 border border-primary/15 text-xs text-muted-foreground flex items-start gap-2">
-              <KeyRound className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
-              <div>
-                <span className="font-semibold text-foreground">Security PIN Required:</span> Super Admins, Pastors, Church Admins, and Ministry Leads must use their assigned Security PIN.
-              </div>
-            </div>
-
+        <Card className="glass-card shadow-lg border border-border/50 rounded-2xl">
+          <CardContent className="pt-6 space-y-4">
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <div className="space-y-1.5">
-                <Label htmlFor="admin-email" className="text-xs font-medium">Administrator Email</Label>
+                <Label htmlFor="admin-email" className="text-xs font-medium text-muted-foreground">
+                  Admin Email
+                </Label>
                 <div className="relative">
-                  <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/70" />
                   <Input
                     id="admin-email"
                     type="email"
                     placeholder="admin@hofchurch.org"
-                    className="pl-9 text-xs h-11"
+                    className="pl-9 text-xs h-11 bg-background/50"
                     autoFocus
                     {...form.getInputProps('email')}
                   />
@@ -101,18 +83,18 @@ const AdminLogin = () => {
 
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="admin-password" className="text-xs font-medium">Security PIN / Password</Label>
-                  <Badge variant="outline" className="text-[10px] py-0 px-1.5 text-muted-foreground">
-                    <Lock className="w-2.5 h-2.5 mr-1" /> 4–6 Digit PIN
-                  </Badge>
+                  <Label htmlFor="admin-password" className="text-xs font-medium text-muted-foreground">
+                    Security PIN
+                  </Label>
+                  <span className="text-[10px] text-muted-foreground/80">4–6 digits</span>
                 </div>
                 <div className="relative">
-                  <KeyRound className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  <Lock className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/70" />
                   <Input
                     id="admin-password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="Enter your security PIN"
-                    className="pl-9 pr-10 text-xs h-11 font-mono tracking-wider"
+                    placeholder="••••••"
+                    className="pl-9 pr-10 text-xs h-11 bg-background/50 font-mono tracking-widest"
                     {...form.getInputProps('password')}
                   />
                   <Button
@@ -130,24 +112,20 @@ const AdminLogin = () => {
 
               <Button 
                 type="submit" 
-                className="w-full h-11 text-xs font-semibold gap-2 bg-primary hover:bg-primary/90 shadow-md" 
+                className="w-full h-11 text-xs font-medium bg-primary hover:bg-primary/90 shadow-xs" 
                 disabled={form.isSubmitting}
               >
                 {form.isSubmitting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" /> Verifying Security PIN...
-                  </>
+                  <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
-                  <>
-                    <ShieldCheck className="w-4 h-4" /> Authenticate Admin
-                  </>
+                  "Sign In"
                 )}
               </Button>
             </form>
 
-            <div className="pt-2 text-center space-y-2 border-t border-border/40">
+            <div className="pt-2 text-center">
               <Link to="/login" className="inline-flex items-center text-xs text-muted-foreground hover:text-primary transition-colors">
-                <ArrowLeft className="w-3.5 h-3.5 mr-1" /> Return to Standard Member Portal
+                <ArrowLeft className="w-3.5 h-3.5 mr-1" /> Back to Main Login
               </Link>
             </div>
           </CardContent>
