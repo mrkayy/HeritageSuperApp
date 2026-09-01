@@ -3,8 +3,8 @@ package dashboard
 import (
 	"net/http"
 
+	"github.com/gin-gonic/gin"
 	"github.com/hofchurchng/church-backend/internal/ent"
-	"github.com/labstack/echo/v4"
 )
 
 type Handler struct {
@@ -15,7 +15,7 @@ func NewHandler(db *ent.Client) *Handler {
 	return &Handler{db: db}
 }
 
-func (h *Handler) Register(g *echo.Group) {
+func (h *Handler) Register(g *gin.RouterGroup) {
 	g.GET("/admin", h.getAdminDashboard)
 }
 
@@ -30,8 +30,8 @@ type dashboardDTO struct {
 	TeamRanking            []map[string]interface{} `json:"teamRanking"`
 }
 
-func (h *Handler) getAdminDashboard(c echo.Context) error {
-	ctx := c.Request().Context()
+func (h *Handler) getAdminDashboard(c *gin.Context) {
+	ctx := c.Request.Context()
 
 	churchCount, _ := h.db.LocalChurch.Query().Count(ctx)
 	userCount, _ := h.db.User.Query().Count(ctx)
@@ -59,5 +59,5 @@ func (h *Handler) getAdminDashboard(c echo.Context) error {
 		TeamRanking:            make([]map[string]interface{}, 0),
 	}
 
-	return c.JSON(http.StatusOK, dto)
+	c.JSON(http.StatusOK, dto)
 }

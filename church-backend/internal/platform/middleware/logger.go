@@ -5,39 +5,43 @@ import (
 	"encoding/json"
 	"io"
 	"log"
-	"net/http"
 	"os"
 	"time"
 
-	"github.com/labstack/echo/v4"
+	"github.com/gin-gonic/gin"
 )
 
 // LogEntry represents a structured log line for request/response details.
 type LogEntry struct {
-	Timestamp    string          `json:"timestamp"`
-	ClientIP     string          `json:"client_ip"`
-	Method       string          `json:"method"`
-	URI          string          `json:"uri"`
-	Status       int             `json:"status"`
-	LatencyMs    int64           `json:"latency_ms"`
-	RequestBody  string          `json:"request_body,omitempty"`
-	ResponseBody string          `json:"response_body,omitempty"`
-	Error        string          `json:"error,omitempty"`
+	Timestamp    string `json:"timestamp"`
+	ClientIP     string `json:"client_ip"`
+	Method       string `json:"method"`
+	URI          string `json:"uri"`
+	Status       int    `json:"status"`
+	LatencyMs    int64  `json:"latency_ms"`
+	RequestBody  string `json:"request_body,omitempty"`
+	ResponseBody string `json:"response_body,omitempty"`
+	Error        string `json:"error,omitempty"`
 }
 
-type bodyLogWriter struct {
-	http.ResponseWriter
+type ginBodyLogWriter struct {
+	gin.ResponseWriter
 	body *bytes.Buffer
 }
 
-func (w *bodyLogWriter) Write(b []byte) (int, error) {
+func (w *ginBodyLogWriter) Write(b []byte) (int, error) {
 	w.body.Write(b)
 	return w.ResponseWriter.Write(b)
 }
 
+func (w *ginBodyLogWriter) WriteString(s string) (int, error) {
+	w.body.WriteString(s)
+	return w.ResponseWriter.WriteString(s)
+}
+
 // RequestResponseLogger creates a middleware that logs all requests, responses,
 // and their bodies to a file and stdout in a structured JSON format.
-func RequestResponseLogger(logWriter io.Writer) echo.MiddlewareFunc {
+func RequestResponseLogger(logWriter io.Writer) gin.HandlerFunc {
 	var writer io.Writer
 	if logWriter != nil {
 		writer = io.MultiWriter(os.Stdout, logWriter)
@@ -46,59 +50,50 @@ func RequestResponseLogger(logWriter io.Writer) echo.MiddlewareFunc {
 	}
 	logger := log.New(writer, "", 0)
 
-	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			req := c.Request()
-			res := c.Response()
+	return func(c *gin.Context) {
+		req := c.Request
 
-			// Read request body
-			var reqBody []byte
-			if req.Body != nil {
-				reqBody, _ = io.ReadAll(req.Body)
-				// Restore request body so other handlers can read it
-				req.Body = io.NopCloser(bytes.NewBuffer(reqBody))
-			}
+		// Read request body
+		var reqBody []byte
+		if req.Body != nil {
+			reqBody, _ = io.ReadAll(req.Body)
+			// Restore request body so other handlers can read it
+			req.Body = io.NopCloser(bytes.NewBuffer(reqBody))
+		}
 
-			// Intercept response body
-			resBodyBuf := new(bytes.Buffer)
-			mw := &bodyLogWriter{ResponseWriter: res.Writer, body: resBodyBuf}
-			res.Writer = mw
+		// Intercept response body
+		resBodyBuf := new(bytes.Buffer)
+		blw := &ginBodyLogWriter{ResponseWriter: c.Writer, body: resBodyBuf}
+		c.Writer = blw
 
-			start := time.Now()
-			err := next(c)
-			latency := time.Since(start).Milliseconds()
+		start := time.Now()
+		c.Next()
+		latency := time.Since(start).Milliseconds()
 
-			if err != nil {
-				c.Error(err)
-			}
+		// Build log entry
+		entry := LogEntry{
+			Timestamp:    time.Now().Format(time.RFC3339),
+			ClientIP:     c.ClientIP(),
+			Method:       req.Method,
+			URI:          req.RequestURI,
+			Status:       c.Writer.Status(),
+			LatencyMs:    latency,
+			RequestBody:  string(reqBody),
+			ResponseBody: resBodyBuf.String(),
+		}
 
-			// Build log entry
-			entry := LogEntry{
-				Timestamp:    time.Now().Format(time.RFC3339),
-				ClientIP:     c.RealIP(),
-				Method:       req.Method,
-				URI:          req.RequestURI,
-				Status:       res.Status,
-				LatencyMs:    latency,
-				RequestBody:  string(reqBody),
-				ResponseBody: resBodyBuf.String(),
-			}
+		// Clean up sensitive fields like passwords from the log payload
+		entry.RequestBody = sanitizeJSON(entry.RequestBody)
 
-			// Clean up sensitive fields like passwords from the log payload
-			entry.RequestBody = sanitizeJSON(entry.RequestBody)
+		if len(c.Errors) > 0 {
+			entry.Error = c.Errors.String()
+		}
 
-			if err != nil {
-				entry.Error = err.Error()
-			}
-
-			logData, logErr := json.Marshal(entry)
-			if logErr == nil {
-				logger.Println(string(logData))
-			} else {
-				logger.Printf("Failed to marshal log entry: %v\n", logErr)
-			}
-
-			return nil
+		logData, logErr := json.Marshal(entry)
+		if logErr == nil {
+			logger.Println(string(logData))
+		} else {
+			logger.Printf("Failed to marshal log entry: %v\n", logErr)
 		}
 	}
 }

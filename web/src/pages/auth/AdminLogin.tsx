@@ -51,25 +51,25 @@ const AdminLogin = () => {
             <div className="w-20 h-20 flex items-center justify-center mx-auto mb-4">
               <img
                 src="/logo-design.png"
-                alt="Soul Bank Logo"
+                alt="hofmmc"
                 className="w-20 h-20 object-contain"
               />
             </div>
-          <h1 className="text-3xl font-bold text-primary">Soul Bank</h1>
-          <p className="text-muted-foreground">Super Admin Access Portal</p>
+          <h1 className="text-3xl font-bold text-primary mb-2">Heritage MM Console</h1>
+          <p className="text-muted-foreground">Admin Access Only</p>
         </div>
 
         <Card className="glass-card shadow-lg border-0">
           <CardHeader>
-            <CardTitle>Super Admin Sign In</CardTitle>
+            <CardTitle>Admin Sign In</CardTitle>
             <CardDescription>
-              Sign in with your system administrator credentials
+              Sign in with your administrator credentials
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="admin-email">Admin Email</Label>
+                <Label htmlFor="admin-email">Email</Label>
                 <Input
                   id="admin-email"
                   type="email"
@@ -82,7 +82,7 @@ const AdminLogin = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="admin-password">System Password</Label>
+                <Label htmlFor="admin-password">Password / Secure Pin</Label>
                 <div className="relative">
                   <Input
                     id="admin-password"
