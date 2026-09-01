@@ -232,5 +232,14 @@ func New(cfg config.Config, client *ent.Client, logWriter io.Writer) *gin.Engine
 	analyticsGroup := api.Group("/analytics", requireAuth, execRole)
 	adminHandler.RegisterAnalyticsRoutes(analyticsGroup)
 
+	r.NoRoute(func(c *gin.Context) {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error":   "endpoint not found",
+			"method":  c.Request.Method,
+			"path":    c.Request.URL.Path,
+			"message": "The requested route does not exist on this server",
+		})
+	})
+
 	return r
 }
