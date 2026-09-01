@@ -29,57 +29,62 @@ func ServerlessHandler(w http.ResponseWriter, r *http.Request) {
 		engine = New(cfg, client, nil)
 	})
 
-	// Check all sources for the original path:
-	// 1. __original_path query parameter (from vercel.json)
-	// 2. path query parameter (from vercel.json /:path*)
-	// 3. x-matched-path header (from Vercel edge router)
-	// 4. x-forwarded-uri header
-	origPath := ""
-
-	q := r.URL.Query()
-	if p := q.Get("__original_path"); p != "" {
-		origPath = p
-	} else if p := q.Get("path"); p != "" && p != "api/index.go" && p != "/api/index.go" {
-		origPath = p
+	rawURI := r.RequestURI
+	if rawURI == "" {
+		rawURI = r.URL.String()
 	}
 
-	// Also check RequestURI if query param on URL wasn't parsed yet
-	if origPath == "" && strings.Contains(r.RequestURI, "__original_path=") {
-		if parsed, err := url.Parse(r.RequestURI); err == nil {
-			if p := parsed.Query().Get("__original_path"); p != "" {
-				origPath = p
-			}
+	origPath := ""
+	var parsedQuery url.Values
+
+	if parsed, err := url.ParseRequestURI(rawURI); err == nil {
+		parsedQuery = parsed.Query()
+		if p := parsedQuery.Get("__original_path"); p != "" {
+			origPath = p
+		} else if p := parsedQuery.Get("path"); p != "" && !strings.Contains(p, "index.go") {
+			origPath = p
 		}
 	}
 
-	// Fallback to headers
 	if origPath == "" {
-		if h := r.Header.Get("x-matched-path"); h != "" && h != "/api/index.go" && h != "/api/index" {
+		q := r.URL.Query()
+		if p := q.Get("__original_path"); p != "" {
+			origPath = p
+			parsedQuery = q
+		} else if p := q.Get("path"); p != "" && !strings.Contains(p, "index.go") {
+			origPath = p
+			parsedQuery = q
+		}
+	}
+
+	if origPath == "" {
+		if h := r.Header.Get("x-matched-path"); h != "" && !strings.Contains(h, "index.go") {
 			origPath = h
-		} else if h := r.Header.Get("x-forwarded-uri"); h != "" {
+		} else if h := r.Header.Get("x-forwarded-uri"); h != "" && !strings.Contains(h, "index.go") {
 			origPath = h
 		}
 	}
 
 	if origPath != "" {
-		// Ensure leading slash
 		if !strings.HasPrefix(origPath, "/") {
 			origPath = "/" + origPath
 		}
-		// Strip query parameters if origPath included them
 		if idx := strings.Index(origPath, "?"); idx != -1 {
 			origPath = origPath[:idx]
 		}
-		r.URL.Path = origPath
 
-		// Clean internal Vercel routing parameters from query
-		q.Del("__original_path")
-		q.Del("path")
-		r.URL.RawQuery = q.Encode()
+		if parsedQuery != nil {
+			parsedQuery.Del("__original_path")
+			parsedQuery.Del("path")
+			r.URL.RawQuery = parsedQuery.Encode()
+		}
+
+		r.URL.Path = origPath
+		r.URL.RawPath = origPath
 		r.RequestURI = r.URL.RequestURI()
 	}
 
-	log.Printf("[ServerlessHandler] Routing %s %s (origPath=%q, rawQuery=%q)", r.Method, r.URL.Path, origPath, r.URL.RawQuery)
+	log.Printf("[ServerlessHandler] Executing %s -> Path: %q, RawPath: %q, RequestURI: %q", r.Method, r.URL.Path, r.URL.RawPath, r.RequestURI)
 
 	engine.ServeHTTP(w, r)
 }
