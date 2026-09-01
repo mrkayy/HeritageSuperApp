@@ -29,6 +29,13 @@ func ServerlessHandler(w http.ResponseWriter, r *http.Request) {
 		engine = New(cfg, client, nil)
 	})
 
+	// Debug: dump raw request properties to identify what Vercel exposes
+	log.Printf("[DEBUG-RAW] RequestURI=%q URL.Path=%q URL.RawQuery=%q URL.RawPath=%q",
+		r.RequestURI, r.URL.Path, r.URL.RawQuery, r.URL.RawPath)
+	for k, v := range r.Header {
+		log.Printf("[DEBUG-RAW] Header %s=%v", k, v)
+	}
+
 	origPath := ""
 
 	q := r.URL.Query()
