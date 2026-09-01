@@ -5,9 +5,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/hofchurchng/church-backend/internal/contracts"
 	"github.com/hofchurchng/church-backend/internal/platform/middleware"
-	"github.com/labstack/echo/v4"
 )
 
 const dateLayout = "2006-01-02"
@@ -20,7 +20,7 @@ func NewHandler(svc *Service) *Handler {
 	return &Handler{svc: svc}
 }
 
-func (h *Handler) Register(g *echo.Group) {
+func (h *Handler) Register(g *gin.RouterGroup) {
 	g.GET("/me", h.getOwn)
 	g.PUT("/me", h.updateOwn)
 	g.GET("/me/kids", h.listKids)
@@ -29,14 +29,14 @@ func (h *Handler) Register(g *echo.Group) {
 	g.DELETE("/me/kids/:kidID", h.deleteKid)
 
 	// Viewing someone else's profile gets a role gate
-	g.GET("/:userID", h.getOther, middleware.RequireAnyRole(
+	g.GET("/:userID", middleware.RequireAnyRole(
 		string(contracts.RoleChurchAdmin),
 		string(contracts.RoleTeamLead),
 		string(contracts.RoleResidentPastor),
 		string(contracts.RoleSteward),
 		string(contracts.RoleMember),
 		string(contracts.RoleGuest),
-	))
+	), h.getOther)
 }
 
 type profileDTO struct {
@@ -116,34 +116,39 @@ func toContractDTO(p contracts.Profile) profileDTO {
 	}
 }
 
-func (h *Handler) getOwn(c echo.Context) error {
-	user, ok := contracts.UserFromContext(c.Request().Context())
+func (h *Handler) getOwn(c *gin.Context) {
+	user, ok := contracts.UserFromContext(c.Request.Context())
 	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
 	}
-	view, err := h.svc.GetOwnProfile(c.Request().Context(), user.ID)
+	view, err := h.svc.GetOwnProfile(c.Request.Context(), user.ID)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
-	return c.JSON(http.StatusOK, toOwnDTO(view))
+	c.JSON(http.StatusOK, toOwnDTO(view))
 }
 
-func (h *Handler) updateOwn(c echo.Context) error {
-	user, ok := contracts.UserFromContext(c.Request().Context())
+func (h *Handler) updateOwn(c *gin.Context) {
+	user, ok := contracts.UserFromContext(c.Request.Context())
 	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
 	}
 
 	var dto profileDTO
-	if err := c.Bind(&dto); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "bad request")
+	if err := c.ShouldBindJSON(&dto); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad request"})
+		return
 	}
 
 	var dob *time.Time
 	if dto.DateOfBirth != nil && *dto.DateOfBirth != "" {
 		parsed, err := time.Parse(dateLayout, *dto.DateOfBirth)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "dateOfBirth must be YYYY-MM-DD")
+			c.JSON(http.StatusBadRequest, gin.H{"error": "dateOfBirth must be YYYY-MM-DD"})
+			return
 		}
 		dob = &parsed
 	}
@@ -153,7 +158,7 @@ func (h *Handler) updateOwn(c echo.Context) error {
 		churchID = dto.LocalChurchID
 	}
 
-	err := h.svc.UpdateProfile(c.Request().Context(), user.ID, UpdateProfileInput{
+	err := h.svc.UpdateProfile(c.Request.Context(), user.ID, UpdateProfileInput{
 		FirstName:               dto.FirstName,
 		LastName:                dto.LastName,
 		ProfileImageURL:         dto.ProfileImageURL,
@@ -176,87 +181,100 @@ func (h *Handler) updateOwn(c echo.Context) error {
 		DateOfBirthMonth:        dto.DateOfBirthMonth,
 	})
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
 
-	view, err := h.svc.GetOwnProfile(c.Request().Context(), user.ID)
+	view, err := h.svc.GetOwnProfile(c.Request.Context(), user.ID)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
-	return c.JSON(http.StatusOK, toOwnDTO(view))
+	c.JSON(http.StatusOK, toOwnDTO(view))
 }
 
-func (h *Handler) getOther(c echo.Context) error {
+func (h *Handler) getOther(c *gin.Context) {
 	targetID := c.Param("userID")
-	p, err := h.svc.GetProfile(c.Request().Context(), targetID)
+	p, err := h.svc.GetProfile(c.Request.Context(), targetID)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, "not found")
+		c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+		return
 	}
-	return c.JSON(http.StatusOK, toContractDTO(p))
+	c.JSON(http.StatusOK, toContractDTO(p))
 }
 
-func (h *Handler) listKids(c echo.Context) error {
-	user, ok := contracts.UserFromContext(c.Request().Context())
+func (h *Handler) listKids(c *gin.Context) {
+	user, ok := contracts.UserFromContext(c.Request.Context())
 	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
 	}
 
-	kids, err := h.svc.ListKids(c.Request().Context(), user.Email)
+	kids, err := h.svc.ListKids(c.Request.Context(), user.Email)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
-	return c.JSON(http.StatusOK, kids)
+	c.JSON(http.StatusOK, kids)
 }
 
-func (h *Handler) addKid(c echo.Context) error {
-	user, ok := contracts.UserFromContext(c.Request().Context())
+func (h *Handler) addKid(c *gin.Context) {
+	user, ok := contracts.UserFromContext(c.Request.Context())
 	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
 	}
 
 	var child contracts.Member
-	if err := c.Bind(&child); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	if err := c.ShouldBindJSON(&child); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
 
-	created, err := h.svc.AddKid(c.Request().Context(), user.Email, child)
+	created, err := h.svc.AddKid(c.Request.Context(), user.Email, child)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
-	return c.JSON(http.StatusCreated, created)
+	c.JSON(http.StatusCreated, created)
 }
 
-func (h *Handler) updateKid(c echo.Context) error {
-	user, ok := contracts.UserFromContext(c.Request().Context())
+func (h *Handler) updateKid(c *gin.Context) {
+	user, ok := contracts.UserFromContext(c.Request.Context())
 	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
 	}
 
 	kidID := c.Param("kidID")
 	var child contracts.Member
-	if err := c.Bind(&child); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	if err := c.ShouldBindJSON(&child); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
 
-	updated, err := h.svc.UpdateKid(c.Request().Context(), user.Email, kidID, child)
+	updated, err := h.svc.UpdateKid(c.Request.Context(), user.Email, kidID, child)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
-	return c.JSON(http.StatusOK, updated)
+	c.JSON(http.StatusOK, updated)
 }
 
-func (h *Handler) deleteKid(c echo.Context) error {
-	user, ok := contracts.UserFromContext(c.Request().Context())
+func (h *Handler) deleteKid(c *gin.Context) {
+	user, ok := contracts.UserFromContext(c.Request.Context())
 	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
 	}
 
 	kidID := c.Param("kidID")
-	err := h.svc.DeleteKid(c.Request().Context(), user.Email, kidID)
+	err := h.svc.DeleteKid(c.Request.Context(), user.Email, kidID)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
-	return c.NoContent(http.StatusNoContent)
+	c.Status(http.StatusNoContent)
 }
 
 type userListDTO struct {
@@ -293,7 +311,7 @@ type updateRolePayload struct {
 	Roles []string `json:"roles"`
 }
 
-func (h *Handler) RegisterUsers(g *echo.Group) {
+func (h *Handler) RegisterUsers(g *gin.RouterGroup) {
 	g.GET("", h.listUsers)
 	g.PUT("/:userID/role", h.updateUserRole)
 	g.PATCH("/:userID/role", h.updateUserRole)
@@ -303,77 +321,91 @@ func (h *Handler) RegisterUsers(g *echo.Group) {
 	g.DELETE("/:userID/roles/remove", h.removeUserRole)
 }
 
-func (h *Handler) updateUserRole(c echo.Context) error {
+func (h *Handler) updateUserRole(c *gin.Context) {
 	userID := c.Param("userID")
 	var p updateRolePayload
-	if err := c.Bind(&p); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	if err := c.ShouldBindJSON(&p); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
 	if len(p.Roles) > 0 {
-		if err := h.svc.UpdateUserRoles(c.Request().Context(), userID, p.Roles); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		if err := h.svc.UpdateUserRoles(c.Request.Context(), userID, p.Roles); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
 		}
-		return c.JSON(http.StatusOK, map[string]string{"message": "user roles updated successfully"})
+		c.JSON(http.StatusOK, gin.H{"message": "user roles updated successfully"})
+		return
 	}
 	if p.Role != "" {
-		if err := h.svc.UpdateUserRole(c.Request().Context(), userID, p.Role); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		if err := h.svc.UpdateUserRole(c.Request.Context(), userID, p.Role); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
 		}
-		return c.JSON(http.StatusOK, map[string]string{"message": "user role updated successfully"})
+		c.JSON(http.StatusOK, gin.H{"message": "user role updated successfully"})
+		return
 	}
-	return echo.NewHTTPError(http.StatusBadRequest, "role or roles required")
+	c.JSON(http.StatusBadRequest, gin.H{"error": "role or roles required"})
 }
 
-func (h *Handler) updateUserRoles(c echo.Context) error {
+func (h *Handler) updateUserRoles(c *gin.Context) {
 	userID := c.Param("userID")
 	var p updateRolePayload
-	if err := c.Bind(&p); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	if err := c.ShouldBindJSON(&p); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
-	if err := h.svc.UpdateUserRoles(c.Request().Context(), userID, p.Roles); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	if err := h.svc.UpdateUserRoles(c.Request.Context(), userID, p.Roles); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
-	return c.JSON(http.StatusOK, map[string]string{"message": "user roles updated successfully"})
+	c.JSON(http.StatusOK, gin.H{"message": "user roles updated successfully"})
 }
 
-func (h *Handler) appendUserRole(c echo.Context) error {
+func (h *Handler) appendUserRole(c *gin.Context) {
 	userID := c.Param("userID")
 	var p updateRolePayload
-	if err := c.Bind(&p); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	if err := c.ShouldBindJSON(&p); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
 	if p.Role == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "role is required")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "role is required"})
+		return
 	}
-	if err := h.svc.AppendUserRole(c.Request().Context(), userID, p.Role); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	if err := h.svc.AppendUserRole(c.Request.Context(), userID, p.Role); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
-	return c.JSON(http.StatusOK, map[string]string{"message": "role appended successfully"})
+	c.JSON(http.StatusOK, gin.H{"message": "role appended successfully"})
 }
 
-func (h *Handler) removeUserRole(c echo.Context) error {
+func (h *Handler) removeUserRole(c *gin.Context) {
 	userID := c.Param("userID")
 	var p updateRolePayload
-	if err := c.Bind(&p); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	if err := c.ShouldBindJSON(&p); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
 	if p.Role == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "role is required")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "role is required"})
+		return
 	}
-	if err := h.svc.RemoveUserRole(c.Request().Context(), userID, p.Role); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	if err := h.svc.RemoveUserRole(c.Request.Context(), userID, p.Role); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
-	return c.JSON(http.StatusOK, map[string]string{"message": "role removed successfully"})
+	c.JSON(http.StatusOK, gin.H{"message": "role removed successfully"})
 }
 
-func (h *Handler) listUsers(c echo.Context) error {
-	users, err := h.svc.ListUsers(c.Request().Context())
+func (h *Handler) listUsers(c *gin.Context) {
+	users, err := h.svc.ListUsers(c.Request.Context())
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 
 	// Fetch all members to match email -> ID
-	members, err := h.svc.repo.db.Member.Query().All(c.Request().Context())
+	members, err := h.svc.repo.db.Member.Query().All(c.Request.Context())
 	memberMap := make(map[string]string)
 	if err == nil {
 		for _, m := range members {
@@ -422,5 +454,5 @@ func (h *Handler) listUsers(c echo.Context) error {
 		})
 	}
 
-	return c.JSON(http.StatusOK, out)
+	c.JSON(http.StatusOK, out)
 }

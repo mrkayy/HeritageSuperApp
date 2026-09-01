@@ -61,11 +61,11 @@ const Login = () => {
           <div className="w-20 h-20 flex items-center justify-center mx-auto mb-4">
             <img
               src="/logo-design.png"
-              alt="Soul Bank Logo"
+              alt="hofmmc"
               className="w-20 h-20 object-contain"
             />
           </div>
-          <h1 className="text-3xl font-bold text-primary">Soul Bank</h1>
+          <h1 className="text-3xl font-bold text-primary">Heritage MM Console</h1>
           <p className="text-muted-foreground">Sign in to your account</p>
         </div>
 

@@ -44,7 +44,7 @@ export function GuestRegistrationForm() {
       await AuthenticationService.registerGuest(payload);
       toast({
         title: 'Account created!',
-        description: 'Welcome to Soul Bank. Please check your email to verify your account.',
+        description: 'Welcome to HOFMM Console. Please check your email to verify your account.',
       });
     } catch (error: any) {
       toast({

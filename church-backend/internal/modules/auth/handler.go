@@ -4,9 +4,9 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/gin-gonic/gin"
 	"github.com/gorilla/sessions"
 	"github.com/hofchurchng/church-backend/internal/contracts"
-	"github.com/labstack/echo/v4"
 	"github.com/markbates/goth"
 	"github.com/markbates/goth/gothic"
 	"github.com/markbates/goth/providers/google"
@@ -35,7 +35,7 @@ func NewHandler(svc *Service, sessionSecret, clientID, clientSecret, callbackURL
 }
 
 // RegisterPublic mounts endpoints that don't require credentials.
-func (h *Handler) RegisterPublic(g *echo.Group) {
+func (h *Handler) RegisterPublic(g *gin.RouterGroup) {
 	g.POST("/login", h.login)
 	g.GET("/login/google", h.loginGoogle)
 	g.GET("/callback/google", h.callbackGoogle)
@@ -44,7 +44,7 @@ func (h *Handler) RegisterPublic(g *echo.Group) {
 }
 
 // RegisterProtected mounts endpoints that require validation.
-func (h *Handler) RegisterProtected(g *echo.Group) {
+func (h *Handler) RegisterProtected(g *gin.RouterGroup) {
 	g.GET("/me", h.me)
 }
 
@@ -53,29 +53,33 @@ type loginRequest struct {
 	Password string `json:"password"`
 }
 
-func (h *Handler) login(c echo.Context) error {
+func (h *Handler) login(c *gin.Context) {
 	var req loginRequest
-	if err := c.Bind(&req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "bad request")
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad request"})
+		return
 	}
 
-	result, err := h.svc.Login(c.Request().Context(), req.Email, req.Password)
+	result, err := h.svc.Login(c.Request.Context(), req.Email, req.Password)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
 	}
 
-	return c.JSON(http.StatusOK, result)
+	c.JSON(http.StatusOK, result)
 }
 
-func (h *Handler) me(c echo.Context) error {
-	userCtx, ok := contracts.UserFromContext(c.Request().Context())
+func (h *Handler) me(c *gin.Context) {
+	userCtx, ok := contracts.UserFromContext(c.Request.Context())
 	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
 	}
 
-	u, err := h.svc.repo.FindByEmail(c.Request().Context(), userCtx.Email)
+	u, err := h.svc.repo.FindByEmail(c.Request.Context(), userCtx.Email)
 	if err != nil {
-		return c.JSON(http.StatusOK, userCtx)
+		c.JSON(http.StatusOK, userCtx)
+		return
 	}
 
 	currentRole := ""
@@ -83,7 +87,7 @@ func (h *Handler) me(c echo.Context) error {
 		currentRole = u.Roles[0]
 	}
 
-	return c.JSON(http.StatusOK, contracts.AuthedUser{
+	c.JSON(http.StatusOK, contracts.AuthedUser{
 		ID:          u.ID,
 		Email:       u.Email,
 		Roles:       u.Roles,
@@ -93,71 +97,77 @@ func (h *Handler) me(c echo.Context) error {
 	})
 }
 
-func (h *Handler) loginGoogle(c echo.Context) error {
-	email := c.QueryParam("email")
+func (h *Handler) loginGoogle(c *gin.Context) {
+	email := c.Query("email")
 	if email == "" {
-		return c.Redirect(http.StatusTemporaryRedirect, h.frontendURL+"/login?error=email_required")
+		c.Redirect(http.StatusTemporaryRedirect, h.frontendURL+"/login?error=email_required")
+		return
 	}
 
 	// Verify the email exists in the member table first before calling Google
-	exists, err := h.svc.CheckMemberExists(c.Request().Context(), email)
+	exists, err := h.svc.CheckMemberExists(c.Request.Context(), email)
 	if err != nil || !exists {
-		return c.Redirect(http.StatusTemporaryRedirect, h.frontendURL+"/login?error=not_profiled")
+		c.Redirect(http.StatusTemporaryRedirect, h.frontendURL+"/login?error=not_profiled")
+		return
 	}
 
 	// Goth looks at "provider" in the query string or URL parameter.
-	q := c.Request().URL.Query()
+	q := c.Request.URL.Query()
 	q.Set("provider", "google")
-	c.Request().URL.RawQuery = q.Encode()
+	c.Request.URL.RawQuery = q.Encode()
 
-	gothic.BeginAuthHandler(c.Response().Writer, c.Request())
-	return nil
+	gothic.BeginAuthHandler(c.Writer, c.Request)
 }
 
-func (h *Handler) callbackGoogle(c echo.Context) error {
-	q := c.Request().URL.Query()
+func (h *Handler) callbackGoogle(c *gin.Context) {
+	q := c.Request.URL.Query()
 	q.Set("provider", "google")
-	c.Request().URL.RawQuery = q.Encode()
+	c.Request.URL.RawQuery = q.Encode()
 
-	gothUser, err := gothic.CompleteUserAuth(c.Response().Writer, c.Request())
+	gothUser, err := gothic.CompleteUserAuth(c.Writer, c.Request)
 	if err != nil {
-		return c.Redirect(http.StatusTemporaryRedirect, h.frontendURL+"/login?error=auth_failed")
+		c.Redirect(http.StatusTemporaryRedirect, h.frontendURL+"/login?error=auth_failed")
+		return
 	}
 
-	result, err := h.svc.LoginOrCreateOAuthUser(c.Request().Context(), gothUser.Email)
+	result, err := h.svc.LoginOrCreateOAuthUser(c.Request.Context(), gothUser.Email)
 	if err != nil {
 		if errors.Is(err, ErrNotProfiled) {
-			return c.Redirect(http.StatusTemporaryRedirect, h.frontendURL+"/login?error=not_profiled")
+			c.Redirect(http.StatusTemporaryRedirect, h.frontendURL+"/login?error=not_profiled")
+			return
 		}
-		return c.Redirect(http.StatusTemporaryRedirect, h.frontendURL+"/login?error=auth_failed")
+		c.Redirect(http.StatusTemporaryRedirect, h.frontendURL+"/login?error=auth_failed")
+		return
 	}
 
 	// Redirect to frontend with token
 	redirectURL := h.frontendURL + "/login?token=" + result.Token
-	return c.Redirect(http.StatusTemporaryRedirect, redirectURL)
+	c.Redirect(http.StatusTemporaryRedirect, redirectURL)
 }
 
-func (h *Handler) verifyMagicLink(c echo.Context) error {
-	code := c.QueryParam("code")
-	email := c.QueryParam("email")
+func (h *Handler) verifyMagicLink(c *gin.Context) {
+	code := c.Query("code")
+	email := c.Query("email")
 	if code == "" || email == "" {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+		c.JSON(http.StatusBadRequest, gin.H{
 			"valid":   false,
 			"message": "code and email query parameters are required",
 		})
+		return
 	}
 
-	res, err := h.svc.VerifyMagicLink(c.Request().Context(), code, email)
+	res, err := h.svc.VerifyMagicLink(c.Request.Context(), code, email)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+		c.JSON(http.StatusBadRequest, gin.H{
 			"valid":   false,
 			"message": err.Error(),
 		})
+		return
 	}
-	return c.JSON(http.StatusOK, res)
+	c.JSON(http.StatusOK, res)
 }
 
-func (h *Handler) completeMagicLink(c echo.Context) error {
+func (h *Handler) completeMagicLink(c *gin.Context) {
 	var req struct {
 		Code      string `json:"code"`
 		Email     string `json:"email"`
@@ -165,17 +175,20 @@ func (h *Handler) completeMagicLink(c echo.Context) error {
 		LastName  string `json:"last_name"`
 		Password  string `json:"password"`
 	}
-	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{"message": "invalid request body"})
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid request body"})
+		return
 	}
 
 	if req.Code == "" || req.Email == "" || req.Password == "" {
-		return c.JSON(http.StatusBadRequest, map[string]string{"message": "code, email and password are required"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "code, email and password are required"})
+		return
 	}
 
-	res, err := h.svc.CompleteMagicLinkOnboarding(c.Request().Context(), req.Code, req.Email, req.FirstName, req.LastName, req.Password)
+	res, err := h.svc.CompleteMagicLinkOnboarding(c.Request.Context(), req.Code, req.Email, req.FirstName, req.LastName, req.Password)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{"message": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
 	}
-	return c.JSON(http.StatusOK, res)
+	c.JSON(http.StatusOK, res)
 }

@@ -20,11 +20,11 @@ const TermsOfService = () => {
           <div className="w-16 h-16 flex items-center justify-center mx-auto mb-4">
             <img
               src="/logo-design.png"
-              alt="Soul Bank Logo"
+              alt="homm console"
               className="w-16 h-16 object-contain"
             />
           </div>
-          <h1 className="text-3xl font-bold text-primary">Soul Bank</h1>
+          <h1 className="text-3xl font-bold text-primary">Heritage - Member Management Console</h1>
         </div>
 
         <Card className="glass-card shadow-lg border-0">
@@ -36,7 +36,7 @@ const TermsOfService = () => {
             <section>
               <h3 className="text-lg font-semibold">1. Acceptance of Terms</h3>
               <p className="text-muted-foreground leading-relaxed">
-                By accessing or using Soul Bank ("the Platform"), operated by Heritage of Faith Church ("we", "us", or "our"),
+                By accessing or using Heritage - Member Management Console ("the Platform"), operated by Heritage of Faith Church ("we", "us", or "our"),
                 you agree to be bound by these Terms of Service. If you do not agree to these terms,
                 please do not use the Platform.
               </p>
@@ -45,7 +45,7 @@ const TermsOfService = () => {
             <section>
               <h3 className="text-lg font-semibold">2. Description of Service</h3>
               <p className="text-muted-foreground leading-relaxed">
-                Soul Bank is a church management platform that provides tools for member management,
+                Heritage - Member Management Console is a church management platform that provides tools for member management,
                 soul registration, follow-up tracking, team coordination, transport logistics, and
                 related church administrative functions. The Platform is intended for use by authorized
                 members and administrators of participating churches.
