@@ -84,6 +84,10 @@ Database-backed flags gate features on both sides. Backend: `middleware.RequireF
 
 **App wiring:** `internal/app/app.go` is the sole wiring point — both `cmd/server/main.go` (local dev) and `api/index.go` (Vercel) call `app.New()`.
 
-## CI/CD
+## CI/CD & Git Workflow
 
-Push to `staging` triggers `.github/workflows/staging-to-main.yml`: runs `go vet` + `go build`, then `npm ci` + `npm run build`, then promotes staging → main.
+- **Branch Promotion Rule**:
+  - `[feature/fix branches]` ──(PR)──> `dev` ──(PR)──> `staging` ──(PR)──> `main`
+  - **Never create a Pull Request directly into `main`** from a feature/bugfix branch or from `dev`.
+  - **Only `staging` can raise a PR into `main`**.
+- Push to `staging` triggers `.github/workflows/staging-to-main.yml`: runs `go vet` + `go build`, then `npm ci` + `npm run build`, then promotes staging → main.
