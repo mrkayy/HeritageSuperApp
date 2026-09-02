@@ -189,43 +189,18 @@ export default function InfoCenterMembers() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button onClick={loadMembers} variant="outline" size="icon" className="h-9 w-9 rounded-xl" disabled={loading}>
-                  <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                  <span className="sr-only">Refresh Directory</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Refresh Directory</p>
-              </TooltipContent>
-            </Tooltip>
-
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button onClick={() => setCsvModalOpen(true)} size="icon" variant="secondary" className="shadow-sm h-9 w-9 rounded-xl">
-                  <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
-                  <span className="sr-only">Bulk CSV Upload</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Bulk CSV Upload</p>
-              </TooltipContent>
-            </Tooltip>
-
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button onClick={handleOpenAdd} size="icon" className="bg-primary text-primary-foreground h-9 w-9 rounded-xl">
-                  <UserPlus className="w-4 h-4" />
-                  <span className="sr-only">Create Member</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Create Member</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <Button onClick={loadMembers} variant="outline" size="sm" disabled={loading}>
+            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+          <Button onClick={() => setCsvModalOpen(true)} variant="outline" size="sm" className="border-emerald-600/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950">
+            <FileSpreadsheet className="w-4 h-4 mr-2" />
+            Bulk CSV Upload
+          </Button>
+          <Button onClick={handleOpenAdd} size="sm" className="bg-primary text-primary-foreground">
+            <UserPlus className="w-4 h-4 mr-2" />
+            Add Member
+          </Button>
         </div>
       </div>
 
