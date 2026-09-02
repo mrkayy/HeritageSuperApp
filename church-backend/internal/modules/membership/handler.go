@@ -26,6 +26,7 @@ func (h *Handler) Register(g *gin.RouterGroup) {
 	g.POST("/profile", h.profile)
 	g.POST("/bulk-profile", h.bulkProfile)
 	g.POST("/bulk-profile-json", h.bulkProfileJSON)
+	g.POST("/bulk", h.bulkProfileJSON)
 	g.PUT("/:id", h.update)
 	g.DELETE("/:id", h.delete)
 

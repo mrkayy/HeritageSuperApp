@@ -310,7 +310,7 @@ export class MembershipService {
   }
 
   static async bulkProfileJSON(payload: SaveMemberPayload[]): Promise<any> {
-    const { data } = await api.post('/members/bulk', payload);
+    const { data } = await api.post('/members/bulk-profile-json', payload);
     return data;
   }
 
