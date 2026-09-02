@@ -310,7 +310,7 @@ func (s *Service) findMatchingMember(ctx context.Context, firstName, surname str
 }
 
 // BulkImportCSV handles fast goroutine-based bulk profiling of CSV member records
-func (s *Service) BulkImportCSV(ctx context.Context, r io.Reader, creatorID *uuid.UUID) (BulkImportResult, error) {
+func (s *Service) BulkImportCSV(ctx context.Context, r io.Reader, creatorID *uuid.UUID, churchID *uuid.UUID) (BulkImportResult, error) {
 	reader := csv.NewReader(r)
 	reader.FieldsPerRecord = -1 // Allow variable column counts
 	reader.TrimLeadingSpace = true
@@ -341,7 +341,7 @@ func (s *Service) BulkImportCSV(ctx context.Context, r io.Reader, creatorID *uui
 		go func() {
 			defer wg.Done()
 			for job := range jobs {
-				err := s.processCSVRow(ctx, job.Row, hm, creatorID)
+				err := s.processCSVRow(ctx, job.Row, hm, creatorID, churchID)
 				if err != nil {
 					name := "Row " + strconv.Itoa(job.Index+1)
 					if hm.firstNameIdx != -1 && hm.firstNameIdx < len(job.Row) {
@@ -387,7 +387,7 @@ func (s *Service) BulkImportCSV(ctx context.Context, r io.Reader, creatorID *uui
 	return res, nil
 }
 
-func (s *Service) processCSVRow(ctx context.Context, row []string, hm headerMap, creatorID *uuid.UUID) error {
+func (s *Service) processCSVRow(ctx context.Context, row []string, hm headerMap, creatorID *uuid.UUID, churchID *uuid.UUID) error {
 	getVal := func(idx int) string {
 		if idx >= 0 && idx < len(row) {
 			return strings.TrimSpace(row[idx])
@@ -466,6 +466,12 @@ func (s *Service) processCSVRow(ctx context.Context, row []string, hm headerMap,
 		jobPtr = &occupation
 	}
 
+	var churchIDStr *string
+	if churchID != nil {
+		cStr := churchID.String()
+		churchIDStr = &cStr
+	}
+
 	// Check if member already exists via Email or Levenshtein distance on Name & Phone
 	existingMember, _ := s.findMatchingMember(ctx, firstName, surname, email, phone)
 	if existingMember != nil {
@@ -474,6 +480,12 @@ func (s *Service) processCSVRow(ctx context.Context, row []string, hm headerMap,
 		if email != "" {
 			emailPtr = &email
 		}
+		targetChurchID := churchIDStr
+		if existingMember.LocalChurchID != nil && *existingMember.LocalChurchID != uuid.Nil {
+			cid := existingMember.LocalChurchID.String()
+			targetChurchID = &cid
+		}
+
 		_, err := s.repo.Update(ctx, existingMember.ID.String(), AddMemberInput{
 			FirstName:               firstName,
 			Surname:                 surname,
@@ -489,6 +501,7 @@ func (s *Service) processCSVRow(ctx context.Context, row []string, hm headerMap,
 			WeddingAnniversaryMonth: annMonth,
 			JobOccupation:           jobPtr,
 			CurrentStage:            &stageStr,
+			LocalChurchID:           targetChurchID,
 		})
 		return err
 	}
@@ -502,6 +515,7 @@ func (s *Service) processCSVRow(ctx context.Context, row []string, hm headerMap,
 			Role:         roleStr,
 			CurrentStage: &stageStr,
 			CreatedBy:    creatorID,
+			ChurchID:     churchIDStr,
 		})
 		if err == nil {
 			if memberRec, getErr := s.repo.db.Member.Query().Where(member.Email(email)).Only(ctx); getErr == nil {
@@ -515,13 +529,14 @@ func (s *Service) processCSVRow(ctx context.Context, row []string, hm headerMap,
 				if annDay != nil { u.SetWeddingAnniversaryDay(*annDay) }
 				if annMonth != nil { u.SetWeddingAnniversaryMonth(*annMonth) }
 				if jobPtr != nil { u.SetJobOccupation(*jobPtr) }
+				if churchID != nil { u.SetLocalChurchID(*churchID) }
 				_ = u.Exec(ctx)
 			}
 			return nil
 		}
 	}
 
-	// Create new member record
+	// Create new member record with uploader's default local church ID
 	var emailPtr *string
 	if email != "" {
 		emailPtr = &email
@@ -543,15 +558,22 @@ func (s *Service) processCSVRow(ctx context.Context, row []string, hm headerMap,
 		JobOccupation:           jobPtr,
 		CurrentStage:            &stageStr,
 		CreatedBy:               creatorID,
+		LocalChurchID:           churchIDStr,
 	})
 
 	return err
 }
 
-func (s *Service) BulkImportJSON(ctx context.Context, members []AddMemberInput, creatorID *uuid.UUID) (BulkImportResult, error) {
+func (s *Service) BulkImportJSON(ctx context.Context, members []AddMemberInput, creatorID *uuid.UUID, churchID *uuid.UUID) (BulkImportResult, error) {
 	totalRecords := len(members)
 	if totalRecords == 0 {
 		return BulkImportResult{}, fmt.Errorf("no members provided")
+	}
+
+	var churchIDStr *string
+	if churchID != nil {
+		cStr := churchID.String()
+		churchIDStr = &cStr
 	}
 
 	jobs := make(chan AddMemberInput, totalRecords)
@@ -565,6 +587,10 @@ func (s *Service) BulkImportJSON(ctx context.Context, members []AddMemberInput, 
 		go func() {
 			defer wg.Done()
 			for job := range jobs {
+				if (job.LocalChurchID == nil || *job.LocalChurchID == "") && churchIDStr != nil {
+					job.LocalChurchID = churchIDStr
+				}
+
 				var emailStr string
 				if job.Email != nil {
 					emailStr = *job.Email
@@ -573,6 +599,10 @@ func (s *Service) BulkImportJSON(ctx context.Context, members []AddMemberInput, 
 				existingMember, _ := s.findMatchingMember(ctx, job.FirstName, job.Surname, emailStr, job.PhoneNumber)
 				var err error
 				if existingMember != nil {
+					if (job.LocalChurchID == nil || *job.LocalChurchID == "") && existingMember.LocalChurchID != nil {
+						cid := existingMember.LocalChurchID.String()
+						job.LocalChurchID = &cid
+					}
 					_, err = s.repo.Update(ctx, existingMember.ID.String(), job)
 				} else if emailStr != "" {
 					stageStr := "first_time_guest"
@@ -586,6 +616,7 @@ func (s *Service) BulkImportJSON(ctx context.Context, members []AddMemberInput, 
 						Role:         job.Role,
 						CurrentStage: &stageStr,
 						CreatedBy:    creatorID,
+						ChurchID:     job.LocalChurchID,
 					})
 					if err == nil {
 						if memberRec, getErr := s.repo.db.Member.Query().Where(member.Email(emailStr)).Only(ctx); getErr == nil {
@@ -599,6 +630,11 @@ func (s *Service) BulkImportJSON(ctx context.Context, members []AddMemberInput, 
 							if job.WeddingAnniversaryDay != nil { u.SetWeddingAnniversaryDay(*job.WeddingAnniversaryDay) }
 							if job.WeddingAnniversaryMonth != nil { u.SetWeddingAnniversaryMonth(*job.WeddingAnniversaryMonth) }
 							if job.JobOccupation != nil { u.SetJobOccupation(*job.JobOccupation) }
+							if job.LocalChurchID != nil && *job.LocalChurchID != "" {
+								if cu, err := uuid.Parse(*job.LocalChurchID); err == nil {
+									u.SetLocalChurchID(cu)
+								}
+							}
 							_ = u.Exec(ctx)
 						}
 					} else {

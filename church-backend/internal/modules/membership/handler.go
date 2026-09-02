@@ -166,6 +166,17 @@ func (h *Handler) add(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+
+	u, ok := contracts.UserFromContext(c.Request.Context())
+	if ok {
+		if uidParsed, err := uuid.Parse(u.ID); err == nil {
+			in.CreatedBy = &uidParsed
+		}
+		if u.ChurchID != "" && (in.LocalChurchID == nil || *in.LocalChurchID == "") {
+			in.LocalChurchID = &u.ChurchID
+		}
+	}
+
 	member, err := h.svc.AddMember(c.Request.Context(), in)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -183,9 +194,11 @@ func (h *Handler) profile(c *gin.Context) {
 
 	u, ok := contracts.UserFromContext(c.Request.Context())
 	if ok {
-		uid := u.ID
-		if uidParsed, err := uuid.Parse(uid); err == nil {
+		if uidParsed, err := uuid.Parse(u.ID); err == nil {
 			in.CreatedBy = &uidParsed
+		}
+		if u.ChurchID != "" && (in.ChurchID == nil || *in.ChurchID == "") {
+			in.ChurchID = &u.ChurchID
 		}
 	}
 
@@ -234,6 +247,13 @@ func (h *Handler) bulkProfile(c *gin.Context) {
 		return
 	}
 
+	var churchIDParsed *uuid.UUID
+	if u.ChurchID != "" {
+		if cid, err := uuid.Parse(u.ChurchID); err == nil {
+			churchIDParsed = &cid
+		}
+	}
+
 	file, _, err := c.Request.FormFile("file")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "file is required"})
@@ -241,7 +261,7 @@ func (h *Handler) bulkProfile(c *gin.Context) {
 	}
 	defer file.Close()
 
-	res, err := h.svc.BulkImportCSV(c.Request.Context(), file, &uidParsed)
+	res, err := h.svc.BulkImportCSV(c.Request.Context(), file, &uidParsed, churchIDParsed)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -262,13 +282,20 @@ func (h *Handler) bulkProfileJSON(c *gin.Context) {
 		return
 	}
 
+	var churchIDParsed *uuid.UUID
+	if u.ChurchID != "" {
+		if cid, err := uuid.Parse(u.ChurchID); err == nil {
+			churchIDParsed = &cid
+		}
+	}
+
 	var in []AddMemberInput
 	if err := c.ShouldBindJSON(&in); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	res, err := h.svc.BulkImportJSON(c.Request.Context(), in, &uidParsed)
+	res, err := h.svc.BulkImportJSON(c.Request.Context(), in, &uidParsed, churchIDParsed)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
