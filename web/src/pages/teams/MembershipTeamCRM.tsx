@@ -1,12 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, Plus } from 'lucide-react';
+import { RefreshCw, Plus, FileSpreadsheet } from 'lucide-react';
 import { useMemberCRM } from '@/hooks/useMemberCRM';
 import { MemberCRMTable } from '@/components/teams/MemberCRMTable';
 import { MemberFormDialog } from '@/components/teams/MemberFormDialog';
+import CsvPreviewModal from '@/components/layout/CsvPreviewModal';
 
 export default function MembershipTeamCRM() {
+  const [csvModalOpen, setCsvModalOpen] = useState(false);
+
   const {
     filteredMembers,
     loading,
@@ -45,6 +48,10 @@ export default function MembershipTeamCRM() {
             <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
+          <Button onClick={() => setCsvModalOpen(true)} variant="outline" size="sm" className="border-emerald-600/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950">
+            <FileSpreadsheet className="w-4 h-4 mr-2" />
+            Bulk CSV Upload
+          </Button>
           <Button onClick={handleOpenAdd} size="sm" className="bg-primary text-primary-foreground">
             <Plus className="w-4 h-4 mr-2" />
             Add Member
@@ -69,6 +76,12 @@ export default function MembershipTeamCRM() {
         member={selectedMember}
         onSave={handleSave}
         saving={saving}
+      />
+
+      <CsvPreviewModal
+        open={csvModalOpen}
+        onOpenChange={setCsvModalOpen}
+        onImportComplete={loadMembers}
       />
     </div>
   );

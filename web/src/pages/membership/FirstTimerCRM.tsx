@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { MembershipService, FirstTimerAssignment, WeeklyPastoralSummary } from '@/services/membershipService';
+import CsvPreviewModal from '@/components/layout/CsvPreviewModal';
 
 export const FirstTimerCRM: React.FC = () => {
   const [assignments, setAssignments] = useState<FirstTimerAssignment[]>([]);
   const [summary, setSummary] = useState<WeeklyPastoralSummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [csvModalOpen, setCsvModalOpen] = useState(false);
 
   const [selectedMember, setSelectedMember] = useState<FirstTimerAssignment | null>(null);
   const [outcome, setOutcome] = useState('reached_welcomed');
@@ -57,9 +59,17 @@ export const FirstTimerCRM: React.FC = () => {
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">First-Timer Call CRM & Weekly Pastoral Summary</h1>
           <p className="text-sm text-slate-500">Manage delegated first-timer follow-up calls and collate weekly pastoral stats.</p>
         </div>
-        <button onClick={loadCRMData} className="px-4 py-2 text-sm bg-slate-100 dark:bg-slate-800 rounded-lg hover:bg-slate-200">
-          Refresh CRM
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setCsvModalOpen(true)}
+            className="px-4 py-2 text-sm bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg shadow-sm"
+          >
+            Bulk CSV Upload
+          </button>
+          <button onClick={loadCRMData} className="px-4 py-2 text-sm bg-slate-100 dark:bg-slate-800 rounded-lg hover:bg-slate-200">
+            Refresh CRM
+          </button>
+        </div>
       </div>
 
       {summary && (
@@ -182,6 +192,12 @@ export const FirstTimerCRM: React.FC = () => {
           )}
         </div>
       </div>
+
+      <CsvPreviewModal
+        open={csvModalOpen}
+        onOpenChange={setCsvModalOpen}
+        onImportComplete={loadCRMData}
+      />
     </div>
   );
 };
