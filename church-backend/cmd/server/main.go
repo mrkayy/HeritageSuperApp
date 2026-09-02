@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"net/http"
 	"os"
 
 	"github.com/hofchurchng/church-backend/app"
@@ -30,7 +31,12 @@ func main() {
 	defer client.Close()
 
 	engine := app.New(cfg, client, logFile)
+	httpHandler := app.RewriteHandler(engine)
 
 	log.Printf("HOF Church backend listening on :%s", cfg.Port)
-	log.Fatal(engine.Run(":" + cfg.Port))
+	server := &http.Server{
+		Addr:    ":" + cfg.Port,
+		Handler: httpHandler,
+	}
+	log.Fatal(server.ListenAndServe())
 }
