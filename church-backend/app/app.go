@@ -20,6 +20,7 @@ import (
 	"github.com/hofchurchng/church-backend/internal/modules/teams"
 	"github.com/hofchurchng/church-backend/internal/modules/transport"
 	"github.com/hofchurchng/church-backend/internal/platform/config"
+	"github.com/hofchurchng/church-backend/internal/platform/email"
 	"github.com/hofchurchng/church-backend/internal/platform/middleware"
 )
 
@@ -97,8 +98,28 @@ func New(cfg config.Config, client *ent.Client, logWriter io.Writer) *gin.Engine
 
 	dashboardHandler := dashboard.NewHandler(client)
 
+	// --- Platform Email Service ---
+	emailRenderer, err := email.NewRenderer()
+	if err != nil {
+		panic("failed to initialize email template renderer: " + err.Error())
+	}
+	var mailer email.Mailer
+	if cfg.SMTPHost != "" {
+		mailer = email.NewSMTPMailer(email.SMTPConfig{
+			Host:      cfg.SMTPHost,
+			Port:      cfg.SMTPPort,
+			Username:  cfg.SMTPUsername,
+			Password:  cfg.SMTPPassword,
+			FromEmail: cfg.SMTPFromEmail,
+			FromName:  cfg.SMTPFromName,
+		})
+	} else {
+		mailer = email.NewLogMailer()
+	}
+	emailSvc := email.NewEmailService(mailer, emailRenderer)
+
 	adminRepo := admin.NewRepository(client)
-	adminSvc := admin.NewService(adminRepo)
+	adminSvc := admin.NewService(adminRepo, emailSvc, cfg.FrontendURL)
 	adminHandler := admin.NewHandler(adminSvc)
 
 	// Compile-time contract checks
@@ -112,6 +133,7 @@ func New(cfg config.Config, client *ent.Client, logWriter io.Writer) *gin.Engine
 	var _ contracts.TransportReader = transportSvc
 	var _ contracts.InfoCenterReader = infocenterSvc
 	var _ contracts.InfoCenterProfiler = infocenterSvc
+	var _ contracts.EmailDispatcher = emailSvc
 
 	// --- Gin router ---
 	r := gin.New()

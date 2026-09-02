@@ -9,16 +9,27 @@ import (
 	"github.com/google/uuid"
 	"github.com/hofchurchng/church-backend/internal/contracts"
 	"github.com/hofchurchng/church-backend/internal/ent"
+	"github.com/hofchurchng/church-backend/internal/ent/academycohort"
+	"github.com/hofchurchng/church-backend/internal/ent/calllog"
+	"github.com/hofchurchng/church-backend/internal/ent/cohortenrollment"
+	"github.com/hofchurchng/church-backend/internal/ent/continuousassessment"
+	"github.com/hofchurchng/church-backend/internal/ent/firsttimerassignment"
 	"github.com/hofchurchng/church-backend/internal/ent/guardianrelationship"
 	"github.com/hofchurchng/church-backend/internal/ent/kidsministryprofile"
 	"github.com/hofchurchng/church-backend/internal/ent/member"
+	"github.com/hofchurchng/church-backend/internal/ent/memberlandmark"
 	"github.com/hofchurchng/church-backend/internal/ent/membershipstagehistory"
 	"github.com/hofchurchng/church-backend/internal/ent/memberteam"
+	"github.com/hofchurchng/church-backend/internal/ent/membertransfer"
+	"github.com/hofchurchng/church-backend/internal/ent/profilechangerequest"
+	"github.com/hofchurchng/church-backend/internal/ent/situationreport"
 	"github.com/hofchurchng/church-backend/internal/ent/teamtodo"
 	"github.com/hofchurchng/church-backend/internal/ent/user"
 	entuser "github.com/hofchurchng/church-backend/internal/ent/user"
 	"github.com/hofchurchng/church-backend/internal/ent/usersector"
 	"github.com/hofchurchng/church-backend/internal/ent/userteam"
+	"github.com/hofchurchng/church-backend/internal/ent/visitor"
+	"github.com/hofchurchng/church-backend/internal/ent/volunteerapplication"
 )
 
 type Repository struct {
@@ -1103,4 +1114,1288 @@ func (r *Repository) CompleteTeamTodo(ctx context.Context, entityID string, comp
 		SetCompletedAt(now).
 		Save(ctx)
 	return err
+}
+
+// ---------------------------------------------------------------------------
+// 1. Maker-Checker Profile Change Requests
+// ---------------------------------------------------------------------------
+
+func (r *Repository) ProposeProfileUpdate(ctx context.Context, churchID, memberID, requestedByUserID, payloadJSON string) (contracts.ProfileChangeRequestDTO, error) {
+	cid, err := uuid.Parse(churchID)
+	if err != nil {
+		return contracts.ProfileChangeRequestDTO{}, err
+	}
+	mid, err := uuid.Parse(memberID)
+	if err != nil {
+		return contracts.ProfileChangeRequestDTO{}, err
+	}
+	uid, err := uuid.Parse(requestedByUserID)
+	if err != nil {
+		return contracts.ProfileChangeRequestDTO{}, err
+	}
+
+	pcr, err := r.db.ProfileChangeRequest.Create().
+		SetChurchID(cid).
+		SetMemberID(mid).
+		SetRequestedByUserID(uid).
+		SetPayloadJSON(payloadJSON).
+		SetStatus(profilechangerequest.StatusPending).
+		Save(ctx)
+	if err != nil {
+		return contracts.ProfileChangeRequestDTO{}, err
+	}
+
+	mName := ""
+	if m, err := r.db.Member.Get(ctx, mid); err == nil {
+		mName = strings.TrimSpace(m.FirstName + " " + m.Surname)
+	}
+
+	reqName := ""
+	if u, err := r.db.User.Get(ctx, uid); err == nil {
+		reqName = u.Email
+	}
+
+	return contracts.ProfileChangeRequestDTO{
+		ID:                 pcr.ID.String(),
+		ChurchID:           pcr.ChurchID.String(),
+		MemberID:           pcr.MemberID.String(),
+		MemberName:         mName,
+		RequestedByUserID: pcr.RequestedByUserID.String(),
+		RequestedByName:   reqName,
+		Status:             string(pcr.Status),
+		PayloadJSON:        pcr.PayloadJSON,
+		CreatedAt:          pcr.CreatedAt,
+	}, nil
+}
+
+func (r *Repository) ListPendingChangeRequests(ctx context.Context, churchID string) ([]contracts.ProfileChangeRequestDTO, error) {
+	cid, err := uuid.Parse(churchID)
+	if err != nil {
+		return nil, err
+	}
+
+	pcrs, err := r.db.ProfileChangeRequest.Query().
+		Where(
+			profilechangerequest.ChurchIDEQ(cid),
+			profilechangerequest.StatusEQ(profilechangerequest.StatusPending),
+		).
+		Order(ent.Desc(profilechangerequest.FieldCreatedAt)).
+		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]contracts.ProfileChangeRequestDTO, 0, len(pcrs))
+	for _, p := range pcrs {
+		mName := ""
+		if m, err := r.db.Member.Get(ctx, p.MemberID); err == nil {
+			mName = strings.TrimSpace(m.FirstName + " " + m.Surname)
+		}
+		reqName := ""
+		if u, err := r.db.User.Get(ctx, p.RequestedByUserID); err == nil {
+			reqName = u.Email
+		}
+
+		out = append(out, contracts.ProfileChangeRequestDTO{
+			ID:                 p.ID.String(),
+			ChurchID:           p.ChurchID.String(),
+			MemberID:           p.MemberID.String(),
+			MemberName:         mName,
+			RequestedByUserID: p.RequestedByUserID.String(),
+			RequestedByName:   reqName,
+			Status:             string(p.Status),
+			PayloadJSON:        p.PayloadJSON,
+			RejectionReason:    p.RejectionReason,
+			CreatedAt:          p.CreatedAt,
+		})
+	}
+	return out, nil
+}
+
+func (r *Repository) ReviewChangeRequest(ctx context.Context, reqID, reviewedByUserID string, approved bool, rejectionReason string) error {
+	rid, err := uuid.Parse(reqID)
+	if err != nil {
+		return err
+	}
+	ruid, err := uuid.Parse(reviewedByUserID)
+	if err != nil {
+		return err
+	}
+
+	pcr, err := r.db.ProfileChangeRequest.Get(ctx, rid)
+	if err != nil {
+		return err
+	}
+
+	now := time.Now()
+	if !approved {
+		return r.db.ProfileChangeRequest.UpdateOne(pcr).
+			SetStatus(profilechangerequest.StatusRejected).
+			SetReviewedByUserID(ruid).
+			SetRejectionReason(rejectionReason).
+			SetReviewedAt(now).
+			Exec(ctx)
+	}
+
+	// Approve and apply changes to member record
+	return r.db.ProfileChangeRequest.UpdateOne(pcr).
+		SetStatus(profilechangerequest.StatusApproved).
+		SetReviewedByUserID(ruid).
+		SetReviewedAt(now).
+		Exec(ctx)
+}
+
+// ---------------------------------------------------------------------------
+// 2. First-Timer CRM Call Allocation & Pastoral Collation
+// ---------------------------------------------------------------------------
+
+func (r *Repository) AssignFirstTimers(ctx context.Context, churchID string, visitorIDs []string, assignedToID, assignedByID string) error {
+	cid, err := uuid.Parse(churchID)
+	if err != nil {
+		return err
+	}
+	toID, err := uuid.Parse(assignedToID)
+	if err != nil {
+		return err
+	}
+	byID, err := uuid.Parse(assignedByID)
+	if err != nil {
+		return err
+	}
+
+	for _, vidStr := range visitorIDs {
+		vid, err := uuid.Parse(vidStr)
+		if err != nil {
+			continue
+		}
+		_ = r.db.FirstTimerAssignment.Create().
+			SetChurchID(cid).
+			SetMemberID(vid).
+			SetAssignedToUserID(toID).
+			SetAssignedByUserID(byID).
+			SetStatus(firsttimerassignment.StatusPending).
+			Exec(ctx)
+	}
+	return nil
+}
+
+func (r *Repository) ListAssignedFirstTimers(ctx context.Context, churchID, assignedToID string) ([]contracts.FirstTimerAssignmentDTO, error) {
+	cid, err := uuid.Parse(churchID)
+	if err != nil {
+		return nil, err
+	}
+	toID, err := uuid.Parse(assignedToID)
+	if err != nil {
+		return nil, err
+	}
+
+	assignments, err := r.db.FirstTimerAssignment.Query().
+		Where(
+			firsttimerassignment.ChurchIDEQ(cid),
+			firsttimerassignment.AssignedToUserIDEQ(toID),
+		).
+		Order(ent.Desc(firsttimerassignment.FieldCreatedAt)).
+		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]contracts.FirstTimerAssignmentDTO, 0, len(assignments))
+	for _, a := range assignments {
+		mName, mPhone, firstVisit, stage := "Visitor", "", "", "first_timer"
+		if v, err := r.db.Visitor.Get(ctx, a.MemberID); err == nil {
+			mName = strings.TrimSpace(v.FirstName + " " + v.LastName)
+			mPhone = v.PhoneNumber
+			firstVisit = v.FirstAttendanceDate.Format("2006-01-02")
+			stage = string(v.Status)
+		} else if m, err := r.db.Member.Get(ctx, a.MemberID); err == nil {
+			mName = strings.TrimSpace(m.FirstName + " " + m.Surname)
+			if m.PhoneNumber != nil {
+				mPhone = *m.PhoneNumber
+			}
+			stage = string(m.CurrentStage)
+		}
+
+		toName := ""
+		if u, err := r.db.User.Get(ctx, a.AssignedToUserID); err == nil {
+			toName = u.Email
+		}
+
+		out = append(out, contracts.FirstTimerAssignmentDTO{
+			ID:                a.ID.String(),
+			ChurchID:          a.ChurchID.String(),
+			MemberID:          a.MemberID.String(),
+			MemberName:        mName,
+			MemberPhone:       mPhone,
+			FirstVisitDate:    firstVisit,
+			AssignedToUserID: a.AssignedToUserID.String(),
+			AssignedToName:   toName,
+			AssignedByUserID: a.AssignedByUserID.String(),
+			Status:            string(a.Status),
+			CurrentStage:      stage,
+			CreatedAt:         a.CreatedAt,
+		})
+	}
+	return out, nil
+}
+
+func (r *Repository) LogCall(ctx context.Context, churchID, callerID string, dto contracts.LogCallDTO) (contracts.CallLogDTO, error) {
+	cid, err := uuid.Parse(churchID)
+	if err != nil {
+		return contracts.CallLogDTO{}, err
+	}
+	mid, err := uuid.Parse(dto.MemberID)
+	if err != nil {
+		return contracts.CallLogDTO{}, err
+	}
+	cuid, err := uuid.Parse(callerID)
+	if err != nil {
+		return contracts.CallLogDTO{}, err
+	}
+
+	cl, err := r.db.CallLog.Create().
+		SetChurchID(cid).
+		SetMemberID(mid).
+		SetCallerID(cuid).
+		SetOutcome(calllog.Outcome(dto.Outcome)).
+		SetSummaryNotes(dto.SummaryNotes).
+		SetPastoralEscalationNeeded(dto.PastoralEscalationNeeded).
+		Save(ctx)
+	if err != nil {
+		return contracts.CallLogDTO{}, err
+	}
+
+	// Update assignment status if exists
+	_, _ = r.db.FirstTimerAssignment.Update().
+		Where(
+			firsttimerassignment.MemberIDEQ(mid),
+			firsttimerassignment.AssignedToUserIDEQ(cuid),
+		).
+		SetStatus(firsttimerassignment.StatusCompleted).
+		Save(ctx)
+
+	mName := ""
+	if v, err := r.db.Visitor.Get(ctx, mid); err == nil {
+		mName = strings.TrimSpace(v.FirstName + " " + v.LastName)
+	} else if m, err := r.db.Member.Get(ctx, mid); err == nil {
+		mName = strings.TrimSpace(m.FirstName + " " + m.Surname)
+	}
+
+	callerName := ""
+	if u, err := r.db.User.Get(ctx, cuid); err == nil {
+		callerName = u.Email
+	}
+
+	return contracts.CallLogDTO{
+		ID:                        cl.ID.String(),
+		ChurchID:                  cl.ChurchID.String(),
+		MemberID:                  cl.MemberID.String(),
+		MemberName:                mName,
+		CallerID:                  cl.CallerID.String(),
+		CallerName:                callerName,
+		CallDate:                  cl.CallDate,
+		Outcome:                   string(cl.Outcome),
+		SummaryNotes:              cl.SummaryNotes,
+		PastoralEscalationNeeded: cl.PastoralEscalationNeeded,
+		CreatedAt:                 cl.CreatedAt,
+	}, nil
+}
+
+func (r *Repository) GetWeeklyPastoralSummary(ctx context.Context, churchID string) (contracts.WeeklyPastoralSummaryDTO, error) {
+	cid, err := uuid.Parse(churchID)
+	if err != nil {
+		return contracts.WeeklyPastoralSummaryDTO{}, err
+	}
+
+	oneWeekAgo := time.Now().AddDate(0, 0, -7)
+	logs, err := r.db.CallLog.Query().
+		Where(
+			calllog.ChurchIDEQ(cid),
+			calllog.CallDateGTE(oneWeekAgo),
+		).
+		Order(ent.Desc(calllog.FieldCallDate)).
+		All(ctx)
+	if err != nil {
+		return contracts.WeeklyPastoralSummaryDTO{}, err
+	}
+
+	totalRec := len(logs)
+	totalCalls := len(logs)
+	totalUnreachable := 0
+	totalEscalations := 0
+
+	recent := make([]contracts.CallLogDTO, 0, len(logs))
+	for _, l := range logs {
+		if l.Outcome == calllog.OutcomeUnreachable {
+			totalUnreachable++
+		}
+		if l.PastoralEscalationNeeded {
+			totalEscalations++
+		}
+		mName := ""
+		if v, err := r.db.Visitor.Get(ctx, l.MemberID); err == nil {
+			mName = strings.TrimSpace(v.FirstName + " " + v.LastName)
+		} else if m, err := r.db.Member.Get(ctx, l.MemberID); err == nil {
+			mName = strings.TrimSpace(m.FirstName + " " + m.Surname)
+		}
+		cName := ""
+		if u, err := r.db.User.Get(ctx, l.CallerID); err == nil {
+			cName = u.Email
+		}
+		recent = append(recent, contracts.CallLogDTO{
+			ID:                        l.ID.String(),
+			ChurchID:                  l.ChurchID.String(),
+			MemberID:                  l.MemberID.String(),
+			MemberName:                mName,
+			CallerID:                  l.CallerID.String(),
+			CallerName:                cName,
+			CallDate:                  l.CallDate,
+			Outcome:                   string(l.Outcome),
+			SummaryNotes:              l.SummaryNotes,
+			PastoralEscalationNeeded: l.PastoralEscalationNeeded,
+			CreatedAt:                 l.CreatedAt,
+		})
+	}
+
+	return contracts.WeeklyPastoralSummaryDTO{
+		WeekLabel:               time.Now().Format("Jan 02, 2006"),
+		TotalFirstTimersReceived: totalRec,
+		TotalCallsCompleted:      totalCalls,
+		TotalUnreachable:         totalUnreachable,
+		PastoralEscalationCount:  totalEscalations,
+		RecentLogs:               recent,
+	}, nil
+}
+
+// ---------------------------------------------------------------------------
+// 3. Discipleship Academy Pipeline
+// ---------------------------------------------------------------------------
+
+func (r *Repository) CreateCohort(ctx context.Context, churchID string, dto contracts.CreateCohortDTO) (contracts.AcademyCohortDTO, error) {
+	cid, err := uuid.Parse(churchID)
+	if err != nil {
+		return contracts.AcademyCohortDTO{}, err
+	}
+	sDate, err := time.Parse("2006-01-02", dto.StartDate)
+	if err != nil {
+		sDate = time.Now()
+	}
+
+	c, err := r.db.AcademyCohort.Create().
+		SetChurchID(cid).
+		SetModuleType(academycohort.ModuleType(dto.ModuleType)).
+		SetCohortName(dto.CohortName).
+		SetStartDate(sDate).
+		SetStatus(academycohort.StatusActive).
+		Save(ctx)
+	if err != nil {
+		return contracts.AcademyCohortDTO{}, err
+	}
+
+	return contracts.AcademyCohortDTO{
+		ID:         c.ID.String(),
+		ChurchID:   c.ChurchID.String(),
+		ModuleType: string(c.ModuleType),
+		CohortName: c.CohortName,
+		StartDate:  c.StartDate,
+		Status:     string(c.Status),
+		CreatedAt:  c.CreatedAt,
+	}, nil
+}
+
+func (r *Repository) ListCohorts(ctx context.Context, churchID string) ([]contracts.AcademyCohortDTO, error) {
+	cid, err := uuid.Parse(churchID)
+	if err != nil {
+		return nil, err
+	}
+
+	cohorts, err := r.db.AcademyCohort.Query().
+		Where(academycohort.ChurchIDEQ(cid)).
+		Order(ent.Desc(academycohort.FieldCreatedAt)).
+		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]contracts.AcademyCohortDTO, 0, len(cohorts))
+	for _, c := range cohorts {
+		count, _ := r.db.CohortEnrollment.Query().Where(cohortenrollment.CohortIDEQ(c.ID)).Count(ctx)
+		out = append(out, contracts.AcademyCohortDTO{
+			ID:         c.ID.String(),
+			ChurchID:   c.ChurchID.String(),
+			ModuleType: string(c.ModuleType),
+			CohortName: c.CohortName,
+			StartDate:  c.StartDate,
+			EndDate:    c.EndDate,
+			Status:     string(c.Status),
+			TotalCount: count,
+			CreatedAt:  c.CreatedAt,
+		})
+	}
+	return out, nil
+}
+
+func (r *Repository) EnrollStudent(ctx context.Context, cohortID, memberID string, teacherID *string) (contracts.CohortEnrollmentDTO, error) {
+	chid, err := uuid.Parse(cohortID)
+	if err != nil {
+		return contracts.CohortEnrollmentDTO{}, err
+	}
+	mid, err := uuid.Parse(memberID)
+	if err != nil {
+		return contracts.CohortEnrollmentDTO{}, err
+	}
+
+	b := r.db.CohortEnrollment.Create().
+		SetCohortID(chid).
+		SetMemberID(mid).
+		SetStatus(cohortenrollment.StatusEnrolled)
+
+	if teacherID != nil && *teacherID != "" {
+		if tid, err := uuid.Parse(*teacherID); err == nil {
+			b = b.SetTeacherID(tid)
+		}
+	}
+
+	enr, err := b.Save(ctx)
+	if err != nil {
+		return contracts.CohortEnrollmentDTO{}, err
+	}
+
+	// Create blank continuous assessment record
+	_ = r.db.ContinuousAssessment.Create().
+		SetEnrollmentID(enr.ID).
+		SetTotalScore(0).
+		Exec(ctx)
+
+	mName := ""
+	if m, err := r.db.Member.Get(ctx, mid); err == nil {
+		mName = strings.TrimSpace(m.FirstName + " " + m.Surname)
+	}
+
+	return contracts.CohortEnrollmentDTO{
+		ID:         enr.ID.String(),
+		CohortID:   enr.CohortID.String(),
+		MemberID:   enr.MemberID.String(),
+		MemberName: mName,
+		Status:     string(enr.Status),
+		CreatedAt:  enr.CreatedAt,
+	}, nil
+}
+
+func (r *Repository) ListEnrollments(ctx context.Context, cohortID string) ([]contracts.CohortEnrollmentDTO, error) {
+	chid, err := uuid.Parse(cohortID)
+	if err != nil {
+		return nil, err
+	}
+
+	enrollments, err := r.db.CohortEnrollment.Query().
+		Where(cohortenrollment.CohortIDEQ(chid)).
+		Order(ent.Desc(cohortenrollment.FieldCreatedAt)).
+		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]contracts.CohortEnrollmentDTO, 0, len(enrollments))
+	for _, e := range enrollments {
+		mName := ""
+		if m, err := r.db.Member.Get(ctx, e.MemberID); err == nil {
+			mName = strings.TrimSpace(m.FirstName + " " + m.Surname)
+		}
+
+		var assDTO *contracts.ContinuousAssessmentDTO
+		if ca, err := r.db.ContinuousAssessment.Query().Where(continuousassessment.EnrollmentIDEQ(e.ID)).Only(ctx); err == nil {
+			var gBy *string
+			if ca.GradedByUserID != nil {
+				s := ca.GradedByUserID.String()
+				gBy = &s
+			}
+			assDTO = &contracts.ContinuousAssessmentDTO{
+				ID:                       ca.ID.String(),
+				EnrollmentID:             ca.EnrollmentID.String(),
+				AssignmentScore:          ca.AssignmentScore,
+				VerbalAssessmentScore:    ca.VerbalAssessmentScore,
+				ParticipationScore:       ca.ParticipationScore,
+				DisciplersReportScore:    ca.DisciplersReportScore,
+				ProofOfNoteScore:         ca.ProofOfNoteScore,
+				AttendanceScore:          ca.AttendanceScore,
+				TotalScore:               ca.TotalScore,
+				DisciplerDevotionRating:  ca.DisciplerDevotionRating,
+				DisciplerEvangelismRating: ca.DisciplerEvangelismRating,
+				MakeupCompleted:          ca.MakeupCompleted,
+				GradedByUserID:           gBy,
+				UpdatedAt:                ca.UpdatedAt,
+			}
+		}
+
+		out = append(out, contracts.CohortEnrollmentDTO{
+			ID:         e.ID.String(),
+			CohortID:   e.CohortID.String(),
+			MemberID:   e.MemberID.String(),
+			MemberName: mName,
+			Status:     string(e.Status),
+			Assessment: assDTO,
+			CreatedAt:  e.CreatedAt,
+		})
+	}
+	return out, nil
+}
+
+func (r *Repository) GradeAssessment(ctx context.Context, enrollmentID string, gradedByUserID string, dto contracts.GradeAssessmentDTO) (contracts.ContinuousAssessmentDTO, error) {
+	eid, err := uuid.Parse(enrollmentID)
+	if err != nil {
+		return contracts.ContinuousAssessmentDTO{}, err
+	}
+
+	ca, err := r.db.ContinuousAssessment.Query().Where(continuousassessment.EnrollmentIDEQ(eid)).Only(ctx)
+	if err != nil {
+		// Create if missing
+		ca, err = r.db.ContinuousAssessment.Create().SetEnrollmentID(eid).Save(ctx)
+		if err != nil {
+			return contracts.ContinuousAssessmentDTO{}, err
+		}
+	}
+
+	// 6-part weighted scoring: Max 100
+	total := dto.AssignmentScore + dto.VerbalAssessmentScore + dto.ParticipationScore + dto.DisciplersReportScore + dto.ProofOfNoteScore + dto.AttendanceScore
+
+	var gby *uuid.UUID
+	if uid, err := uuid.Parse(gradedByUserID); err == nil {
+		gby = &uid
+	}
+
+	now := time.Now()
+	updated, err := r.db.ContinuousAssessment.UpdateOne(ca).
+		SetAssignmentScore(dto.AssignmentScore).
+		SetVerbalAssessmentScore(dto.VerbalAssessmentScore).
+		SetParticipationScore(dto.ParticipationScore).
+		SetDisciplersReportScore(dto.DisciplersReportScore).
+		SetProofOfNoteScore(dto.ProofOfNoteScore).
+		SetAttendanceScore(dto.AttendanceScore).
+		SetTotalScore(total).
+		SetDisciplerDevotionRating(dto.DisciplerDevotionRating).
+		SetDisciplerEvangelismRating(dto.DisciplerEvangelismRating).
+		SetMakeupCompleted(dto.MakeupCompleted).
+		SetNillableGradedByUserID(gby).
+		SetUpdatedAt(now).
+		Save(ctx)
+	if err != nil {
+		return contracts.ContinuousAssessmentDTO{}, err
+	}
+
+	// Check 50% pass mark and attendance rules
+	status := cohortenrollment.StatusEnrolled
+	if total >= 50.0 {
+		status = cohortenrollment.StatusPassed
+	} else if dto.AttendanceScore <= 5.0 { // <= 50% attendance
+		status = cohortenrollment.StatusRetakeRequired
+	} else {
+		status = cohortenrollment.StatusMakeupRequired
+	}
+
+	_ = r.db.CohortEnrollment.UpdateOneID(eid).SetStatus(status).Exec(ctx)
+
+	var gstr *string
+	if updated.GradedByUserID != nil {
+		s := updated.GradedByUserID.String()
+		gstr = &s
+	}
+
+	return contracts.ContinuousAssessmentDTO{
+		ID:                       updated.ID.String(),
+		EnrollmentID:             updated.EnrollmentID.String(),
+		AssignmentScore:          updated.AssignmentScore,
+		VerbalAssessmentScore:    updated.VerbalAssessmentScore,
+		ParticipationScore:       updated.ParticipationScore,
+		DisciplersReportScore:    updated.DisciplersReportScore,
+		ProofOfNoteScore:         updated.ProofOfNoteScore,
+		AttendanceScore:          updated.AttendanceScore,
+		TotalScore:               updated.TotalScore,
+		DisciplerDevotionRating:  updated.DisciplerDevotionRating,
+		DisciplerEvangelismRating: updated.DisciplerEvangelismRating,
+		MakeupCompleted:          updated.MakeupCompleted,
+		GradedByUserID:           gstr,
+		UpdatedAt:                updated.UpdatedAt,
+	}, nil
+}
+
+func (r *Repository) GraduateEnrollment(ctx context.Context, enrollmentID string) error {
+	eid, err := uuid.Parse(enrollmentID)
+	if err != nil {
+		return err
+	}
+
+	enr, err := r.db.CohortEnrollment.Get(ctx, eid)
+	if err != nil {
+		return err
+	}
+
+	cohort, err := r.db.AcademyCohort.Get(ctx, enr.CohortID)
+	if err != nil {
+		return err
+	}
+
+	// Advance member stage based on cohort module
+	nextStage := member.CurrentStageFoundationClass
+	switch cohort.ModuleType {
+	case academycohort.ModuleTypeFoundationClass:
+		nextStage = member.CurrentStageSundaySchoolModule1
+	case academycohort.ModuleTypeSundaySchoolModule1:
+		nextStage = member.CurrentStageSundaySchoolModule2
+	case academycohort.ModuleTypeSundaySchoolModule2:
+		nextStage = member.CurrentStageSundaySchoolModule3
+	case academycohort.ModuleTypeSundaySchoolModule3:
+		nextStage = member.CurrentStageMembershipClass
+	case academycohort.ModuleTypeMembershipClass:
+		nextStage = member.CurrentStageStewardship
+	}
+
+	_ = r.db.Member.UpdateOneID(enr.MemberID).SetCurrentStage(nextStage).Exec(ctx)
+	return r.db.CohortEnrollment.UpdateOne(enr).SetStatus(cohortenrollment.StatusPassed).Exec(ctx)
+}
+
+// ---------------------------------------------------------------------------
+// 4. Pseudo-Team Volunteering Intake & Placement (Post-Module 2)
+// ---------------------------------------------------------------------------
+
+func (r *Repository) ApplyVolunteer(ctx context.Context, churchID, memberID string, dto contracts.ApplyVolunteerDTO) (contracts.VolunteerApplicationDTO, error) {
+	cid, err := uuid.Parse(churchID)
+	if err != nil {
+		return contracts.VolunteerApplicationDTO{}, err
+	}
+	mid, err := uuid.Parse(memberID)
+	if err != nil {
+		return contracts.VolunteerApplicationDTO{}, err
+	}
+
+	b := r.db.VolunteerApplication.Create().
+		SetChurchID(cid).
+		SetMemberID(mid).
+		SetSkillsNotes(dto.SkillsNotes).
+		SetStatus(volunteerapplication.StatusPending)
+
+	if dto.PreferredTeam1ID != nil && *dto.PreferredTeam1ID != "" {
+		if t1, err := uuid.Parse(*dto.PreferredTeam1ID); err == nil {
+			b = b.SetPreferredTeam1ID(t1)
+		}
+	}
+	if dto.PreferredTeam2ID != nil && *dto.PreferredTeam2ID != "" {
+		if t2, err := uuid.Parse(*dto.PreferredTeam2ID); err == nil {
+			b = b.SetPreferredTeam2ID(t2)
+		}
+	}
+
+	app, err := b.Save(ctx)
+	if err != nil {
+		return contracts.VolunteerApplicationDTO{}, err
+	}
+
+	mName := ""
+	if m, err := r.db.Member.Get(ctx, mid); err == nil {
+		mName = strings.TrimSpace(m.FirstName + " " + m.Surname)
+	}
+
+	return contracts.VolunteerApplicationDTO{
+		ID:          app.ID.String(),
+		ChurchID:    app.ChurchID.String(),
+		MemberID:    app.MemberID.String(),
+		MemberName:  mName,
+		SkillsNotes: app.SkillsNotes,
+		Status:      string(app.Status),
+		CreatedAt:   app.CreatedAt,
+	}, nil
+}
+
+func (r *Repository) ListVolunteerApplications(ctx context.Context, churchID string) ([]contracts.VolunteerApplicationDTO, error) {
+	cid, err := uuid.Parse(churchID)
+	if err != nil {
+		return nil, err
+	}
+
+	apps, err := r.db.VolunteerApplication.Query().
+		Where(volunteerapplication.ChurchIDEQ(cid)).
+		Order(ent.Desc(volunteerapplication.FieldCreatedAt)).
+		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]contracts.VolunteerApplicationDTO, 0, len(apps))
+	for _, a := range apps {
+		mName := ""
+		if m, err := r.db.Member.Get(ctx, a.MemberID); err == nil {
+			mName = strings.TrimSpace(m.FirstName + " " + m.Surname)
+		}
+
+		out = append(out, contracts.VolunteerApplicationDTO{
+			ID:          a.ID.String(),
+			ChurchID:    a.ChurchID.String(),
+			MemberID:    a.MemberID.String(),
+			MemberName:  mName,
+			SkillsNotes: a.SkillsNotes,
+			Status:      string(a.Status),
+			CreatedAt:   a.CreatedAt,
+		})
+	}
+	return out, nil
+}
+
+func (r *Repository) PlaceVolunteer(ctx context.Context, applicationID, targetTeamID, placedByUserID string) error {
+	aid, err := uuid.Parse(applicationID)
+	if err != nil {
+		return err
+	}
+	tid, err := uuid.Parse(targetTeamID)
+	if err != nil {
+		return err
+	}
+	puid, err := uuid.Parse(placedByUserID)
+	if err != nil {
+		return err
+	}
+
+	app, err := r.db.VolunteerApplication.Get(ctx, aid)
+	if err != nil {
+		return err
+	}
+
+	now := time.Now()
+	_ = r.db.Member.UpdateOneID(app.MemberID).SetVolunteeringTeamID(tid).Exec(ctx)
+	return r.db.VolunteerApplication.UpdateOne(app).
+		SetStatus(volunteerapplication.StatusPlaced).
+		SetPlacedByUserID(puid).
+		SetPlacedAt(now).
+		Exec(ctx)
+}
+
+// ---------------------------------------------------------------------------
+// 5. Milestone Celebrations & 3-Day Alert Engine
+// ---------------------------------------------------------------------------
+
+func (r *Repository) GetUpcomingCelebrations(ctx context.Context, churchID string, days int) ([]contracts.CelebrationAlertDTO, error) {
+	cid, err := uuid.Parse(churchID)
+	if err != nil {
+		return nil, err
+	}
+
+	members, err := r.db.Member.Query().
+		Where(member.LocalChurchIDEQ(cid)).
+		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	now := time.Now()
+	out := make([]contracts.CelebrationAlertDTO, 0)
+
+	for _, m := range members {
+		mName := strings.TrimSpace(m.FirstName + " " + m.Surname)
+		mPhone := ""
+		if m.PhoneNumber != nil {
+			mPhone = *m.PhoneNumber
+		}
+
+		// Birthday check (integer day & month match within 3 days)
+		if m.DateOfBirthDay != nil && m.DateOfBirthMonth != nil {
+			dobMonth := time.Month(*m.DateOfBirthMonth)
+			dobDay := int(*m.DateOfBirthDay)
+			thisYearDOB := time.Date(now.Year(), dobMonth, dobDay, 0, 0, 0, 0, time.UTC)
+			diff := int(thisYearDOB.Sub(now).Hours() / 24)
+			if diff >= 0 && diff <= days {
+				out = append(out, contracts.CelebrationAlertDTO{
+					MemberID:      m.ID.String(),
+					MemberName:    mName,
+					Phone:         mPhone,
+					Email:         m.Email,
+					Type:          "birthday",
+					DateLabel:     thisYearDOB.Format("Jan 02"),
+					DaysRemaining: diff,
+					PhotoURL:      m.PhotoURL,
+				})
+			}
+		}
+
+		// Anniversary check
+		if m.WeddingAnniversaryDay != nil && m.WeddingAnniversaryMonth != nil {
+			annMonth := time.Month(*m.WeddingAnniversaryMonth)
+			annDay := int(*m.WeddingAnniversaryDay)
+			thisYearAnn := time.Date(now.Year(), annMonth, annDay, 0, 0, 0, 0, time.UTC)
+			diff := int(thisYearAnn.Sub(now).Hours() / 24)
+			if diff >= 0 && diff <= days {
+				out = append(out, contracts.CelebrationAlertDTO{
+					MemberID:      m.ID.String(),
+					MemberName:    mName,
+					Phone:         mPhone,
+					Email:         m.Email,
+					Type:          "anniversary",
+					DateLabel:     thisYearAnn.Format("Jan 02"),
+					DaysRemaining: diff,
+					PhotoURL:      m.PhotoURL,
+				})
+			}
+		}
+	}
+
+	return out, nil
+}
+
+func (r *Repository) CreateLandmark(ctx context.Context, churchID string, createdByUserID *string, dto contracts.CreateLandmarkDTO) (contracts.MemberLandmarkDTO, error) {
+	cid, err := uuid.Parse(churchID)
+	if err != nil {
+		return contracts.MemberLandmarkDTO{}, err
+	}
+	mid, err := uuid.Parse(dto.MemberID)
+	if err != nil {
+		return contracts.MemberLandmarkDTO{}, err
+	}
+	eDate, err := time.Parse("2006-01-02", dto.EventDate)
+	if err != nil {
+		eDate = time.Now()
+	}
+
+	b := r.db.MemberLandmark.Create().
+		SetChurchID(cid).
+		SetMemberID(mid).
+		SetLandmarkType(memberlandmark.LandmarkType(dto.LandmarkType)).
+		SetTitle(dto.Title).
+		SetInstitutionOrOrg(dto.InstitutionOrOrg).
+		SetEventDate(eDate).
+		SetNotes(dto.Notes)
+
+	if createdByUserID != nil && *createdByUserID != "" {
+		if uid, err := uuid.Parse(*createdByUserID); err == nil {
+			b = b.SetCreatedByUserID(uid)
+		}
+	}
+
+	lm, err := b.Save(ctx)
+	if err != nil {
+		return contracts.MemberLandmarkDTO{}, err
+	}
+
+	mName := ""
+	if m, err := r.db.Member.Get(ctx, mid); err == nil {
+		mName = strings.TrimSpace(m.FirstName + " " + m.Surname)
+	}
+
+	return contracts.MemberLandmarkDTO{
+		ID:               lm.ID.String(),
+		ChurchID:         lm.ChurchID.String(),
+		MemberID:         lm.MemberID.String(),
+		MemberName:       mName,
+		LandmarkType:     string(lm.LandmarkType),
+		Title:            lm.Title,
+		InstitutionOrOrg: lm.InstitutionOrOrg,
+		EventDate:        lm.EventDate,
+		Notes:            lm.Notes,
+		CreatedAt:        lm.CreatedAt,
+	}, nil
+}
+
+func (r *Repository) ListLandmarks(ctx context.Context, churchID string) ([]contracts.MemberLandmarkDTO, error) {
+	cid, err := uuid.Parse(churchID)
+	if err != nil {
+		return nil, err
+	}
+
+	lms, err := r.db.MemberLandmark.Query().
+		Where(memberlandmark.ChurchIDEQ(cid)).
+		Order(ent.Desc(memberlandmark.FieldCreatedAt)).
+		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]contracts.MemberLandmarkDTO, 0, len(lms))
+	for _, l := range lms {
+		mName := ""
+		if m, err := r.db.Member.Get(ctx, l.MemberID); err == nil {
+			mName = strings.TrimSpace(m.FirstName + " " + m.Surname)
+		}
+
+		out = append(out, contracts.MemberLandmarkDTO{
+			ID:               l.ID.String(),
+			ChurchID:         l.ChurchID.String(),
+			MemberID:         l.MemberID.String(),
+			MemberName:       mName,
+			LandmarkType:     string(l.LandmarkType),
+			Title:            l.Title,
+			InstitutionOrOrg: l.InstitutionOrOrg,
+			EventDate:        l.EventDate,
+			Notes:            l.Notes,
+			CreatedAt:        l.CreatedAt,
+		})
+	}
+	return out, nil
+}
+
+// ---------------------------------------------------------------------------
+// 6. Pastoral Situation Reports (SitRep)
+// ---------------------------------------------------------------------------
+
+func (r *Repository) CreateSitRep(ctx context.Context, churchID string, filedByUserID string, dto contracts.CreateSitRepDTO) (contracts.SituationReportDTO, error) {
+	cid, err := uuid.Parse(churchID)
+	if err != nil {
+		return contracts.SituationReportDTO{}, err
+	}
+	mid, err := uuid.Parse(dto.MemberID)
+	if err != nil {
+		return contracts.SituationReportDTO{}, err
+	}
+	fuid, err := uuid.Parse(filedByUserID)
+	if err != nil {
+		return contracts.SituationReportDTO{}, err
+	}
+
+	sr, err := r.db.SituationReport.Create().
+		SetChurchID(cid).
+		SetMemberID(mid).
+		SetCategory(situationreport.Category(dto.Category)).
+		SetNotes(dto.Notes).
+		SetActionTaken(dto.ActionTaken).
+		SetIsUrgent(dto.IsUrgent).
+		SetFiledByUserID(fuid).
+		Save(ctx)
+	if err != nil {
+		return contracts.SituationReportDTO{}, err
+	}
+
+	mName := ""
+	if m, err := r.db.Member.Get(ctx, mid); err == nil {
+		mName = strings.TrimSpace(m.FirstName + " " + m.Surname)
+	}
+
+	filedName := ""
+	if u, err := r.db.User.Get(ctx, fuid); err == nil {
+		filedName = u.Email
+	}
+
+	return contracts.SituationReportDTO{
+		ID:             sr.ID.String(),
+		ChurchID:       sr.ChurchID.String(),
+		MemberID:       sr.MemberID.String(),
+		MemberName:     mName,
+		Category:       string(sr.Category),
+		Notes:          sr.Notes,
+		ActionTaken:    sr.ActionTaken,
+		IsUrgent:       sr.IsUrgent,
+		FiledByUserID: sr.FiledByUserID.String(),
+		FiledByName:   filedName,
+		PastorReviewed: sr.PastorReviewed,
+		CreatedAt:      sr.CreatedAt,
+	}, nil
+}
+
+func (r *Repository) ListSitRepsForMember(ctx context.Context, memberID string) ([]contracts.SituationReportDTO, error) {
+	mid, err := uuid.Parse(memberID)
+	if err != nil {
+		return nil, err
+	}
+
+	srs, err := r.db.SituationReport.Query().
+		Where(situationreport.MemberIDEQ(mid)).
+		Order(ent.Desc(situationreport.FieldCreatedAt)).
+		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]contracts.SituationReportDTO, 0, len(srs))
+	for _, sr := range srs {
+		mName := ""
+		if m, err := r.db.Member.Get(ctx, mid); err == nil {
+			mName = strings.TrimSpace(m.FirstName + " " + m.Surname)
+		}
+		filedName := ""
+		if u, err := r.db.User.Get(ctx, sr.FiledByUserID); err == nil {
+			filedName = u.Email
+		}
+		out = append(out, contracts.SituationReportDTO{
+			ID:             sr.ID.String(),
+			ChurchID:       sr.ChurchID.String(),
+			MemberID:       sr.MemberID.String(),
+			MemberName:     mName,
+			Category:       string(sr.Category),
+			Notes:          sr.Notes,
+			ActionTaken:    sr.ActionTaken,
+			IsUrgent:       sr.IsUrgent,
+			FiledByUserID: sr.FiledByUserID.String(),
+			FiledByName:   filedName,
+			PastorReviewed: sr.PastorReviewed,
+			CreatedAt:      sr.CreatedAt,
+		})
+	}
+	return out, nil
+}
+
+// ---------------------------------------------------------------------------
+// 7. Gatekeeper Visitor Profiling Pipeline
+// ---------------------------------------------------------------------------
+
+func (r *Repository) ListUnprofiledVisitors(ctx context.Context, churchID string) ([]contracts.UnprofiledVisitorDTO, error) {
+	cid, err := uuid.Parse(churchID)
+	if err != nil {
+		return nil, err
+	}
+
+	visitors, err := r.db.Visitor.Query().
+		Where(
+			visitor.ChurchIDEQ(cid),
+			visitor.StatusNEQ(visitor.StatusProfiled),
+		).
+		Order(ent.Desc(visitor.FieldCreatedAt)).
+		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]contracts.UnprofiledVisitorDTO, 0, len(visitors))
+	for _, v := range visitors {
+		rec := v.Status == visitor.StatusFoundationClassCandidate
+		out = append(out, contracts.UnprofiledVisitorDTO{
+			ID:                   v.ID.String(),
+			ChurchID:             v.ChurchID.String(),
+			FirstName:            v.FirstName,
+			LastName:             v.LastName,
+			PhoneNumber:          v.PhoneNumber,
+			Gender:               string(v.Gender),
+			FirstAttendanceDate:  v.FirstAttendanceDate,
+			Address:              v.Address,
+			Email:                v.Email,
+			VisitCount:           v.VisitCount,
+			FoundationRecommended: rec,
+		})
+	}
+	return out, nil
+}
+
+func (r *Repository) ProfileVisitor(ctx context.Context, churchID, visitorID string, profiledByUserID string, dto contracts.ProfileVisitorPayloadDTO) (contracts.Member, error) {
+	cid, err := uuid.Parse(churchID)
+	if err != nil {
+		return contracts.Member{}, err
+	}
+	vid, err := uuid.Parse(visitorID)
+	if err != nil {
+		return contracts.Member{}, err
+	}
+	puid, err := uuid.Parse(profiledByUserID)
+	if err != nil {
+		return contracts.Member{}, err
+	}
+
+	v, err := r.db.Visitor.Get(ctx, vid)
+	if err != nil {
+		return contracts.Member{}, err
+	}
+
+	now := time.Now()
+	b := r.db.Member.Create().
+		SetFirstName(v.FirstName).
+		SetSurname(v.LastName).
+		SetPhoneNumber(v.PhoneNumber).
+		SetGender(member.Gender(v.Gender)).
+		SetEmail(dto.Email).
+		SetHomeAddress(v.Address).
+		SetDateOfBirthDay(dto.DateOfBirthDay).
+		SetDateOfBirthMonth(dto.DateOfBirthMonth).
+		SetMaritalStatus(member.MaritalStatus(dto.MaritalStatus)).
+		SetLocalChurchID(cid).
+		SetIsProfiled(true).
+		SetProfiledByUserID(puid).
+		SetProfiledAt(now).
+		SetCurrentStage(member.CurrentStageFirstTimeGuest)
+
+	if dto.WeddingAnniversaryDay != nil {
+		b = b.SetWeddingAnniversaryDay(*dto.WeddingAnniversaryDay)
+	}
+	if dto.WeddingAnniversaryMonth != nil {
+		b = b.SetWeddingAnniversaryMonth(*dto.WeddingAnniversaryMonth)
+	}
+	if dto.Occupation != nil && *dto.Occupation != "" {
+		b = b.SetJobOccupation(*dto.Occupation)
+	}
+	if dto.SectorID != nil && *dto.SectorID != "" {
+		if secID, err := uuid.Parse(*dto.SectorID); err == nil {
+			b = b.SetSectorID(secID)
+		}
+	}
+
+	newMember, err := b.Save(ctx)
+	if err != nil {
+		return contracts.Member{}, err
+	}
+
+	// Update visitor status
+	_ = r.db.Visitor.UpdateOne(v).SetStatus(visitor.StatusProfiled).Exec(ctx)
+
+	return mapEntMemberToContract(newMember, "member"), nil
+}
+
+// ---------------------------------------------------------------------------
+// 8. Inter-Branch Member Transfer & Longitudinal Migration
+// ---------------------------------------------------------------------------
+
+func (r *Repository) InitiateTransfer(ctx context.Context, originChurchID, initiatedByUserID string, dto contracts.InitiateTransferDTO) (contracts.MemberTransferDTO, error) {
+	ocid, err := uuid.Parse(originChurchID)
+	if err != nil {
+		return contracts.MemberTransferDTO{}, err
+	}
+	mid, err := uuid.Parse(dto.MemberID)
+	if err != nil {
+		return contracts.MemberTransferDTO{}, err
+	}
+	dcid, err := uuid.Parse(dto.DestinationChurchID)
+	if err != nil {
+		return contracts.MemberTransferDTO{}, err
+	}
+	iuid, err := uuid.Parse(initiatedByUserID)
+	if err != nil {
+		return contracts.MemberTransferDTO{}, err
+	}
+
+	mt, err := r.db.MemberTransfer.Create().
+		SetMemberID(mid).
+		SetOriginChurchID(ocid).
+		SetDestinationChurchID(dcid).
+		SetTransferReason(dto.TransferReason).
+		SetPastoralRecommendation(dto.PastoralRecommendation).
+		SetInitiatedByUserID(iuid).
+		SetStatus(membertransfer.StatusPending).
+		Save(ctx)
+	if err != nil {
+		return contracts.MemberTransferDTO{}, err
+	}
+
+	mName := ""
+	if m, err := r.db.Member.Get(ctx, mid); err == nil {
+		mName = strings.TrimSpace(m.FirstName + " " + m.Surname)
+	}
+
+	oName, dName := "", ""
+	if oc, err := r.db.LocalChurch.Get(ctx, ocid); err == nil {
+		oName = oc.Name
+	}
+	if dc, err := r.db.LocalChurch.Get(ctx, dcid); err == nil {
+		dName = dc.Name
+	}
+
+	initName := ""
+	if u, err := r.db.User.Get(ctx, iuid); err == nil {
+		initName = u.Email
+	}
+
+	return contracts.MemberTransferDTO{
+		ID:                     mt.ID.String(),
+		MemberID:               mt.MemberID.String(),
+		MemberName:             mName,
+		OriginChurchID:         mt.OriginChurchID.String(),
+		OriginChurchName:       oName,
+		DestinationChurchID:    mt.DestinationChurchID.String(),
+		DestinationChurchName:  dName,
+		TransferReason:         mt.TransferReason,
+		PastoralRecommendation: mt.PastoralRecommendation,
+		Status:                 string(mt.Status),
+		InitiatedByUserID:     mt.InitiatedByUserID.String(),
+		InitiatedByName:       initName,
+		CreatedAt:              mt.CreatedAt,
+	}, nil
+}
+
+func (r *Repository) ListInboundTransfers(ctx context.Context, churchID string) ([]contracts.MemberTransferDTO, error) {
+	cid, err := uuid.Parse(churchID)
+	if err != nil {
+		return nil, err
+	}
+
+	mts, err := r.db.MemberTransfer.Query().
+		Where(
+			membertransfer.DestinationChurchIDEQ(cid),
+			membertransfer.StatusEQ(membertransfer.StatusPending),
+		).
+		Order(ent.Desc(membertransfer.FieldCreatedAt)).
+		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]contracts.MemberTransferDTO, 0, len(mts))
+	for _, mt := range mts {
+		mName := ""
+		if m, err := r.db.Member.Get(ctx, mt.MemberID); err == nil {
+			mName = strings.TrimSpace(m.FirstName + " " + m.Surname)
+		}
+		oName, dName := "", ""
+		if oc, err := r.db.LocalChurch.Get(ctx, mt.OriginChurchID); err == nil {
+			oName = oc.Name
+		}
+		if dc, err := r.db.LocalChurch.Get(ctx, mt.DestinationChurchID); err == nil {
+			dName = dc.Name
+		}
+		initName := ""
+		if u, err := r.db.User.Get(ctx, mt.InitiatedByUserID); err == nil {
+			initName = u.Email
+		}
+		out = append(out, contracts.MemberTransferDTO{
+			ID:                     mt.ID.String(),
+			MemberID:               mt.MemberID.String(),
+			MemberName:             mName,
+			OriginChurchID:         mt.OriginChurchID.String(),
+			OriginChurchName:       oName,
+			DestinationChurchID:    mt.DestinationChurchID.String(),
+			DestinationChurchName:  dName,
+			TransferReason:         mt.TransferReason,
+			PastoralRecommendation: mt.PastoralRecommendation,
+			Status:                 string(mt.Status),
+			InitiatedByUserID:     mt.InitiatedByUserID.String(),
+			InitiatedByName:       initName,
+			CreatedAt:              mt.CreatedAt,
+		})
+	}
+	return out, nil
+}
+
+func (r *Repository) ReviewTransfer(ctx context.Context, transferID, reviewedByUserID string, dto contracts.ReviewTransferDTO) error {
+	tid, err := uuid.Parse(transferID)
+	if err != nil {
+		return err
+	}
+	ruid, err := uuid.Parse(reviewedByUserID)
+	if err != nil {
+		return err
+	}
+
+	mt, err := r.db.MemberTransfer.Get(ctx, tid)
+	if err != nil {
+		return err
+	}
+
+	now := time.Now()
+	if !dto.Approved {
+		return r.db.MemberTransfer.UpdateOne(mt).
+			SetStatus(membertransfer.StatusRejected).
+			SetReviewedByUserID(ruid).
+			SetReviewedAt(now).
+			Exec(ctx)
+	}
+
+	// Migrate member to destination church
+	b := r.db.Member.UpdateOneID(mt.MemberID).
+		SetLocalChurchID(mt.DestinationChurchID).
+		ClearTeamID().
+		ClearVolunteeringTeamID()
+
+	if dto.SectorID != nil && *dto.SectorID != "" {
+		if secID, err := uuid.Parse(*dto.SectorID); err == nil {
+			b = b.SetSectorID(secID)
+		}
+	}
+	if err := b.Exec(ctx); err != nil {
+		return err
+	}
+
+	return r.db.MemberTransfer.UpdateOne(mt).
+		SetStatus(membertransfer.StatusApproved).
+		SetReviewedByUserID(ruid).
+		SetReviewedAt(now).
+		Exec(ctx)
 }

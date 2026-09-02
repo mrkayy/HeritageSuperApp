@@ -6,11 +6,17 @@ import (
 	"entgo.io/ent/dialect/sql"
 )
 
+// AcademyCohort is the predicate function for academycohort builders.
+type AcademyCohort func(*sql.Selector)
+
 // AttendanceRecord is the predicate function for attendancerecord builders.
 type AttendanceRecord func(*sql.Selector)
 
 // AuditLog is the predicate function for auditlog builders.
 type AuditLog func(*sql.Selector)
+
+// CallLog is the predicate function for calllog builders.
+type CallLog func(*sql.Selector)
 
 // ChurchEvent is the predicate function for churchevent builders.
 type ChurchEvent func(*sql.Selector)
@@ -21,11 +27,20 @@ type ChurchSetting func(*sql.Selector)
 // ChurchTeams is the predicate function for churchteams builders.
 type ChurchTeams func(*sql.Selector)
 
+// CohortEnrollment is the predicate function for cohortenrollment builders.
+type CohortEnrollment func(*sql.Selector)
+
+// ContinuousAssessment is the predicate function for continuousassessment builders.
+type ContinuousAssessment func(*sql.Selector)
+
 // Districts is the predicate function for districts builders.
 type Districts func(*sql.Selector)
 
 // FeatureFlag is the predicate function for featureflag builders.
 type FeatureFlag func(*sql.Selector)
+
+// FirstTimerAssignment is the predicate function for firsttimerassignment builders.
+type FirstTimerAssignment func(*sql.Selector)
 
 // FollowUp is the predicate function for followup builders.
 type FollowUp func(*sql.Selector)
@@ -42,8 +57,14 @@ type LocalChurch func(*sql.Selector)
 // Member is the predicate function for member builders.
 type Member func(*sql.Selector)
 
+// MemberLandmark is the predicate function for memberlandmark builders.
+type MemberLandmark func(*sql.Selector)
+
 // MemberTeam is the predicate function for memberteam builders.
 type MemberTeam func(*sql.Selector)
+
+// MemberTransfer is the predicate function for membertransfer builders.
+type MemberTransfer func(*sql.Selector)
 
 // MembershipStageHistory is the predicate function for membershipstagehistory builders.
 type MembershipStageHistory func(*sql.Selector)
@@ -57,8 +78,14 @@ type OutreachReport func(*sql.Selector)
 // OutreachTargets is the predicate function for outreachtargets builders.
 type OutreachTargets func(*sql.Selector)
 
+// ProfileChangeRequest is the predicate function for profilechangerequest builders.
+type ProfileChangeRequest func(*sql.Selector)
+
 // Sector is the predicate function for sector builders.
 type Sector func(*sql.Selector)
+
+// SituationReport is the predicate function for situationreport builders.
+type SituationReport func(*sql.Selector)
 
 // Soul is the predicate function for soul builders.
 type Soul func(*sql.Selector)
@@ -89,3 +116,6 @@ type UserTeam func(*sql.Selector)
 
 // Visitor is the predicate function for visitor builders.
 type Visitor func(*sql.Selector)
+
+// VolunteerApplication is the predicate function for volunteerapplication builders.
+type VolunteerApplication func(*sql.Selector)

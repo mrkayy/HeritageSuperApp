@@ -14,11 +14,17 @@ import (
 )
 
 type Service struct {
-	repo *Repository
+	repo            *Repository
+	emailDispatcher contracts.EmailDispatcher
+	frontendURL     string
 }
 
-func NewService(repo *Repository) *Service {
-	return &Service{repo: repo}
+func NewService(repo *Repository, emailDispatcher contracts.EmailDispatcher, frontendURL string) *Service {
+	return &Service{
+		repo:            repo,
+		emailDispatcher: emailDispatcher,
+		frontendURL:     strings.TrimRight(frontendURL, "/"),
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -190,6 +196,38 @@ func (s *Service) CreateLeadershipInvite(ctx context.Context, input contracts.Cr
 	return dto, nil
 }
 
+func (s *Service) SendTestEmail(ctx context.Context, input contracts.SendTestEmailDTO, actorUser contracts.AuthedUser) (contracts.SendTestEmailResponseDTO, error) {
+	if s.emailDispatcher == nil {
+		return contracts.SendTestEmailResponseDTO{Success: false, Message: "email dispatcher not configured on server"}, errors.New("email dispatcher not configured")
+	}
+	if strings.TrimSpace(input.ToEmail) == "" {
+		return contracts.SendTestEmailResponseDTO{Success: false, Message: "recipient email (to_email) is required"}, errors.New("to_email is required")
+	}
+
+	err := s.emailDispatcher.SendTestEmail(ctx, strings.TrimSpace(input.ToEmail), input.Template, input.Name)
+	if err != nil {
+		return contracts.SendTestEmailResponseDTO{Success: false, Message: fmt.Sprintf("Failed to send test email: %v", err)}, err
+	}
+
+	// Audit Log
+	uid := actorUser.ID
+	_ = s.repo.CreateAuditLog(ctx, contracts.AuditLogDTO{
+		ActorUserID:  &uid,
+		ActorName:    actorUser.Email,
+		ActorEmail:   actorUser.Email,
+		ActorRole:    actorUser.CurrentRole,
+		Action:       "send_test_email",
+		ResourceType: "email_template",
+		ResourceID:   input.Template,
+		Details:      fmt.Sprintf("Dispatched test email (%s) to %s", input.Template, input.ToEmail),
+	})
+
+	return contracts.SendTestEmailResponseDTO{
+		Success: true,
+		Message: fmt.Sprintf("Test email for '%s' sent successfully to %s", input.Template, input.ToEmail),
+	}, nil
+}
+
 func (s *Service) RevokeLeadershipInvite(ctx context.Context, idStr string, actorUser contracts.AuthedUser) error {
 	id, err := uuid.Parse(idStr)
 	if err != nil {
@@ -351,4 +389,3 @@ func (s *Service) UpdateChurchSettings(ctx context.Context, churchIDStr string, 
 
 	return dto, nil
 }
-

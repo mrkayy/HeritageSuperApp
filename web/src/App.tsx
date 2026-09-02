@@ -50,6 +50,15 @@ import ProfilingQueue from "./pages/teams/ProfilingQueue";
 import MembershipTeamGuide from "./pages/teams/MembershipTeamGuide";
 import InfoCenterGuide from "./pages/teams/InfoCenterGuide";
 
+import { MakerCheckerQueue } from "./pages/membership/MakerCheckerQueue";
+import { FirstTimerCRM } from "./pages/membership/FirstTimerCRM";
+import { DiscipleshipAcademy } from "./pages/membership/DiscipleshipAcademy";
+import { VolunteerIntake } from "./pages/membership/VolunteerIntake";
+import { CelebrationsLandmarks } from "./pages/membership/CelebrationsLandmarks";
+import { SitRepPastoralLog } from "./pages/membership/SitRepPastoralLog";
+import { VisitorProfilingQueue } from "./pages/membership/VisitorProfilingQueue";
+import { InterBranchTransfers } from "./pages/membership/InterBranchTransfers";
+
 import { FeatureFlagProvider } from "./contexts/FeatureFlagContext";
 import FeatureFlagGate from "./components/auth/FeatureFlagGate";
 
@@ -197,6 +206,16 @@ const App = () => (
                     <MembershipTeamGuide />
                   </FeatureFlagGate>
                 } />
+
+                {/* Membership Suite Features */}
+                <Route path="membership/maker-checker" element={<MakerCheckerQueue />} />
+                <Route path="membership/first-timer-crm" element={<FirstTimerCRM />} />
+                <Route path="membership/academy" element={<DiscipleshipAcademy />} />
+                <Route path="membership/volunteers" element={<VolunteerIntake />} />
+                <Route path="membership/celebrations" element={<CelebrationsLandmarks />} />
+                <Route path="membership/sitrep" element={<SitRepPastoralLog />} />
+                <Route path="membership/visitor-profiling" element={<VisitorProfilingQueue />} />
+                <Route path="membership/transfers" element={<InterBranchTransfers />} />
 
                 {/* Information Center routes */}
                 <Route path="teams/info-center" element={

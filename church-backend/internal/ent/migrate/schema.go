@@ -9,6 +9,23 @@ import (
 )
 
 var (
+	// AcademyCohortsColumns holds the columns for the "academy_cohorts" table.
+	AcademyCohortsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "church_id", Type: field.TypeUUID},
+		{Name: "module_type", Type: field.TypeEnum, Enums: []string{"foundation_class", "sunday_school_module_1", "sunday_school_module_2", "sunday_school_module_3", "membership_class"}},
+		{Name: "cohort_name", Type: field.TypeString, Size: 2147483647},
+		{Name: "start_date", Type: field.TypeTime},
+		{Name: "end_date", Type: field.TypeTime, Nullable: true},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"enrolling", "active", "completed"}, Default: "enrolling"},
+		{Name: "created_at", Type: field.TypeTime},
+	}
+	// AcademyCohortsTable holds the schema information for the "academy_cohorts" table.
+	AcademyCohortsTable = &schema.Table{
+		Name:       "academy_cohorts",
+		Columns:    AcademyCohortsColumns,
+		PrimaryKey: []*schema.Column{AcademyCohortsColumns[0]},
+	}
 	// AttendanceRecordsColumns holds the columns for the "attendance_records" table.
 	AttendanceRecordsColumns = []*schema.Column{
 		{Name: "attendance_id", Type: field.TypeUUID},
@@ -73,6 +90,24 @@ var (
 		Name:       "audit_logs",
 		Columns:    AuditLogsColumns,
 		PrimaryKey: []*schema.Column{AuditLogsColumns[0]},
+	}
+	// CallLogsColumns holds the columns for the "call_logs" table.
+	CallLogsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "church_id", Type: field.TypeUUID},
+		{Name: "member_id", Type: field.TypeUUID},
+		{Name: "caller_id", Type: field.TypeUUID},
+		{Name: "call_date", Type: field.TypeTime},
+		{Name: "outcome", Type: field.TypeEnum, Enums: []string{"reached_welcomed", "unreachable", "requested_callback", "pastoral_attention"}, Default: "reached_welcomed"},
+		{Name: "summary_notes", Type: field.TypeString, Nullable: true, Size: 2147483647, Default: ""},
+		{Name: "pastoral_escalation_needed", Type: field.TypeBool, Default: false},
+		{Name: "created_at", Type: field.TypeTime},
+	}
+	// CallLogsTable holds the schema information for the "call_logs" table.
+	CallLogsTable = &schema.Table{
+		Name:       "call_logs",
+		Columns:    CallLogsColumns,
+		PrimaryKey: []*schema.Column{CallLogsColumns[0]},
 	}
 	// ChurchEventColumns holds the columns for the "church_event" table.
 	ChurchEventColumns = []*schema.Column{
@@ -155,6 +190,45 @@ var (
 			},
 		},
 	}
+	// CohortEnrollmentsColumns holds the columns for the "cohort_enrollments" table.
+	CohortEnrollmentsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "cohort_id", Type: field.TypeUUID},
+		{Name: "member_id", Type: field.TypeUUID},
+		{Name: "teacher_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"enrolled", "passed", "makeup_required", "retake_required", "dropped"}, Default: "enrolled"},
+		{Name: "created_at", Type: field.TypeTime},
+	}
+	// CohortEnrollmentsTable holds the schema information for the "cohort_enrollments" table.
+	CohortEnrollmentsTable = &schema.Table{
+		Name:       "cohort_enrollments",
+		Columns:    CohortEnrollmentsColumns,
+		PrimaryKey: []*schema.Column{CohortEnrollmentsColumns[0]},
+	}
+	// ContinuousAssessmentsColumns holds the columns for the "continuous_assessments" table.
+	ContinuousAssessmentsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "enrollment_id", Type: field.TypeUUID},
+		{Name: "assignment_score", Type: field.TypeFloat64, Default: 0},
+		{Name: "verbal_assessment_score", Type: field.TypeFloat64, Default: 0},
+		{Name: "participation_score", Type: field.TypeFloat64, Default: 0},
+		{Name: "disciplers_report_score", Type: field.TypeFloat64, Default: 0},
+		{Name: "proof_of_note_score", Type: field.TypeFloat64, Default: 0},
+		{Name: "attendance_score", Type: field.TypeFloat64, Default: 0},
+		{Name: "total_score", Type: field.TypeFloat64, Default: 0},
+		{Name: "discipler_devotion_rating", Type: field.TypeInt, Default: 5},
+		{Name: "discipler_evangelism_rating", Type: field.TypeInt, Default: 5},
+		{Name: "makeup_completed", Type: field.TypeBool, Default: false},
+		{Name: "graded_by_user_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+	}
+	// ContinuousAssessmentsTable holds the schema information for the "continuous_assessments" table.
+	ContinuousAssessmentsTable = &schema.Table{
+		Name:       "continuous_assessments",
+		Columns:    ContinuousAssessmentsColumns,
+		PrimaryKey: []*schema.Column{ContinuousAssessmentsColumns[0]},
+	}
 	// DistrictsColumns holds the columns for the "districts" table.
 	DistrictsColumns = []*schema.Column{
 		{Name: "district_id", Type: field.TypeUUID},
@@ -187,6 +261,22 @@ var (
 		Name:       "feature_flags",
 		Columns:    FeatureFlagsColumns,
 		PrimaryKey: []*schema.Column{FeatureFlagsColumns[0]},
+	}
+	// FirstTimerAssignmentsColumns holds the columns for the "first_timer_assignments" table.
+	FirstTimerAssignmentsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "church_id", Type: field.TypeUUID},
+		{Name: "member_id", Type: field.TypeUUID},
+		{Name: "assigned_to_user_id", Type: field.TypeUUID},
+		{Name: "assigned_by_user_id", Type: field.TypeUUID},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"pending", "contacted", "unreachable", "completed"}, Default: "pending"},
+		{Name: "created_at", Type: field.TypeTime},
+	}
+	// FirstTimerAssignmentsTable holds the schema information for the "first_timer_assignments" table.
+	FirstTimerAssignmentsTable = &schema.Table{
+		Name:       "first_timer_assignments",
+		Columns:    FirstTimerAssignmentsColumns,
+		PrimaryKey: []*schema.Column{FirstTimerAssignmentsColumns[0]},
 	}
 	// FollowUpColumns holds the columns for the "follow_up" table.
 	FollowUpColumns = []*schema.Column{
@@ -359,6 +449,25 @@ var (
 			},
 		},
 	}
+	// MemberLandmarksColumns holds the columns for the "member_landmarks" table.
+	MemberLandmarksColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "church_id", Type: field.TypeUUID},
+		{Name: "member_id", Type: field.TypeUUID},
+		{Name: "landmark_type", Type: field.TypeEnum, Enums: []string{"graduation", "childbirth", "wedding", "career", "custom"}},
+		{Name: "title", Type: field.TypeString, Size: 2147483647},
+		{Name: "institution_or_org", Type: field.TypeString, Nullable: true, Size: 2147483647, Default: ""},
+		{Name: "event_date", Type: field.TypeTime},
+		{Name: "notes", Type: field.TypeString, Nullable: true, Size: 2147483647, Default: ""},
+		{Name: "created_by_user_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "created_at", Type: field.TypeTime},
+	}
+	// MemberLandmarksTable holds the schema information for the "member_landmarks" table.
+	MemberLandmarksTable = &schema.Table{
+		Name:       "member_landmarks",
+		Columns:    MemberLandmarksColumns,
+		PrimaryKey: []*schema.Column{MemberLandmarksColumns[0]},
+	}
 	// MemberTeamsColumns holds the columns for the "member_teams" table.
 	MemberTeamsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -393,6 +502,26 @@ var (
 				Columns: []*schema.Column{MemberTeamsColumns[3], MemberTeamsColumns[4]},
 			},
 		},
+	}
+	// MemberTransfersColumns holds the columns for the "member_transfers" table.
+	MemberTransfersColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "member_id", Type: field.TypeUUID},
+		{Name: "origin_church_id", Type: field.TypeUUID},
+		{Name: "destination_church_id", Type: field.TypeUUID},
+		{Name: "transfer_reason", Type: field.TypeString, Nullable: true, Size: 2147483647, Default: ""},
+		{Name: "pastoral_recommendation", Type: field.TypeString, Nullable: true, Size: 2147483647, Default: ""},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"pending", "approved", "rejected"}, Default: "pending"},
+		{Name: "initiated_by_user_id", Type: field.TypeUUID},
+		{Name: "reviewed_by_user_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "reviewed_at", Type: field.TypeTime, Nullable: true},
+	}
+	// MemberTransfersTable holds the schema information for the "member_transfers" table.
+	MemberTransfersTable = &schema.Table{
+		Name:       "member_transfers",
+		Columns:    MemberTransfersColumns,
+		PrimaryKey: []*schema.Column{MemberTransfersColumns[0]},
 	}
 	// MembershipStageHistoryColumns holds the columns for the "membership_stage_history" table.
 	MembershipStageHistoryColumns = []*schema.Column{
@@ -527,6 +656,25 @@ var (
 			},
 		},
 	}
+	// ProfileChangeRequestsColumns holds the columns for the "profile_change_requests" table.
+	ProfileChangeRequestsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "church_id", Type: field.TypeUUID},
+		{Name: "member_id", Type: field.TypeUUID},
+		{Name: "requested_by_user_id", Type: field.TypeUUID},
+		{Name: "reviewed_by_user_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"pending", "approved", "rejected"}, Default: "pending"},
+		{Name: "payload_json", Type: field.TypeString, Size: 2147483647},
+		{Name: "rejection_reason", Type: field.TypeString, Nullable: true, Size: 2147483647, Default: ""},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "reviewed_at", Type: field.TypeTime, Nullable: true},
+	}
+	// ProfileChangeRequestsTable holds the schema information for the "profile_change_requests" table.
+	ProfileChangeRequestsTable = &schema.Table{
+		Name:       "profile_change_requests",
+		Columns:    ProfileChangeRequestsColumns,
+		PrimaryKey: []*schema.Column{ProfileChangeRequestsColumns[0]},
+	}
 	// SectorColumns holds the columns for the "sector" table.
 	SectorColumns = []*schema.Column{
 		{Name: "sector_id", Type: field.TypeUUID},
@@ -548,6 +696,25 @@ var (
 				OnDelete:   schema.SetNull,
 			},
 		},
+	}
+	// SituationReportsColumns holds the columns for the "situation_reports" table.
+	SituationReportsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "church_id", Type: field.TypeUUID},
+		{Name: "member_id", Type: field.TypeUUID},
+		{Name: "category", Type: field.TypeEnum, Enums: []string{"health", "bereavement", "childbirth", "academic_distress", "job_loss", "counseling", "relocation", "general"}},
+		{Name: "notes", Type: field.TypeString, Size: 2147483647},
+		{Name: "action_taken", Type: field.TypeString, Nullable: true, Size: 2147483647, Default: ""},
+		{Name: "is_urgent", Type: field.TypeBool, Default: false},
+		{Name: "filed_by_user_id", Type: field.TypeUUID},
+		{Name: "pastor_reviewed", Type: field.TypeBool, Default: false},
+		{Name: "created_at", Type: field.TypeTime},
+	}
+	// SituationReportsTable holds the schema information for the "situation_reports" table.
+	SituationReportsTable = &schema.Table{
+		Name:       "situation_reports",
+		Columns:    SituationReportsColumns,
+		PrimaryKey: []*schema.Column{SituationReportsColumns[0]},
 	}
 	// SoulColumns holds the columns for the "soul" table.
 	SoulColumns = []*schema.Column{
@@ -918,26 +1085,54 @@ var (
 			},
 		},
 	}
+	// VolunteerApplicationsColumns holds the columns for the "volunteer_applications" table.
+	VolunteerApplicationsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "church_id", Type: field.TypeUUID},
+		{Name: "member_id", Type: field.TypeUUID},
+		{Name: "preferred_team_1_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "preferred_team_2_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "skills_notes", Type: field.TypeString, Nullable: true, Size: 2147483647, Default: ""},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"pending", "placed"}, Default: "pending"},
+		{Name: "placed_by_user_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "placed_at", Type: field.TypeTime, Nullable: true},
+		{Name: "created_at", Type: field.TypeTime},
+	}
+	// VolunteerApplicationsTable holds the schema information for the "volunteer_applications" table.
+	VolunteerApplicationsTable = &schema.Table{
+		Name:       "volunteer_applications",
+		Columns:    VolunteerApplicationsColumns,
+		PrimaryKey: []*schema.Column{VolunteerApplicationsColumns[0]},
+	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		AcademyCohortsTable,
 		AttendanceRecordsTable,
 		AuditLogsTable,
+		CallLogsTable,
 		ChurchEventTable,
 		ChurchSettingsTable,
 		ChurchTeamsTable,
+		CohortEnrollmentsTable,
+		ContinuousAssessmentsTable,
 		DistrictsTable,
 		FeatureFlagsTable,
+		FirstTimerAssignmentsTable,
 		FollowUpTable,
 		GuardianRelationshipsTable,
 		KidsMinistryProfilesTable,
 		LocalChurchTable,
 		MembersTable,
+		MemberLandmarksTable,
 		MemberTeamsTable,
+		MemberTransfersTable,
 		MembershipStageHistoryTable,
 		OtpInvitesTable,
 		OutreachReportTable,
 		OutreachTargetsTable,
+		ProfileChangeRequestsTable,
 		SectorTable,
+		SituationReportsTable,
 		SoulTable,
 		SoulJournalTable,
 		TeamTable,
@@ -948,6 +1143,7 @@ var (
 		UserSectorTable,
 		StewardTeamsTable,
 		VisitorsTable,
+		VolunteerApplicationsTable,
 	}
 )
 

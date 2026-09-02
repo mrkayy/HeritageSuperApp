@@ -300,7 +300,7 @@ As a First-Time Visitor, I want to scan a QR code on the church screen or seat f
 #### 1. Member Profile Enrichment & Maker-Checker Approval Queue
 
 **Priority:** High  
-**Status:** Not Started  
+**Status:** Done  
 
 **User Story:**  
 As a Membership Team Worker, I want an actionable To-Do queue of member profiles missing critical information, so that I can update their complete details with changes reviewed and approved by the Membership Team Lead before updating the live record.
@@ -342,17 +342,17 @@ As a Membership Team Worker, I want an actionable To-Do queue of member profiles
 - `POST /api/v1/churches/{church_id}/membership/change-requests/{id}/review`
 
 **Acceptance Criteria:**  
-- [ ] Automatically generates To-Dos when critical fields are missing.
-- [ ] Captures Day and Month for birthdays and anniversaries as separate integers.
-- [ ] Enforces Maker-Checker workflow: worker submissions remain pending until approved by Lead or Assistant Lead.
-- [ ] Member photo upload is strictly restricted to member self-service.
+- [x] Automatically generates To-Dos when critical fields are missing.
+- [x] Captures Day and Month for birthdays and anniversaries as separate integers.
+- [x] Enforces Maker-Checker workflow: worker submissions remain pending until approved by Lead or Assistant Lead.
+- [x] Member photo upload is strictly restricted to member self-service.
 
 ---
 
 #### 2. First-Timer Follow-Up CRM, Manual Delegation & Weekly Pastor Collation
 
 **Priority:** High  
-**Status:** Not Started  
+**Status:** Done  
 
 **User Story:**  
 As a Membership Team Lead / Caller, I want first-time guests manually assigned to team callers, so that workers can welcome them, record call feedback notes, send templated SMS, and collate a weekly summary for the Resident Pastor.
@@ -390,17 +390,17 @@ As a Membership Team Lead / Caller, I want first-time guests manually assigned t
 - `GET /api/v1/churches/{church_id}/membership/reports/weekly-pastoral-summary?week={week}`
 
 **Acceptance Criteria:**  
-- [ ] Team Lead and Assistant Lead can manually assign first-timers to specific callers.
-- [ ] Callers can log structured call summary notes and dispatch templated SMS messages.
-- [ ] Callers retain a dedicated history tab tracking their assignees' progress through Stewardship.
-- [ ] Weekly collation report automatically generates for the Resident Pastor.
+- [x] Team Lead and Assistant Lead can manually assign first-timers to specific callers.
+- [x] Callers can log structured call summary notes and dispatch templated SMS messages.
+- [x] Callers retain a dedicated history tab tracking their assignees' progress through Stewardship.
+- [x] Weekly collation report automatically generates for the Resident Pastor.
 
 ---
 
 #### 3. Discipleship Academy Pipeline & Continuous Assessment Engine
 
 **Priority:** High  
-**Status:** Not Started  
+**Status:** Done  
 
 **User Story:**  
 As a Discipleship Training Coordinator / Teacher, I want to manage cohort classes and track continuous student assessments across all stages (Foundation Class -> Sunday School Modules 1-3 -> Membership Class -> Stewardship), so that students are systematically evaluated without written exams.
@@ -449,17 +449,17 @@ As a Discipleship Training Coordinator / Teacher, I want to manage cohort classe
 - `POST /api/v1/churches/{church_id}/membership/enrollments/{id}/graduate`
 
 **Acceptance Criteria:**  
-- [ ] Implements the 6-part weighted continuous assessment structure totalling 100% with a 50% pass mark.
-- [ ] Enforces strict prerequisite progression from Foundation Class up to Membership Class.
-- [ ] Enforces attendance rules: <50% (<=3 of 6 classes) triggers module retake; 1-2 missed classes flags for makeup.
-- [ ] Dispatches automated/manual notifications to candidates when new cohorts are announced.
+- [x] Implements the 6-part weighted continuous assessment structure totalling 100% with a 50% pass mark.
+- [x] Enforces strict prerequisite progression from Foundation Class up to Membership Class.
+- [x] Enforces attendance rules: <50% (<=3 of 6 classes) triggers module retake; 1-2 missed classes flags for makeup.
+- [x] Dispatches automated/manual notifications to candidates when new cohorts are announced.
 
 ---
 
 #### 4. Pseudo-Team Volunteering Intake & Assignment (Post-Module 2)
 
 **Priority:** High  
-**Status:** Not Started  
+**Status:** Done  
 
 **User Story:**  
 As a Student completing Sunday School Module 2, I want to submit my preferred church service department (Choir, Ushering, Media, Protocol, etc.), so that the Membership Team can assign me to a volunteering pseudo-team to begin practical service.
@@ -489,16 +489,16 @@ As a Student completing Sunday School Module 2, I want to submit my preferred ch
 - `POST /api/v1/churches/{church_id}/membership/volunteer-assignments`
 
 **Acceptance Criteria:**  
-- [ ] Triggers volunteer application intake immediately upon passing Sunday School Module 2.
-- [ ] Allows manual placement by Membership Team into local church departments with `pseudo_team` status.
-- [ ] Automatically elevates status to full steward upon final Membership Class graduation.
+- [x] Triggers volunteer application intake immediately upon passing Sunday School Module 2.
+- [x] Allows manual placement by Membership Team into local church departments with `pseudo_team` status.
+- [x] Automatically elevates status to full steward upon final Membership Class graduation.
 
 ---
 
 #### 5. Milestone Celebrations & Proactive 3-Day Alert Engine
 
 **Priority:** Medium  
-**Status:** Not Started  
+**Status:** Done  
 
 **User Story:**  
 As a Membership Team Worker, I want automated celebration reminders 3 days before upcoming birthdays and anniversaries, plus a landmark tracker for college/university graduations, so that the church can celebrate members proactively.
@@ -526,16 +526,16 @@ As a Membership Team Worker, I want automated celebration reminders 3 days befor
 - `POST /api/v1/churches/{church_id}/membership/landmarks`
 
 **Acceptance Criteria:**  
-- [ ] Proactively flags celebrants 3 days in advance on the dashboard using day/month integer matching.
-- [ ] Supports logging student university/college graduations and life achievements.
-- [ ] Provides instant SMS messaging triggers for celebrations.
+- [x] Proactively flags celebrants 3 days in advance on the dashboard using day/month integer matching.
+- [x] Supports logging student university/college graduations and life achievements.
+- [x] Provides instant SMS messaging triggers for celebrations.
 
 ---
 
 #### 6. Situation Reports (SitRep) & Longitudinal Pastoral Care Log
 
 **Priority:** High  
-**Status:** Not Started  
+**Status:** Done  
 
 **User Story:**  
 As a Membership Team Worker / Team Lead, I want to file and track structured Situation Reports on members throughout their journey, so that a medical-style pastoral history is maintained, with urgent cases triggering instant email alerts to the Resident Pastor.
@@ -569,17 +569,17 @@ As a Membership Team Worker / Team Lead, I want to file and track structured Sit
 - Triggers SMTP email dispatch to Local Church `resident_pastor` when `is_urgent == true`.
 
 **Acceptance Criteria:**  
-- [ ] Maintains a chronological, longitudinal timeline of situation reports on member profiles.
-- [ ] Supports customizable category tags and notes.
-- [ ] Urgent flag dispatches immediate email notifications to the Resident Pastor.
-- [ ] Membership team retains tracking access across all lifecycle stages.
+- [x] Maintains a chronological, longitudinal timeline of situation reports on member profiles.
+- [x] Supports customizable category tags and notes.
+- [x] Urgent flag dispatches immediate email notifications to the Resident Pastor.
+- [x] Membership team retains tracking access across all lifecycle stages.
 
 ---
 
 #### 7. First-Timer Intake-to-Member Formal Profiling Pipeline (Gatekeeper Flow)
 
 **Priority:** High  
-**Status:** Not Started  
+**Status:** Done  
 
 **User Story:**  
 As a Membership Team Worker / Lead, I want exclusive authority to review raw visitor slips from the Information Center, verify their details during follow-up, and formally profile them into the platform as official church members, so that only verified people gain platform identity.
@@ -613,16 +613,16 @@ As a Membership Team Worker / Lead, I want exclusive authority to review raw vis
 - Triggers background email dispatch with unique claim URL: `https://app.heritageoffaith.org/claim-account?token=...`.
 
 **Acceptance Criteria:**  
-- [ ] Only Membership Team and Admins have permission to formally profile members into the platform.
-- [ ] Requires email address before generating account claim magic link.
-- [ ] Profiling automatically transitions visitor into the permanent church member registry.
+- [x] Only Membership Team and Admins have permission to formally profile members into the platform.
+- [x] Requires email address before generating account claim magic link.
+- [x] Profiling automatically transitions visitor into the permanent church member registry.
 
 ---
 
 #### 8. Inter-Branch Member Transfer & Longitudinal History Migration
 
 **Priority:** High  
-**Status:** Not Started  
+**Status:** Done  
 
 **User Story:**  
 As a Membership Team Lead / Church Admin, I want to transfer a member who has relocated to another Local Church branch, so that their new local church gains their profile while their complete discipleship progress, continuous assessment scores, attendance records, and pastoral situation reports migrate intact.

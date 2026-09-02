@@ -82,10 +82,15 @@ export const SystemSettingsService = {
     return res.data;
   },
 
-  async updateChurchSettings(churchId: string, minAttendance: number): Promise<BranchSetting> {
+  async updateChurchSettings(churchId: string, foundationClassMinAttendance: number): Promise<BranchSetting> {
     const res = await api.put(`/super-admin/settings/churches/${churchId}`, {
-      foundation_class_min_attendance: minAttendance
+      foundation_class_min_attendance: foundationClassMinAttendance
     });
     return res.data;
   },
+
+  async sendTestEmail(payload: { template: string; to_email: string; name?: string }): Promise<{ success: boolean; message: string }> {
+    const res = await api.post('/super-admin/email/send-test', payload);
+    return res.data;
+  }
 };

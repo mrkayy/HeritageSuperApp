@@ -17,6 +17,7 @@ type AuthedUser struct {
 	CurrentRole string   `json:"currentRole"`
 	TeamID      string   `json:"teamId"`
 	TeamName    string   `json:"teamName"`
+	ChurchID    string   `json:"churchId"`
 }
 
 type ctxKey string

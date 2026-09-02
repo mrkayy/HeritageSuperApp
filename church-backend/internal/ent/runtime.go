@@ -6,25 +6,34 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/hofchurchng/church-backend/internal/ent/academycohort"
 	"github.com/hofchurchng/church-backend/internal/ent/attendancerecord"
 	"github.com/hofchurchng/church-backend/internal/ent/auditlog"
+	"github.com/hofchurchng/church-backend/internal/ent/calllog"
 	"github.com/hofchurchng/church-backend/internal/ent/churchevent"
 	"github.com/hofchurchng/church-backend/internal/ent/churchsetting"
 	"github.com/hofchurchng/church-backend/internal/ent/churchteams"
+	"github.com/hofchurchng/church-backend/internal/ent/cohortenrollment"
+	"github.com/hofchurchng/church-backend/internal/ent/continuousassessment"
 	"github.com/hofchurchng/church-backend/internal/ent/districts"
 	"github.com/hofchurchng/church-backend/internal/ent/featureflag"
+	"github.com/hofchurchng/church-backend/internal/ent/firsttimerassignment"
 	"github.com/hofchurchng/church-backend/internal/ent/followup"
 	"github.com/hofchurchng/church-backend/internal/ent/guardianrelationship"
 	"github.com/hofchurchng/church-backend/internal/ent/kidsministryprofile"
 	"github.com/hofchurchng/church-backend/internal/ent/localchurch"
 	"github.com/hofchurchng/church-backend/internal/ent/member"
+	"github.com/hofchurchng/church-backend/internal/ent/memberlandmark"
 	"github.com/hofchurchng/church-backend/internal/ent/membershipstagehistory"
 	"github.com/hofchurchng/church-backend/internal/ent/memberteam"
+	"github.com/hofchurchng/church-backend/internal/ent/membertransfer"
 	"github.com/hofchurchng/church-backend/internal/ent/otpinvites"
 	"github.com/hofchurchng/church-backend/internal/ent/outreachreport"
 	"github.com/hofchurchng/church-backend/internal/ent/outreachtargets"
+	"github.com/hofchurchng/church-backend/internal/ent/profilechangerequest"
 	"github.com/hofchurchng/church-backend/internal/ent/schema"
 	"github.com/hofchurchng/church-backend/internal/ent/sector"
+	"github.com/hofchurchng/church-backend/internal/ent/situationreport"
 	"github.com/hofchurchng/church-backend/internal/ent/soul"
 	"github.com/hofchurchng/church-backend/internal/ent/souljournal"
 	"github.com/hofchurchng/church-backend/internal/ent/team"
@@ -35,12 +44,23 @@ import (
 	"github.com/hofchurchng/church-backend/internal/ent/usersector"
 	"github.com/hofchurchng/church-backend/internal/ent/userteam"
 	"github.com/hofchurchng/church-backend/internal/ent/visitor"
+	"github.com/hofchurchng/church-backend/internal/ent/volunteerapplication"
 )
 
 // The init function reads all schema descriptors with runtime code
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	academycohortFields := schema.AcademyCohort{}.Fields()
+	_ = academycohortFields
+	// academycohortDescCreatedAt is the schema descriptor for created_at field.
+	academycohortDescCreatedAt := academycohortFields[7].Descriptor()
+	// academycohort.DefaultCreatedAt holds the default value on creation for the created_at field.
+	academycohort.DefaultCreatedAt = academycohortDescCreatedAt.Default.(func() time.Time)
+	// academycohortDescID is the schema descriptor for id field.
+	academycohortDescID := academycohortFields[0].Descriptor()
+	// academycohort.DefaultID holds the default value on creation for the id field.
+	academycohort.DefaultID = academycohortDescID.Default.(func() uuid.UUID)
 	attendancerecordFields := schema.AttendanceRecord{}.Fields()
 	_ = attendancerecordFields
 	// attendancerecordDescCreatedAt is the schema descriptor for created_at field.
@@ -89,6 +109,28 @@ func init() {
 	auditlogDescID := auditlogFields[0].Descriptor()
 	// auditlog.DefaultID holds the default value on creation for the id field.
 	auditlog.DefaultID = auditlogDescID.Default.(func() uuid.UUID)
+	calllogFields := schema.CallLog{}.Fields()
+	_ = calllogFields
+	// calllogDescCallDate is the schema descriptor for call_date field.
+	calllogDescCallDate := calllogFields[4].Descriptor()
+	// calllog.DefaultCallDate holds the default value on creation for the call_date field.
+	calllog.DefaultCallDate = calllogDescCallDate.Default.(func() time.Time)
+	// calllogDescSummaryNotes is the schema descriptor for summary_notes field.
+	calllogDescSummaryNotes := calllogFields[6].Descriptor()
+	// calllog.DefaultSummaryNotes holds the default value on creation for the summary_notes field.
+	calllog.DefaultSummaryNotes = calllogDescSummaryNotes.Default.(string)
+	// calllogDescPastoralEscalationNeeded is the schema descriptor for pastoral_escalation_needed field.
+	calllogDescPastoralEscalationNeeded := calllogFields[7].Descriptor()
+	// calllog.DefaultPastoralEscalationNeeded holds the default value on creation for the pastoral_escalation_needed field.
+	calllog.DefaultPastoralEscalationNeeded = calllogDescPastoralEscalationNeeded.Default.(bool)
+	// calllogDescCreatedAt is the schema descriptor for created_at field.
+	calllogDescCreatedAt := calllogFields[8].Descriptor()
+	// calllog.DefaultCreatedAt holds the default value on creation for the created_at field.
+	calllog.DefaultCreatedAt = calllogDescCreatedAt.Default.(func() time.Time)
+	// calllogDescID is the schema descriptor for id field.
+	calllogDescID := calllogFields[0].Descriptor()
+	// calllog.DefaultID holds the default value on creation for the id field.
+	calllog.DefaultID = calllogDescID.Default.(func() uuid.UUID)
 	churcheventFields := schema.ChurchEvent{}.Fields()
 	_ = churcheventFields
 	// churcheventDescCreatedAt is the schema descriptor for created_at field.
@@ -135,6 +177,70 @@ func init() {
 	churchteamsDescID := churchteamsFields[0].Descriptor()
 	// churchteams.DefaultID holds the default value on creation for the id field.
 	churchteams.DefaultID = churchteamsDescID.Default.(func() uuid.UUID)
+	cohortenrollmentFields := schema.CohortEnrollment{}.Fields()
+	_ = cohortenrollmentFields
+	// cohortenrollmentDescCreatedAt is the schema descriptor for created_at field.
+	cohortenrollmentDescCreatedAt := cohortenrollmentFields[5].Descriptor()
+	// cohortenrollment.DefaultCreatedAt holds the default value on creation for the created_at field.
+	cohortenrollment.DefaultCreatedAt = cohortenrollmentDescCreatedAt.Default.(func() time.Time)
+	// cohortenrollmentDescID is the schema descriptor for id field.
+	cohortenrollmentDescID := cohortenrollmentFields[0].Descriptor()
+	// cohortenrollment.DefaultID holds the default value on creation for the id field.
+	cohortenrollment.DefaultID = cohortenrollmentDescID.Default.(func() uuid.UUID)
+	continuousassessmentFields := schema.ContinuousAssessment{}.Fields()
+	_ = continuousassessmentFields
+	// continuousassessmentDescAssignmentScore is the schema descriptor for assignment_score field.
+	continuousassessmentDescAssignmentScore := continuousassessmentFields[2].Descriptor()
+	// continuousassessment.DefaultAssignmentScore holds the default value on creation for the assignment_score field.
+	continuousassessment.DefaultAssignmentScore = continuousassessmentDescAssignmentScore.Default.(float64)
+	// continuousassessmentDescVerbalAssessmentScore is the schema descriptor for verbal_assessment_score field.
+	continuousassessmentDescVerbalAssessmentScore := continuousassessmentFields[3].Descriptor()
+	// continuousassessment.DefaultVerbalAssessmentScore holds the default value on creation for the verbal_assessment_score field.
+	continuousassessment.DefaultVerbalAssessmentScore = continuousassessmentDescVerbalAssessmentScore.Default.(float64)
+	// continuousassessmentDescParticipationScore is the schema descriptor for participation_score field.
+	continuousassessmentDescParticipationScore := continuousassessmentFields[4].Descriptor()
+	// continuousassessment.DefaultParticipationScore holds the default value on creation for the participation_score field.
+	continuousassessment.DefaultParticipationScore = continuousassessmentDescParticipationScore.Default.(float64)
+	// continuousassessmentDescDisciplersReportScore is the schema descriptor for disciplers_report_score field.
+	continuousassessmentDescDisciplersReportScore := continuousassessmentFields[5].Descriptor()
+	// continuousassessment.DefaultDisciplersReportScore holds the default value on creation for the disciplers_report_score field.
+	continuousassessment.DefaultDisciplersReportScore = continuousassessmentDescDisciplersReportScore.Default.(float64)
+	// continuousassessmentDescProofOfNoteScore is the schema descriptor for proof_of_note_score field.
+	continuousassessmentDescProofOfNoteScore := continuousassessmentFields[6].Descriptor()
+	// continuousassessment.DefaultProofOfNoteScore holds the default value on creation for the proof_of_note_score field.
+	continuousassessment.DefaultProofOfNoteScore = continuousassessmentDescProofOfNoteScore.Default.(float64)
+	// continuousassessmentDescAttendanceScore is the schema descriptor for attendance_score field.
+	continuousassessmentDescAttendanceScore := continuousassessmentFields[7].Descriptor()
+	// continuousassessment.DefaultAttendanceScore holds the default value on creation for the attendance_score field.
+	continuousassessment.DefaultAttendanceScore = continuousassessmentDescAttendanceScore.Default.(float64)
+	// continuousassessmentDescTotalScore is the schema descriptor for total_score field.
+	continuousassessmentDescTotalScore := continuousassessmentFields[8].Descriptor()
+	// continuousassessment.DefaultTotalScore holds the default value on creation for the total_score field.
+	continuousassessment.DefaultTotalScore = continuousassessmentDescTotalScore.Default.(float64)
+	// continuousassessmentDescDisciplerDevotionRating is the schema descriptor for discipler_devotion_rating field.
+	continuousassessmentDescDisciplerDevotionRating := continuousassessmentFields[9].Descriptor()
+	// continuousassessment.DefaultDisciplerDevotionRating holds the default value on creation for the discipler_devotion_rating field.
+	continuousassessment.DefaultDisciplerDevotionRating = continuousassessmentDescDisciplerDevotionRating.Default.(int)
+	// continuousassessmentDescDisciplerEvangelismRating is the schema descriptor for discipler_evangelism_rating field.
+	continuousassessmentDescDisciplerEvangelismRating := continuousassessmentFields[10].Descriptor()
+	// continuousassessment.DefaultDisciplerEvangelismRating holds the default value on creation for the discipler_evangelism_rating field.
+	continuousassessment.DefaultDisciplerEvangelismRating = continuousassessmentDescDisciplerEvangelismRating.Default.(int)
+	// continuousassessmentDescMakeupCompleted is the schema descriptor for makeup_completed field.
+	continuousassessmentDescMakeupCompleted := continuousassessmentFields[11].Descriptor()
+	// continuousassessment.DefaultMakeupCompleted holds the default value on creation for the makeup_completed field.
+	continuousassessment.DefaultMakeupCompleted = continuousassessmentDescMakeupCompleted.Default.(bool)
+	// continuousassessmentDescCreatedAt is the schema descriptor for created_at field.
+	continuousassessmentDescCreatedAt := continuousassessmentFields[13].Descriptor()
+	// continuousassessment.DefaultCreatedAt holds the default value on creation for the created_at field.
+	continuousassessment.DefaultCreatedAt = continuousassessmentDescCreatedAt.Default.(func() time.Time)
+	// continuousassessmentDescUpdatedAt is the schema descriptor for updated_at field.
+	continuousassessmentDescUpdatedAt := continuousassessmentFields[14].Descriptor()
+	// continuousassessment.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	continuousassessment.DefaultUpdatedAt = continuousassessmentDescUpdatedAt.Default.(func() time.Time)
+	// continuousassessmentDescID is the schema descriptor for id field.
+	continuousassessmentDescID := continuousassessmentFields[0].Descriptor()
+	// continuousassessment.DefaultID holds the default value on creation for the id field.
+	continuousassessment.DefaultID = continuousassessmentDescID.Default.(func() uuid.UUID)
 	districtsFields := schema.Districts{}.Fields()
 	_ = districtsFields
 	// districtsDescCreatedAt is the schema descriptor for created_at field.
@@ -177,6 +283,16 @@ func init() {
 	featureflagDescID := featureflagFields[0].Descriptor()
 	// featureflag.DefaultID holds the default value on creation for the id field.
 	featureflag.DefaultID = featureflagDescID.Default.(func() uuid.UUID)
+	firsttimerassignmentFields := schema.FirstTimerAssignment{}.Fields()
+	_ = firsttimerassignmentFields
+	// firsttimerassignmentDescCreatedAt is the schema descriptor for created_at field.
+	firsttimerassignmentDescCreatedAt := firsttimerassignmentFields[6].Descriptor()
+	// firsttimerassignment.DefaultCreatedAt holds the default value on creation for the created_at field.
+	firsttimerassignment.DefaultCreatedAt = firsttimerassignmentDescCreatedAt.Default.(func() time.Time)
+	// firsttimerassignmentDescID is the schema descriptor for id field.
+	firsttimerassignmentDescID := firsttimerassignmentFields[0].Descriptor()
+	// firsttimerassignment.DefaultID holds the default value on creation for the id field.
+	firsttimerassignment.DefaultID = firsttimerassignmentDescID.Default.(func() uuid.UUID)
 	followupFields := schema.FollowUp{}.Fields()
 	_ = followupFields
 	// followupDescCreatedAt is the schema descriptor for created_at field.
@@ -259,6 +375,24 @@ func init() {
 	memberDescID := memberFields[0].Descriptor()
 	// member.DefaultID holds the default value on creation for the id field.
 	member.DefaultID = memberDescID.Default.(func() uuid.UUID)
+	memberlandmarkFields := schema.MemberLandmark{}.Fields()
+	_ = memberlandmarkFields
+	// memberlandmarkDescInstitutionOrOrg is the schema descriptor for institution_or_org field.
+	memberlandmarkDescInstitutionOrOrg := memberlandmarkFields[5].Descriptor()
+	// memberlandmark.DefaultInstitutionOrOrg holds the default value on creation for the institution_or_org field.
+	memberlandmark.DefaultInstitutionOrOrg = memberlandmarkDescInstitutionOrOrg.Default.(string)
+	// memberlandmarkDescNotes is the schema descriptor for notes field.
+	memberlandmarkDescNotes := memberlandmarkFields[7].Descriptor()
+	// memberlandmark.DefaultNotes holds the default value on creation for the notes field.
+	memberlandmark.DefaultNotes = memberlandmarkDescNotes.Default.(string)
+	// memberlandmarkDescCreatedAt is the schema descriptor for created_at field.
+	memberlandmarkDescCreatedAt := memberlandmarkFields[9].Descriptor()
+	// memberlandmark.DefaultCreatedAt holds the default value on creation for the created_at field.
+	memberlandmark.DefaultCreatedAt = memberlandmarkDescCreatedAt.Default.(func() time.Time)
+	// memberlandmarkDescID is the schema descriptor for id field.
+	memberlandmarkDescID := memberlandmarkFields[0].Descriptor()
+	// memberlandmark.DefaultID holds the default value on creation for the id field.
+	memberlandmark.DefaultID = memberlandmarkDescID.Default.(func() uuid.UUID)
 	memberteamFields := schema.MemberTeam{}.Fields()
 	_ = memberteamFields
 	// memberteamDescIsPrimary is the schema descriptor for is_primary field.
@@ -273,6 +407,24 @@ func init() {
 	memberteamDescID := memberteamFields[0].Descriptor()
 	// memberteam.DefaultID holds the default value on creation for the id field.
 	memberteam.DefaultID = memberteamDescID.Default.(func() uuid.UUID)
+	membertransferFields := schema.MemberTransfer{}.Fields()
+	_ = membertransferFields
+	// membertransferDescTransferReason is the schema descriptor for transfer_reason field.
+	membertransferDescTransferReason := membertransferFields[4].Descriptor()
+	// membertransfer.DefaultTransferReason holds the default value on creation for the transfer_reason field.
+	membertransfer.DefaultTransferReason = membertransferDescTransferReason.Default.(string)
+	// membertransferDescPastoralRecommendation is the schema descriptor for pastoral_recommendation field.
+	membertransferDescPastoralRecommendation := membertransferFields[5].Descriptor()
+	// membertransfer.DefaultPastoralRecommendation holds the default value on creation for the pastoral_recommendation field.
+	membertransfer.DefaultPastoralRecommendation = membertransferDescPastoralRecommendation.Default.(string)
+	// membertransferDescCreatedAt is the schema descriptor for created_at field.
+	membertransferDescCreatedAt := membertransferFields[9].Descriptor()
+	// membertransfer.DefaultCreatedAt holds the default value on creation for the created_at field.
+	membertransfer.DefaultCreatedAt = membertransferDescCreatedAt.Default.(func() time.Time)
+	// membertransferDescID is the schema descriptor for id field.
+	membertransferDescID := membertransferFields[0].Descriptor()
+	// membertransfer.DefaultID holds the default value on creation for the id field.
+	membertransfer.DefaultID = membertransferDescID.Default.(func() uuid.UUID)
 	membershipstagehistoryFields := schema.MembershipStageHistory{}.Fields()
 	_ = membershipstagehistoryFields
 	// membershipstagehistoryDescEnteredAt is the schema descriptor for entered_at field.
@@ -333,6 +485,20 @@ func init() {
 	outreachtargetsDescID := outreachtargetsFields[0].Descriptor()
 	// outreachtargets.DefaultID holds the default value on creation for the id field.
 	outreachtargets.DefaultID = outreachtargetsDescID.Default.(func() uuid.UUID)
+	profilechangerequestFields := schema.ProfileChangeRequest{}.Fields()
+	_ = profilechangerequestFields
+	// profilechangerequestDescRejectionReason is the schema descriptor for rejection_reason field.
+	profilechangerequestDescRejectionReason := profilechangerequestFields[7].Descriptor()
+	// profilechangerequest.DefaultRejectionReason holds the default value on creation for the rejection_reason field.
+	profilechangerequest.DefaultRejectionReason = profilechangerequestDescRejectionReason.Default.(string)
+	// profilechangerequestDescCreatedAt is the schema descriptor for created_at field.
+	profilechangerequestDescCreatedAt := profilechangerequestFields[8].Descriptor()
+	// profilechangerequest.DefaultCreatedAt holds the default value on creation for the created_at field.
+	profilechangerequest.DefaultCreatedAt = profilechangerequestDescCreatedAt.Default.(func() time.Time)
+	// profilechangerequestDescID is the schema descriptor for id field.
+	profilechangerequestDescID := profilechangerequestFields[0].Descriptor()
+	// profilechangerequest.DefaultID holds the default value on creation for the id field.
+	profilechangerequest.DefaultID = profilechangerequestDescID.Default.(func() uuid.UUID)
 	sectorFields := schema.Sector{}.Fields()
 	_ = sectorFields
 	// sectorDescCreatedAt is the schema descriptor for created_at field.
@@ -343,6 +509,28 @@ func init() {
 	sectorDescID := sectorFields[0].Descriptor()
 	// sector.DefaultID holds the default value on creation for the id field.
 	sector.DefaultID = sectorDescID.Default.(func() uuid.UUID)
+	situationreportFields := schema.SituationReport{}.Fields()
+	_ = situationreportFields
+	// situationreportDescActionTaken is the schema descriptor for action_taken field.
+	situationreportDescActionTaken := situationreportFields[5].Descriptor()
+	// situationreport.DefaultActionTaken holds the default value on creation for the action_taken field.
+	situationreport.DefaultActionTaken = situationreportDescActionTaken.Default.(string)
+	// situationreportDescIsUrgent is the schema descriptor for is_urgent field.
+	situationreportDescIsUrgent := situationreportFields[6].Descriptor()
+	// situationreport.DefaultIsUrgent holds the default value on creation for the is_urgent field.
+	situationreport.DefaultIsUrgent = situationreportDescIsUrgent.Default.(bool)
+	// situationreportDescPastorReviewed is the schema descriptor for pastor_reviewed field.
+	situationreportDescPastorReviewed := situationreportFields[8].Descriptor()
+	// situationreport.DefaultPastorReviewed holds the default value on creation for the pastor_reviewed field.
+	situationreport.DefaultPastorReviewed = situationreportDescPastorReviewed.Default.(bool)
+	// situationreportDescCreatedAt is the schema descriptor for created_at field.
+	situationreportDescCreatedAt := situationreportFields[9].Descriptor()
+	// situationreport.DefaultCreatedAt holds the default value on creation for the created_at field.
+	situationreport.DefaultCreatedAt = situationreportDescCreatedAt.Default.(func() time.Time)
+	// situationreportDescID is the schema descriptor for id field.
+	situationreportDescID := situationreportFields[0].Descriptor()
+	// situationreport.DefaultID holds the default value on creation for the id field.
+	situationreport.DefaultID = situationreportDescID.Default.(func() uuid.UUID)
 	soulFields := schema.Soul{}.Fields()
 	_ = soulFields
 	// soulDescIsActive is the schema descriptor for is_active field.
@@ -523,4 +711,18 @@ func init() {
 	visitorDescID := visitorFields[0].Descriptor()
 	// visitor.DefaultID holds the default value on creation for the id field.
 	visitor.DefaultID = visitorDescID.Default.(func() uuid.UUID)
+	volunteerapplicationFields := schema.VolunteerApplication{}.Fields()
+	_ = volunteerapplicationFields
+	// volunteerapplicationDescSkillsNotes is the schema descriptor for skills_notes field.
+	volunteerapplicationDescSkillsNotes := volunteerapplicationFields[5].Descriptor()
+	// volunteerapplication.DefaultSkillsNotes holds the default value on creation for the skills_notes field.
+	volunteerapplication.DefaultSkillsNotes = volunteerapplicationDescSkillsNotes.Default.(string)
+	// volunteerapplicationDescCreatedAt is the schema descriptor for created_at field.
+	volunteerapplicationDescCreatedAt := volunteerapplicationFields[9].Descriptor()
+	// volunteerapplication.DefaultCreatedAt holds the default value on creation for the created_at field.
+	volunteerapplication.DefaultCreatedAt = volunteerapplicationDescCreatedAt.Default.(func() time.Time)
+	// volunteerapplicationDescID is the schema descriptor for id field.
+	volunteerapplicationDescID := volunteerapplicationFields[0].Descriptor()
+	// volunteerapplication.DefaultID holds the default value on creation for the id field.
+	volunteerapplication.DefaultID = volunteerapplicationDescID.Default.(func() uuid.UUID)
 }

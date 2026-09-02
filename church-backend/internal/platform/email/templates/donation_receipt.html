@@ -1,0 +1,70 @@
+{{define "header_title"}}
+<h1 style="margin: 0 0 16px 0; font-size: 26px; font-weight: 700; color: #111827; line-height: 34px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  Thank You for Giving
+</h1>
+{{end}}
+
+{{define "content"}}
+<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+  <tr>
+    <td align="center" style="padding-bottom: 24px;">
+      <p style="margin: 0; font-size: 15px; line-height: 24px; color: #4b5563; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 380px;">
+        Hi <strong style="color: #111827;">{{.DonorName}}</strong>, we gratefully acknowledge receipt of your contribution of <strong style="color: #047857; font-size: 16px;">{{.AmountFormatted}}</strong> towards <strong>{{if .FundType}}{{.FundType}}{{else}}Kingdom Ministry{{end}}</strong>.
+      </p>
+    </td>
+  </tr>
+
+  <tr>
+    <td align="center" style="padding-bottom: 24px;">
+      <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border-radius: 8px;">
+        <tr>
+          <td style="padding: 14px 18px;">
+            <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+              <tr>
+                <td style="font-size: 12px; color: #6b7280; padding-bottom: 6px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">Receipt No:</td>
+                <td align="right" style="font-size: 12px; font-weight: 700; color: #111827; font-family: monospace; padding-bottom: 6px;">{{.ReceiptNumber}}</td>
+              </tr>
+              <tr>
+                <td style="font-size: 12px; color: #6b7280; padding-bottom: 6px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">Date:</td>
+                <td align="right" style="font-size: 12px; font-weight: 600; color: #111827; padding-bottom: 6px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">{{.Date}}</td>
+              </tr>
+              <tr>
+                <td style="font-size: 12px; color: #6b7280; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">Payment Method:</td>
+                <td align="right" style="font-size: 12px; font-weight: 600; color: #111827; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">{{if .PaymentMethod}}{{.PaymentMethod}}{{else}}Online Payment{{end}}</td>
+              </tr>
+              {{if .TransactionRef}}
+              <tr>
+                <td style="font-size: 11px; color: #9ca3af; padding-top: 6px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">Ref:</td>
+                <td align="right" style="font-size: 11px; color: #9ca3af; font-family: monospace; padding-top: 6px;">{{.TransactionRef}}</td>
+              </tr>
+              {{end}}
+            </table>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+
+  <tr>
+    <td align="center" style="padding-bottom: 32px;">
+      <p style="margin: 0; font-size: 14px; line-height: 22px; color: #6b7280; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+        You can view your full giving statement anytime on Heritage MMC.
+      </p>
+    </td>
+  </tr>
+
+  <tr>
+    <td align="center">
+      <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto;">
+        <tr>
+          <td align="center" style="background-color: #0088cc; border-radius: 24px;">
+            <a href="{{if .DownloadURL}}{{.DownloadURL}}{{else if .WebsiteURL}}{{.WebsiteURL}}{{else}}#{{end}}" target="_blank" class="btn-mobile" style="font-size: 13px; font-weight: 700; color: #ffffff; text-decoration: none; padding: 14px 40px; display: inline-block; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; border-radius: 24px; letter-spacing: 1.5px; text-transform: uppercase;">
+              {{if .DownloadURL}}DOWNLOAD RECEIPT{{else}}VIEW STATEMENT{{end}}
+            </a>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+{{end}}

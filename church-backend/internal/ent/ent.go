@@ -12,24 +12,33 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/hofchurchng/church-backend/internal/ent/academycohort"
 	"github.com/hofchurchng/church-backend/internal/ent/attendancerecord"
 	"github.com/hofchurchng/church-backend/internal/ent/auditlog"
+	"github.com/hofchurchng/church-backend/internal/ent/calllog"
 	"github.com/hofchurchng/church-backend/internal/ent/churchevent"
 	"github.com/hofchurchng/church-backend/internal/ent/churchsetting"
 	"github.com/hofchurchng/church-backend/internal/ent/churchteams"
+	"github.com/hofchurchng/church-backend/internal/ent/cohortenrollment"
+	"github.com/hofchurchng/church-backend/internal/ent/continuousassessment"
 	"github.com/hofchurchng/church-backend/internal/ent/districts"
 	"github.com/hofchurchng/church-backend/internal/ent/featureflag"
+	"github.com/hofchurchng/church-backend/internal/ent/firsttimerassignment"
 	"github.com/hofchurchng/church-backend/internal/ent/followup"
 	"github.com/hofchurchng/church-backend/internal/ent/guardianrelationship"
 	"github.com/hofchurchng/church-backend/internal/ent/kidsministryprofile"
 	"github.com/hofchurchng/church-backend/internal/ent/localchurch"
 	"github.com/hofchurchng/church-backend/internal/ent/member"
+	"github.com/hofchurchng/church-backend/internal/ent/memberlandmark"
 	"github.com/hofchurchng/church-backend/internal/ent/membershipstagehistory"
 	"github.com/hofchurchng/church-backend/internal/ent/memberteam"
+	"github.com/hofchurchng/church-backend/internal/ent/membertransfer"
 	"github.com/hofchurchng/church-backend/internal/ent/otpinvites"
 	"github.com/hofchurchng/church-backend/internal/ent/outreachreport"
 	"github.com/hofchurchng/church-backend/internal/ent/outreachtargets"
+	"github.com/hofchurchng/church-backend/internal/ent/profilechangerequest"
 	"github.com/hofchurchng/church-backend/internal/ent/sector"
+	"github.com/hofchurchng/church-backend/internal/ent/situationreport"
 	"github.com/hofchurchng/church-backend/internal/ent/soul"
 	"github.com/hofchurchng/church-backend/internal/ent/souljournal"
 	"github.com/hofchurchng/church-backend/internal/ent/team"
@@ -40,6 +49,7 @@ import (
 	"github.com/hofchurchng/church-backend/internal/ent/usersector"
 	"github.com/hofchurchng/church-backend/internal/ent/userteam"
 	"github.com/hofchurchng/church-backend/internal/ent/visitor"
+	"github.com/hofchurchng/church-backend/internal/ent/volunteerapplication"
 )
 
 // ent aliases to avoid import conflicts in user's code.
@@ -100,24 +110,33 @@ var (
 func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
+			academycohort.Table:          academycohort.ValidColumn,
 			attendancerecord.Table:       attendancerecord.ValidColumn,
 			auditlog.Table:               auditlog.ValidColumn,
+			calllog.Table:                calllog.ValidColumn,
 			churchevent.Table:            churchevent.ValidColumn,
 			churchsetting.Table:          churchsetting.ValidColumn,
 			churchteams.Table:            churchteams.ValidColumn,
+			cohortenrollment.Table:       cohortenrollment.ValidColumn,
+			continuousassessment.Table:   continuousassessment.ValidColumn,
 			districts.Table:              districts.ValidColumn,
 			featureflag.Table:            featureflag.ValidColumn,
+			firsttimerassignment.Table:   firsttimerassignment.ValidColumn,
 			followup.Table:               followup.ValidColumn,
 			guardianrelationship.Table:   guardianrelationship.ValidColumn,
 			kidsministryprofile.Table:    kidsministryprofile.ValidColumn,
 			localchurch.Table:            localchurch.ValidColumn,
 			member.Table:                 member.ValidColumn,
+			memberlandmark.Table:         memberlandmark.ValidColumn,
 			memberteam.Table:             memberteam.ValidColumn,
+			membertransfer.Table:         membertransfer.ValidColumn,
 			membershipstagehistory.Table: membershipstagehistory.ValidColumn,
 			otpinvites.Table:             otpinvites.ValidColumn,
 			outreachreport.Table:         outreachreport.ValidColumn,
 			outreachtargets.Table:        outreachtargets.ValidColumn,
+			profilechangerequest.Table:   profilechangerequest.ValidColumn,
 			sector.Table:                 sector.ValidColumn,
+			situationreport.Table:        situationreport.ValidColumn,
 			soul.Table:                   soul.ValidColumn,
 			souljournal.Table:            souljournal.ValidColumn,
 			team.Table:                   team.ValidColumn,
@@ -128,6 +147,7 @@ func checkColumn(t, c string) error {
 			usersector.Table:             usersector.ValidColumn,
 			userteam.Table:               userteam.ValidColumn,
 			visitor.Table:                visitor.ValidColumn,
+			volunteerapplication.Table:   volunteerapplication.ValidColumn,
 		})
 	})
 	return columnCheck(t, c)

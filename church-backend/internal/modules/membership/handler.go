@@ -3,7 +3,6 @@ package membership
 import (
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -30,7 +29,7 @@ func (h *Handler) Register(g *gin.RouterGroup) {
 	g.PUT("/:id", h.update)
 	g.DELETE("/:id", h.delete)
 
-	// Profiling pipeline
+	// Legacy Profiling pipeline
 	g.GET("/profiling-queue", h.profilingQueue)
 	g.POST("/profile-visitor/:visitor_id", h.profileVisitor)
 
@@ -38,6 +37,64 @@ func (h *Handler) Register(g *gin.RouterGroup) {
 	g.GET("/:id/relationships", h.getGuardianRelationships)
 	g.POST("/relationships", h.addGuardianRelationship)
 	g.DELETE("/relationships/:rel_id", h.deleteGuardianRelationship)
+
+	// -----------------------------------------------------------------------
+	// 1. Maker-Checker Profile Change Requests
+	// -----------------------------------------------------------------------
+	g.POST("/:id/propose-update", h.proposeUpdate)
+	g.GET("/change-requests", h.listPendingChangeRequests)
+	g.POST("/change-requests/:id/review", h.reviewChangeRequest)
+
+	// -----------------------------------------------------------------------
+	// 2. First-Timer CRM Call Allocation & Weekly Pastoral Summary
+	// -----------------------------------------------------------------------
+	g.POST("/assignments/batch", h.assignFirstTimers)
+	g.GET("/assignments/my", h.listMyAssignedFirstTimers)
+	g.POST("/call-logs", h.logCall)
+	g.GET("/reports/weekly-pastoral-summary", h.getWeeklyPastoralSummary)
+
+	// -----------------------------------------------------------------------
+	// 3. Discipleship Academy Pipeline
+	// -----------------------------------------------------------------------
+	g.POST("/cohorts", h.createCohort)
+	g.GET("/cohorts", h.listCohorts)
+	g.POST("/cohorts/:id/enroll", h.enrollStudent)
+	g.GET("/cohorts/:id/enrollments", h.listEnrollments)
+	g.PUT("/enrollments/:id/grade", h.gradeAssessment)
+	g.POST("/enrollments/:id/graduate", h.graduateEnrollment)
+
+	// -----------------------------------------------------------------------
+	// 4. Pseudo-Team Volunteering Intake & Placement (Post-Module 2)
+	// -----------------------------------------------------------------------
+	g.POST("/volunteer-applications", h.applyVolunteer)
+	g.GET("/volunteer-applications", h.listVolunteerApplications)
+	g.POST("/volunteer-assignments", h.placeVolunteer)
+
+	// -----------------------------------------------------------------------
+	// 5. Milestone Celebrations & 3-Day Alert Engine
+	// -----------------------------------------------------------------------
+	g.GET("/celebrations/upcoming", h.getUpcomingCelebrations)
+	g.POST("/landmarks", h.createLandmark)
+	g.GET("/landmarks", h.listLandmarks)
+
+	// -----------------------------------------------------------------------
+	// 6. Pastoral Situation Reports (SitRep)
+	// -----------------------------------------------------------------------
+	g.POST("/situation-reports", h.createSitRep)
+	g.GET("/:id/situation-reports", h.listSitRepsForMember)
+
+	// -----------------------------------------------------------------------
+	// 7. Gatekeeper Visitor Profiling Pipeline
+	// -----------------------------------------------------------------------
+	g.GET("/unprofiled-visitors", h.listUnprofiledVisitors)
+	g.POST("/visitors/:visitor_id/profile-full", h.profileVisitorFull)
+
+	// -----------------------------------------------------------------------
+	// 8. Inter-Branch Member Transfer & Longitudinal Migration
+	// -----------------------------------------------------------------------
+	g.POST("/transfers/initiate", h.initiateTransfer)
+	g.GET("/transfers/inbound", h.listInboundTransfers)
+	g.POST("/transfers/:id/review", h.reviewTransfer)
 }
 
 func (h *Handler) list(c *gin.Context) {
@@ -102,77 +159,38 @@ func (h *Handler) get(c *gin.Context) {
 	c.JSON(http.StatusOK, member)
 }
 
-type createPayload struct {
-	FirstName               string  `json:"firstName"`
-	Surname                 string  `json:"surname"`
-	Role                    *string `json:"role"`
-	Email                   *string `json:"email"`
-	PhoneNumber             *string `json:"phoneNumber"`
-	HomeAddress             *string `json:"homeAddress"`
-	Gender                  *string `json:"gender"`
-	DateOfBirthDay          *int16  `json:"dateOfBirthDay"`
-	DateOfBirthMonth        *int16  `json:"dateOfBirthMonth"`
-	MaritalStatus           *string `json:"maritalStatus"`
-	WeddingAnniversaryDay   *int16  `json:"weddingAnniversaryDay"`
-	WeddingAnniversaryMonth *int16  `json:"weddingAnniversaryMonth"`
-	JobOccupation           *string `json:"jobOccupation"`
-	PhotoURL                *string `json:"photoUrl"`
-	EmergencyContactName    *string `json:"emergencyContactName"`
-	EmergencyContactPhone   *string `json:"emergencyContactPhone"`
-	Allergies               *string `json:"allergies"`
-	MedicalNotes            *string `json:"medicalNotes"`
-	IsPlaceholder           bool    `json:"isPlaceholder"`
-	SourceTeam              *string `json:"sourceTeam"`
-	CurrentStage            *string `json:"currentStage"`
-	LocalChurchID           *string `json:"localChurchId"`
-	SectorID                *string `json:"sectorId"`
-	TeamID                  *string `json:"teamId"`
-}
-
 func (h *Handler) add(c *gin.Context) {
-	var p createPayload
-	if err := c.ShouldBindJSON(&p); err != nil {
+	var in AddMemberInput
+	if err := c.ShouldBindJSON(&in); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if p.FirstName == "" || p.Surname == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "firstName and surname are required"})
+	member, err := h.svc.AddMember(c.Request.Context(), in)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusCreated, member)
+}
+
+func (h *Handler) profile(c *gin.Context) {
+	var in ProfileMemberInput
+	if err := c.ShouldBindJSON(&in); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	role := ""
-	if p.Role != nil {
-		role = *p.Role
+	u, ok := contracts.UserFromContext(c.Request.Context())
+	if ok {
+		uid := u.ID
+		if uidParsed, err := uuid.Parse(uid); err == nil {
+			in.CreatedBy = &uidParsed
+		}
 	}
 
-	member, err := h.svc.AddMember(c.Request.Context(), AddMemberInput{
-		FirstName:               p.FirstName,
-		Surname:                 p.Surname,
-		Role:                    role,
-		Email:                   p.Email,
-		PhoneNumber:             p.PhoneNumber,
-		HomeAddress:             p.HomeAddress,
-		Gender:                  p.Gender,
-		DateOfBirthDay:          p.DateOfBirthDay,
-		DateOfBirthMonth:        p.DateOfBirthMonth,
-		MaritalStatus:           p.MaritalStatus,
-		WeddingAnniversaryDay:   p.WeddingAnniversaryDay,
-		WeddingAnniversaryMonth: p.WeddingAnniversaryMonth,
-		JobOccupation:           p.JobOccupation,
-		PhotoURL:                p.PhotoURL,
-		EmergencyContactName:    p.EmergencyContactName,
-		EmergencyContactPhone:   p.EmergencyContactPhone,
-		Allergies:               p.Allergies,
-		MedicalNotes:            p.MedicalNotes,
-		IsPlaceholder:           p.IsPlaceholder,
-		SourceTeam:              p.SourceTeam,
-		CurrentStage:            p.CurrentStage,
-		LocalChurchID:           p.LocalChurchID,
-		SectorID:                p.SectorID,
-		TeamID:                  p.TeamID,
-	})
+	member, err := h.svc.ProfileMember(c.Request.Context(), in)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(http.StatusCreated, member)
@@ -180,207 +198,80 @@ func (h *Handler) add(c *gin.Context) {
 
 func (h *Handler) update(c *gin.Context) {
 	id := c.Param("id")
-	var p createPayload
-	if err := c.ShouldBindJSON(&p); err != nil {
+	var in AddMemberInput
+	if err := c.ShouldBindJSON(&in); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if p.FirstName == "" || p.Surname == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "firstName and surname are required"})
-		return
-	}
-
-	role := ""
-	if p.Role != nil {
-		role = *p.Role
-	}
-
-	member, err := h.svc.UpdateMember(c.Request.Context(), id, AddMemberInput{
-		FirstName:               p.FirstName,
-		Surname:                 p.Surname,
-		Role:                    role,
-		Email:                   p.Email,
-		PhoneNumber:             p.PhoneNumber,
-		HomeAddress:             p.HomeAddress,
-		Gender:                  p.Gender,
-		DateOfBirthDay:          p.DateOfBirthDay,
-		DateOfBirthMonth:        p.DateOfBirthMonth,
-		MaritalStatus:           p.MaritalStatus,
-		WeddingAnniversaryDay:   p.WeddingAnniversaryDay,
-		WeddingAnniversaryMonth: p.WeddingAnniversaryMonth,
-		JobOccupation:           p.JobOccupation,
-		PhotoURL:                p.PhotoURL,
-		EmergencyContactName:    p.EmergencyContactName,
-		EmergencyContactPhone:   p.EmergencyContactPhone,
-		Allergies:               p.Allergies,
-		MedicalNotes:            p.MedicalNotes,
-		IsPlaceholder:           p.IsPlaceholder,
-		SourceTeam:              p.SourceTeam,
-		CurrentStage:            p.CurrentStage,
-		LocalChurchID:           p.LocalChurchID,
-		SectorID:                p.SectorID,
-		TeamID:                  p.TeamID,
-	})
+	member, err := h.svc.UpdateMember(c.Request.Context(), id, in)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, member)
 }
 
 func (h *Handler) delete(c *gin.Context) {
-	userCtx, ok := contracts.UserFromContext(c.Request.Context())
+	id := c.Param("id")
+	if err := h.svc.DeleteMember(c.Request.Context(), id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"status": "deleted"})
+}
+
+func (h *Handler) bulkProfile(c *gin.Context) {
+	u, ok := contracts.UserFromContext(c.Request.Context())
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
 
-	canDelete := userCtx.HasRole("super_admin") || userCtx.HasRole("church_admin") || userCtx.HasRole("resident_pastor") || userCtx.HasRole("team_lead")
-	if !canDelete {
-		c.JSON(http.StatusForbidden, gin.H{"error": "only team leads and admins can delete member records"})
+	uidParsed, err := uuid.Parse(u.ID)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid user id"})
 		return
 	}
 
-	id := c.Param("id")
-	err := h.svc.DeleteMember(c.Request.Context(), id)
+	file, _, err := c.Request.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "file is required"})
+		return
+	}
+	defer file.Close()
+
+	res, err := h.svc.BulkImportCSV(c.Request.Context(), file, &uidParsed)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.Status(http.StatusNoContent)
+	c.JSON(http.StatusOK, res)
 }
 
-func (h *Handler) getGuardianRelationships(c *gin.Context) {
-	memberID := c.Param("id")
-	rels, err := h.svc.GetGuardianRelationships(c.Request.Context(), memberID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+func (h *Handler) bulkProfileJSON(c *gin.Context) {
+	u, ok := contracts.UserFromContext(c.Request.Context())
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
-	c.JSON(http.StatusOK, rels)
-}
 
-func (h *Handler) addGuardianRelationship(c *gin.Context) {
-	var in GuardianRelationshipInput
+	uidParsed, err := uuid.Parse(u.ID)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid user id"})
+		return
+	}
+
+	var in []AddMemberInput
 	if err := c.ShouldBindJSON(&in); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if err := h.svc.AddGuardianRelationship(c.Request.Context(), in); err != nil {
+
+	res, err := h.svc.BulkImportJSON(c.Request.Context(), in, &uidParsed)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.Status(http.StatusCreated)
-}
-
-func (h *Handler) deleteGuardianRelationship(c *gin.Context) {
-	relID := c.Param("rel_id")
-	if err := h.svc.DeleteGuardianRelationship(c.Request.Context(), relID); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	c.Status(http.StatusNoContent)
-}
-
-type profilePayload struct {
-	Name         string  `json:"name"`
-	FirstName    string  `json:"first_name"`
-	Surname      string  `json:"surname"`
-	Email        string  `json:"email"`
-	Role         string  `json:"role"`
-	CurrentStage *string `json:"current_stage"`
-	TeamID       *string `json:"team_id"`
-	SectorID     *string `json:"sector_id"`
-	ChurchID     *string `json:"church_id"`
-}
-
-func (h *Handler) profile(c *gin.Context) {
-	var p profilePayload
-	if err := c.ShouldBindJSON(&p); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	firstName := strings.TrimSpace(p.FirstName)
-	surname := strings.TrimSpace(p.Surname)
-	name := strings.TrimSpace(p.Name)
-	if firstName == "" && surname == "" && name != "" {
-		parts := strings.SplitN(name, " ", 2)
-		firstName = parts[0]
-		if len(parts) > 1 {
-			surname = parts[1]
-		}
-	} else if name == "" && (firstName != "" || surname != "") {
-		name = strings.TrimSpace(firstName + " " + surname)
-	}
-
-	if (name == "" && firstName == "") || p.Email == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "name and email are required"})
-		return
-	}
-
-	churchID := p.ChurchID
-	var creatorID *uuid.UUID
-	// If church_id not provided in payload, default to creator's church_id from context
-	if creatorUser, ok := contracts.UserFromContext(c.Request.Context()); ok && creatorUser.ID != "" {
-		if cid, err := uuid.Parse(creatorUser.ID); err == nil {
-			creatorID = &cid
-		}
-		if churchID == nil || *churchID == "" {
-			// Find creator's user record to get church_id
-			if u, err := h.svc.repo.db.User.Get(c.Request.Context(), uuid.MustParse(creatorUser.ID)); err == nil && u.ChurchID != nil {
-				cid := u.ChurchID.String()
-				churchID = &cid
-			}
-		}
-	}
-
-	member, err := h.svc.ProfileMember(c.Request.Context(), ProfileMemberInput{
-		FirstName:    firstName,
-		Surname:      surname,
-		Name:         name,
-		Email:        p.Email,
-		Role:         p.Role,
-		CurrentStage: p.CurrentStage,
-		TeamID:       p.TeamID,
-		SectorID:     p.SectorID,
-		ChurchID:     churchID,
-		CreatedBy:    creatorID,
-	})
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(http.StatusCreated, member)
-}
-
-func (h *Handler) bulkProfile(c *gin.Context) {
-	fileHeader, err := c.FormFile("file")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "a CSV file is required under form field 'file'"})
-		return
-	}
-
-	src, err := fileHeader.Open()
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to open uploaded CSV file"})
-		return
-	}
-	defer src.Close()
-
-	var creatorID *uuid.UUID
-	if creatorUser, ok := contracts.UserFromContext(c.Request.Context()); ok && creatorUser.ID != "" {
-		if cid, err := uuid.Parse(creatorUser.ID); err == nil {
-			creatorID = &cid
-		}
-	}
-
-	res, err := h.svc.BulkImportCSV(c.Request.Context(), src, creatorID)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
 	c.JSON(http.StatusOK, res)
 }
 
@@ -400,10 +291,6 @@ func (h *Handler) profilingQueue(c *gin.Context) {
 
 func (h *Handler) profileVisitor(c *gin.Context) {
 	visitorID := c.Param("visitor_id")
-	if visitorID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "visitor_id is required"})
-		return
-	}
 	user, ok := contracts.UserFromContext(c.Request.Context())
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
@@ -411,34 +298,464 @@ func (h *Handler) profileVisitor(c *gin.Context) {
 	}
 	member, err := h.svc.ProfileVisitor(c.Request.Context(), visitorID, user.ID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(http.StatusCreated, member)
-}
-
-func (h *Handler) bulkProfileJSON(c *gin.Context) {
-	var payload struct {
-		Members []AddMemberInput `json:"members"`
-	}
-
-	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request payload"})
-		return
-	}
-
-	var creatorID *uuid.UUID
-	if creatorUser, ok := contracts.UserFromContext(c.Request.Context()); ok && creatorUser.ID != "" {
-		if cid, err := uuid.Parse(creatorUser.ID); err == nil {
-			creatorID = &cid
-		}
-	}
-
-	res, err := h.svc.BulkImportJSON(c.Request.Context(), payload.Members, creatorID)
-	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	c.JSON(http.StatusOK, member)
+}
 
+func (h *Handler) getGuardianRelationships(c *gin.Context) {
+	memberID := c.Param("id")
+	rels, err := h.svc.GetGuardianRelationships(c.Request.Context(), memberID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, rels)
+}
+
+func (h *Handler) addGuardianRelationship(c *gin.Context) {
+	var in GuardianRelationshipInput
+	if err := c.ShouldBindJSON(&in); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := h.svc.AddGuardianRelationship(c.Request.Context(), in); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusCreated, gin.H{"message": "Relationship added successfully"})
+}
+
+func (h *Handler) deleteGuardianRelationship(c *gin.Context) {
+	relID := c.Param("rel_id")
+	if err := h.svc.DeleteGuardianRelationship(c.Request.Context(), relID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Relationship deleted successfully"})
+}
+
+// ---------------------------------------------------------------------------
+// Handler implementations for 8 Membership Suite Features
+// ---------------------------------------------------------------------------
+
+func (h *Handler) proposeUpdate(c *gin.Context) {
+	actor, ok := contracts.UserFromContext(c.Request.Context())
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
+		return
+	}
+	memberID := c.Param("id")
+	var dto contracts.ProposeProfileUpdateDTO
+	if err := c.ShouldBindJSON(&dto); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+	resp, err := h.svc.ProposeProfileUpdate(c.Request.Context(), actor.ChurchID, memberID, actor.ID, dto)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	c.JSON(http.StatusCreated, resp)
+}
+
+func (h *Handler) listPendingChangeRequests(c *gin.Context) {
+	actor, ok := contracts.UserFromContext(c.Request.Context())
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
+		return
+	}
+	pcrs, err := h.svc.ListPendingChangeRequests(c.Request.Context(), actor.ChurchID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, pcrs)
+}
+
+func (h *Handler) reviewChangeRequest(c *gin.Context) {
+	actor, ok := contracts.UserFromContext(c.Request.Context())
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
+		return
+	}
+	reqID := c.Param("id")
+	var dto contracts.ReviewChangeRequestDTO
+	if err := c.ShouldBindJSON(&dto); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+	if err := h.svc.ReviewChangeRequest(c.Request.Context(), reqID, actor.ID, dto); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true})
+}
+
+func (h *Handler) assignFirstTimers(c *gin.Context) {
+	actor, ok := contracts.UserFromContext(c.Request.Context())
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
+		return
+	}
+	var dto contracts.AssignCallersDTO
+	if err := c.ShouldBindJSON(&dto); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+	if err := h.svc.AssignFirstTimers(c.Request.Context(), actor.ChurchID, actor.ID, dto); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true})
+}
+
+func (h *Handler) listMyAssignedFirstTimers(c *gin.Context) {
+	actor, ok := contracts.UserFromContext(c.Request.Context())
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
+		return
+	}
+	res, err := h.svc.ListAssignedFirstTimers(c.Request.Context(), actor.ChurchID, actor.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
 	c.JSON(http.StatusOK, res)
+}
+
+func (h *Handler) logCall(c *gin.Context) {
+	actor, ok := contracts.UserFromContext(c.Request.Context())
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
+		return
+	}
+	var dto contracts.LogCallDTO
+	if err := c.ShouldBindJSON(&dto); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+	res, err := h.svc.LogCall(c.Request.Context(), actor.ChurchID, actor.ID, dto)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	c.JSON(http.StatusCreated, res)
+}
+
+func (h *Handler) getWeeklyPastoralSummary(c *gin.Context) {
+	actor, ok := contracts.UserFromContext(c.Request.Context())
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
+		return
+	}
+	res, err := h.svc.GetWeeklyPastoralSummary(c.Request.Context(), actor.ChurchID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, res)
+}
+
+func (h *Handler) createCohort(c *gin.Context) {
+	actor, ok := contracts.UserFromContext(c.Request.Context())
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
+		return
+	}
+	var dto contracts.CreateCohortDTO
+	if err := c.ShouldBindJSON(&dto); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+	res, err := h.svc.CreateCohort(c.Request.Context(), actor.ChurchID, dto)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	c.JSON(http.StatusCreated, res)
+}
+
+func (h *Handler) listCohorts(c *gin.Context) {
+	actor, ok := contracts.UserFromContext(c.Request.Context())
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
+		return
+	}
+	res, err := h.svc.ListCohorts(c.Request.Context(), actor.ChurchID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, res)
+}
+
+func (h *Handler) enrollStudent(c *gin.Context) {
+	cohortID := c.Param("id")
+	var dto contracts.EnrollStudentDTO
+	if err := c.ShouldBindJSON(&dto); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+	res, err := h.svc.EnrollStudent(c.Request.Context(), cohortID, dto)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	c.JSON(http.StatusCreated, res)
+}
+
+func (h *Handler) listEnrollments(c *gin.Context) {
+	cohortID := c.Param("id")
+	res, err := h.svc.ListEnrollments(c.Request.Context(), cohortID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, res)
+}
+
+func (h *Handler) gradeAssessment(c *gin.Context) {
+	actor, ok := contracts.UserFromContext(c.Request.Context())
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
+		return
+	}
+	enrollmentID := c.Param("id")
+	var dto contracts.GradeAssessmentDTO
+	if err := c.ShouldBindJSON(&dto); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+	res, err := h.svc.GradeAssessment(c.Request.Context(), enrollmentID, actor.ID, dto)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, res)
+}
+
+func (h *Handler) graduateEnrollment(c *gin.Context) {
+	enrollmentID := c.Param("id")
+	if err := h.svc.GraduateEnrollment(c.Request.Context(), enrollmentID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true})
+}
+
+func (h *Handler) applyVolunteer(c *gin.Context) {
+	actor, ok := contracts.UserFromContext(c.Request.Context())
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
+		return
+	}
+	var dto contracts.ApplyVolunteerDTO
+	if err := c.ShouldBindJSON(&dto); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+	res, err := h.svc.ApplyVolunteer(c.Request.Context(), actor.ChurchID, actor.ID, dto)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	c.JSON(http.StatusCreated, res)
+}
+
+func (h *Handler) listVolunteerApplications(c *gin.Context) {
+	actor, ok := contracts.UserFromContext(c.Request.Context())
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
+		return
+	}
+	res, err := h.svc.ListVolunteerApplications(c.Request.Context(), actor.ChurchID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, res)
+}
+
+func (h *Handler) placeVolunteer(c *gin.Context) {
+	actor, ok := contracts.UserFromContext(c.Request.Context())
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
+		return
+	}
+	var dto contracts.PlaceVolunteerDTO
+	if err := c.ShouldBindJSON(&dto); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+	if err := h.svc.PlaceVolunteer(c.Request.Context(), actor.ID, dto); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true})
+}
+
+func (h *Handler) getUpcomingCelebrations(c *gin.Context) {
+	actor, ok := contracts.UserFromContext(c.Request.Context())
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
+		return
+	}
+	daysStr := c.DefaultQuery("days", "3")
+	days, _ := strconv.Atoi(daysStr)
+	res, err := h.svc.GetUpcomingCelebrations(c.Request.Context(), actor.ChurchID, days)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, res)
+}
+
+func (h *Handler) createLandmark(c *gin.Context) {
+	actor, ok := contracts.UserFromContext(c.Request.Context())
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
+		return
+	}
+	var dto contracts.CreateLandmarkDTO
+	if err := c.ShouldBindJSON(&dto); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+	res, err := h.svc.CreateLandmark(c.Request.Context(), actor.ChurchID, actor.ID, dto)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	c.JSON(http.StatusCreated, res)
+}
+
+func (h *Handler) listLandmarks(c *gin.Context) {
+	actor, ok := contracts.UserFromContext(c.Request.Context())
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
+		return
+	}
+	res, err := h.svc.ListLandmarks(c.Request.Context(), actor.ChurchID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, res)
+}
+
+func (h *Handler) createSitRep(c *gin.Context) {
+	actor, ok := contracts.UserFromContext(c.Request.Context())
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
+		return
+	}
+	var dto contracts.CreateSitRepDTO
+	if err := c.ShouldBindJSON(&dto); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+	res, err := h.svc.CreateSitRep(c.Request.Context(), actor.ChurchID, actor.ID, dto)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	c.JSON(http.StatusCreated, res)
+}
+
+func (h *Handler) listSitRepsForMember(c *gin.Context) {
+	memberID := c.Param("id")
+	res, err := h.svc.ListSitRepsForMember(c.Request.Context(), memberID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, res)
+}
+
+func (h *Handler) listUnprofiledVisitors(c *gin.Context) {
+	actor, ok := contracts.UserFromContext(c.Request.Context())
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
+		return
+	}
+	res, err := h.svc.ListUnprofiledVisitors(c.Request.Context(), actor.ChurchID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, res)
+}
+
+func (h *Handler) profileVisitorFull(c *gin.Context) {
+	actor, ok := contracts.UserFromContext(c.Request.Context())
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
+		return
+	}
+	visitorID := c.Param("visitor_id")
+	var dto contracts.ProfileVisitorPayloadDTO
+	if err := c.ShouldBindJSON(&dto); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+	res, err := h.svc.ProfileVisitorFull(c.Request.Context(), actor.ChurchID, visitorID, actor.ID, dto)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, res)
+}
+
+func (h *Handler) initiateTransfer(c *gin.Context) {
+	actor, ok := contracts.UserFromContext(c.Request.Context())
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
+		return
+	}
+	var dto contracts.InitiateTransferDTO
+	if err := c.ShouldBindJSON(&dto); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+	res, err := h.svc.InitiateTransfer(c.Request.Context(), actor.ChurchID, actor.ID, dto)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	c.JSON(http.StatusCreated, res)
+}
+
+func (h *Handler) listInboundTransfers(c *gin.Context) {
+	actor, ok := contracts.UserFromContext(c.Request.Context())
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
+		return
+	}
+	res, err := h.svc.ListInboundTransfers(c.Request.Context(), actor.ChurchID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, res)
+}
+
+func (h *Handler) reviewTransfer(c *gin.Context) {
+	actor, ok := contracts.UserFromContext(c.Request.Context())
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
+		return
+	}
+	transferID := c.Param("id")
+	var dto contracts.ReviewTransferDTO
+	if err := c.ShouldBindJSON(&dto); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+	if err := h.svc.ReviewTransfer(c.Request.Context(), transferID, actor.ID, dto); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true})
 }
