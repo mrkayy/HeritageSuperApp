@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"net/http"
 	"os"
 
 	"github.com/hofchurchng/church-backend/app"
@@ -23,6 +24,16 @@ func main() {
 	ctx := context.Background()
 	cfg := config.Load()
 
+	// Use PORT environment variable provided by Vercel or cloud environment
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = cfg.Port
+	}
+	if port == "" {
+		port = "8080"
+	}
+	cfg.Port = port
+
 	client, err := db.Connect(ctx, cfg.DatabaseURL)
 	if err != nil {
 		log.Fatalf("db connect: %v", err)
@@ -31,6 +42,6 @@ func main() {
 
 	engine := app.New(cfg, client, logFile)
 
-	log.Printf("HOF Church backend listening on :%s", cfg.Port)
-	log.Fatal(engine.Run(":" + cfg.Port))
+	log.Printf("HOF Church backend listening on :%s", port)
+	log.Fatal(http.ListenAndServe(":"+port, engine))
 }
