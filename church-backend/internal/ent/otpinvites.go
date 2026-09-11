@@ -13,6 +13,7 @@ import (
 	"github.com/hofchurchng/church-backend/internal/ent/localchurch"
 	"github.com/hofchurchng/church-backend/internal/ent/otpinvites"
 	"github.com/hofchurchng/church-backend/internal/ent/sector"
+	"github.com/hofchurchng/church-backend/internal/ent/team"
 	"github.com/hofchurchng/church-backend/internal/ent/user"
 )
 
@@ -33,6 +34,8 @@ type OtpInvites struct {
 	SectorID *uuid.UUID `json:"sector_id,omitempty"`
 	// ChurchID holds the value of the "church_id" field.
 	ChurchID *uuid.UUID `json:"church_id,omitempty"`
+	// TeamID holds the value of the "team_id" field.
+	TeamID *uuid.UUID `json:"team_id,omitempty"`
 	// Role holds the value of the "role" field.
 	Role otpinvites.Role `json:"role,omitempty"`
 	// UsedByUserID holds the value of the "used_by_user_id" field.
@@ -42,7 +45,7 @@ type OtpInvites struct {
 	// ExpiresAt holds the value of the "expires_at" field.
 	ExpiresAt time.Time `json:"expires_at,omitempty"`
 	// CreatedByUserID holds the value of the "created_by_user_id" field.
-	CreatedByUserID uuid.UUID `json:"created_by_user_id,omitempty"`
+	CreatedByUserID *uuid.UUID `json:"created_by_user_id,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -57,11 +60,13 @@ type OtpInvitesEdges struct {
 	Sector *Sector `json:"sector,omitempty"`
 	// Church holds the value of the church edge.
 	Church *LocalChurch `json:"church,omitempty"`
+	// Team holds the value of the team edge.
+	Team *Team `json:"team,omitempty"`
 	// UsedByUser holds the value of the used_by_user edge.
 	UsedByUser *User `json:"used_by_user,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [4]bool
 }
 
 // SectorOrErr returns the Sector value or an error if the edge
@@ -86,12 +91,23 @@ func (e OtpInvitesEdges) ChurchOrErr() (*LocalChurch, error) {
 	return nil, &NotLoadedError{edge: "church"}
 }
 
+// TeamOrErr returns the Team value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e OtpInvitesEdges) TeamOrErr() (*Team, error) {
+	if e.Team != nil {
+		return e.Team, nil
+	} else if e.loadedTypes[2] {
+		return nil, &NotFoundError{label: team.Label}
+	}
+	return nil, &NotLoadedError{edge: "team"}
+}
+
 // UsedByUserOrErr returns the UsedByUser value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e OtpInvitesEdges) UsedByUserOrErr() (*User, error) {
 	if e.UsedByUser != nil {
 		return e.UsedByUser, nil
-	} else if e.loadedTypes[2] {
+	} else if e.loadedTypes[3] {
 		return nil, &NotFoundError{label: user.Label}
 	}
 	return nil, &NotLoadedError{edge: "used_by_user"}
@@ -102,7 +118,7 @@ func (*OtpInvites) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case otpinvites.FieldSectorID, otpinvites.FieldChurchID, otpinvites.FieldUsedByUserID:
+		case otpinvites.FieldSectorID, otpinvites.FieldChurchID, otpinvites.FieldTeamID, otpinvites.FieldUsedByUserID, otpinvites.FieldCreatedByUserID:
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		case otpinvites.FieldUsed:
 			values[i] = new(sql.NullBool)
@@ -110,7 +126,7 @@ func (*OtpInvites) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case otpinvites.FieldExpiresAt, otpinvites.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
-		case otpinvites.FieldID, otpinvites.FieldCreatedByUserID:
+		case otpinvites.FieldID:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -171,6 +187,13 @@ func (_m *OtpInvites) assignValues(columns []string, values []any) error {
 				_m.ChurchID = new(uuid.UUID)
 				*_m.ChurchID = *value.S.(*uuid.UUID)
 			}
+		case otpinvites.FieldTeamID:
+			if value, ok := values[i].(*sql.NullScanner); !ok {
+				return fmt.Errorf("unexpected type %T for field team_id", values[i])
+			} else if value.Valid {
+				_m.TeamID = new(uuid.UUID)
+				*_m.TeamID = *value.S.(*uuid.UUID)
+			}
 		case otpinvites.FieldRole:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field role", values[i])
@@ -197,10 +220,11 @@ func (_m *OtpInvites) assignValues(columns []string, values []any) error {
 				_m.ExpiresAt = value.Time
 			}
 		case otpinvites.FieldCreatedByUserID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field created_by_user_id", values[i])
-			} else if value != nil {
-				_m.CreatedByUserID = *value
+			} else if value.Valid {
+				_m.CreatedByUserID = new(uuid.UUID)
+				*_m.CreatedByUserID = *value.S.(*uuid.UUID)
 			}
 		case otpinvites.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -229,6 +253,11 @@ func (_m *OtpInvites) QuerySector() *SectorQuery {
 // QueryChurch queries the "church" edge of the OtpInvites entity.
 func (_m *OtpInvites) QueryChurch() *LocalChurchQuery {
 	return NewOtpInvitesClient(_m.config).QueryChurch(_m)
+}
+
+// QueryTeam queries the "team" edge of the OtpInvites entity.
+func (_m *OtpInvites) QueryTeam() *TeamQuery {
+	return NewOtpInvitesClient(_m.config).QueryTeam(_m)
 }
 
 // QueryUsedByUser queries the "used_by_user" edge of the OtpInvites entity.
@@ -281,6 +310,11 @@ func (_m *OtpInvites) String() string {
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
 	builder.WriteString(", ")
+	if v := _m.TeamID; v != nil {
+		builder.WriteString("team_id=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
 	builder.WriteString("role=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Role))
 	builder.WriteString(", ")
@@ -295,8 +329,10 @@ func (_m *OtpInvites) String() string {
 	builder.WriteString("expires_at=")
 	builder.WriteString(_m.ExpiresAt.Format(time.ANSIC))
 	builder.WriteString(", ")
-	builder.WriteString("created_by_user_id=")
-	builder.WriteString(fmt.Sprintf("%v", _m.CreatedByUserID))
+	if v := _m.CreatedByUserID; v != nil {
+		builder.WriteString("created_by_user_id=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
 	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))

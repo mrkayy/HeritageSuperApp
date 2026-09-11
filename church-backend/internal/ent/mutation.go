@@ -19270,6 +19270,8 @@ type OtpInvitesMutation struct {
 	clearedsector       bool
 	church              *uuid.UUID
 	clearedchurch       bool
+	team                *uuid.UUID
+	clearedteam         bool
 	used_by_user        *uuid.UUID
 	clearedused_by_user bool
 	done                bool
@@ -19649,6 +19651,55 @@ func (m *OtpInvitesMutation) ResetChurchID() {
 	delete(m.clearedFields, otpinvites.FieldChurchID)
 }
 
+// SetTeamID sets the "team_id" field.
+func (m *OtpInvitesMutation) SetTeamID(u uuid.UUID) {
+	m.team = &u
+}
+
+// TeamID returns the value of the "team_id" field in the mutation.
+func (m *OtpInvitesMutation) TeamID() (r uuid.UUID, exists bool) {
+	v := m.team
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTeamID returns the old "team_id" field's value of the OtpInvites entity.
+// If the OtpInvites object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OtpInvitesMutation) OldTeamID(ctx context.Context) (v *uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTeamID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTeamID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTeamID: %w", err)
+	}
+	return oldValue.TeamID, nil
+}
+
+// ClearTeamID clears the value of the "team_id" field.
+func (m *OtpInvitesMutation) ClearTeamID() {
+	m.team = nil
+	m.clearedFields[otpinvites.FieldTeamID] = struct{}{}
+}
+
+// TeamIDCleared returns if the "team_id" field was cleared in this mutation.
+func (m *OtpInvitesMutation) TeamIDCleared() bool {
+	_, ok := m.clearedFields[otpinvites.FieldTeamID]
+	return ok
+}
+
+// ResetTeamID resets all changes to the "team_id" field.
+func (m *OtpInvitesMutation) ResetTeamID() {
+	m.team = nil
+	delete(m.clearedFields, otpinvites.FieldTeamID)
+}
+
 // SetRole sets the "role" field.
 func (m *OtpInvitesMutation) SetRole(o otpinvites.Role) {
 	m.role = &o
@@ -19823,7 +19874,7 @@ func (m *OtpInvitesMutation) CreatedByUserID() (r uuid.UUID, exists bool) {
 // OldCreatedByUserID returns the old "created_by_user_id" field's value of the OtpInvites entity.
 // If the OtpInvites object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *OtpInvitesMutation) OldCreatedByUserID(ctx context.Context) (v uuid.UUID, err error) {
+func (m *OtpInvitesMutation) OldCreatedByUserID(ctx context.Context) (v *uuid.UUID, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldCreatedByUserID is only allowed on UpdateOne operations")
 	}
@@ -19837,9 +19888,22 @@ func (m *OtpInvitesMutation) OldCreatedByUserID(ctx context.Context) (v uuid.UUI
 	return oldValue.CreatedByUserID, nil
 }
 
+// ClearCreatedByUserID clears the value of the "created_by_user_id" field.
+func (m *OtpInvitesMutation) ClearCreatedByUserID() {
+	m.created_by_user_id = nil
+	m.clearedFields[otpinvites.FieldCreatedByUserID] = struct{}{}
+}
+
+// CreatedByUserIDCleared returns if the "created_by_user_id" field was cleared in this mutation.
+func (m *OtpInvitesMutation) CreatedByUserIDCleared() bool {
+	_, ok := m.clearedFields[otpinvites.FieldCreatedByUserID]
+	return ok
+}
+
 // ResetCreatedByUserID resets all changes to the "created_by_user_id" field.
 func (m *OtpInvitesMutation) ResetCreatedByUserID() {
 	m.created_by_user_id = nil
+	delete(m.clearedFields, otpinvites.FieldCreatedByUserID)
 }
 
 // SetCreatedAt sets the "created_at" field.
@@ -19932,6 +19996,33 @@ func (m *OtpInvitesMutation) ResetChurch() {
 	m.clearedchurch = false
 }
 
+// ClearTeam clears the "team" edge to the Team entity.
+func (m *OtpInvitesMutation) ClearTeam() {
+	m.clearedteam = true
+	m.clearedFields[otpinvites.FieldTeamID] = struct{}{}
+}
+
+// TeamCleared reports if the "team" edge to the Team entity was cleared.
+func (m *OtpInvitesMutation) TeamCleared() bool {
+	return m.TeamIDCleared() || m.clearedteam
+}
+
+// TeamIDs returns the "team" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// TeamID instead. It exists only for internal usage by the builders.
+func (m *OtpInvitesMutation) TeamIDs() (ids []uuid.UUID) {
+	if id := m.team; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetTeam resets all changes to the "team" edge.
+func (m *OtpInvitesMutation) ResetTeam() {
+	m.team = nil
+	m.clearedteam = false
+}
+
 // ClearUsedByUser clears the "used_by_user" edge to the User entity.
 func (m *OtpInvitesMutation) ClearUsedByUser() {
 	m.clearedused_by_user = true
@@ -19993,7 +20084,7 @@ func (m *OtpInvitesMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *OtpInvitesMutation) Fields() []string {
-	fields := make([]string, 0, 12)
+	fields := make([]string, 0, 13)
 	if m.email != nil {
 		fields = append(fields, otpinvites.FieldEmail)
 	}
@@ -20011,6 +20102,9 @@ func (m *OtpInvitesMutation) Fields() []string {
 	}
 	if m.church != nil {
 		fields = append(fields, otpinvites.FieldChurchID)
+	}
+	if m.team != nil {
+		fields = append(fields, otpinvites.FieldTeamID)
 	}
 	if m.role != nil {
 		fields = append(fields, otpinvites.FieldRole)
@@ -20050,6 +20144,8 @@ func (m *OtpInvitesMutation) Field(name string) (ent.Value, bool) {
 		return m.SectorID()
 	case otpinvites.FieldChurchID:
 		return m.ChurchID()
+	case otpinvites.FieldTeamID:
+		return m.TeamID()
 	case otpinvites.FieldRole:
 		return m.Role()
 	case otpinvites.FieldUsedByUserID:
@@ -20083,6 +20179,8 @@ func (m *OtpInvitesMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldSectorID(ctx)
 	case otpinvites.FieldChurchID:
 		return m.OldChurchID(ctx)
+	case otpinvites.FieldTeamID:
+		return m.OldTeamID(ctx)
 	case otpinvites.FieldRole:
 		return m.OldRole(ctx)
 	case otpinvites.FieldUsedByUserID:
@@ -20145,6 +20243,13 @@ func (m *OtpInvitesMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetChurchID(v)
+		return nil
+	case otpinvites.FieldTeamID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTeamID(v)
 		return nil
 	case otpinvites.FieldRole:
 		v, ok := value.(otpinvites.Role)
@@ -20230,8 +20335,14 @@ func (m *OtpInvitesMutation) ClearedFields() []string {
 	if m.FieldCleared(otpinvites.FieldChurchID) {
 		fields = append(fields, otpinvites.FieldChurchID)
 	}
+	if m.FieldCleared(otpinvites.FieldTeamID) {
+		fields = append(fields, otpinvites.FieldTeamID)
+	}
 	if m.FieldCleared(otpinvites.FieldUsedByUserID) {
 		fields = append(fields, otpinvites.FieldUsedByUserID)
+	}
+	if m.FieldCleared(otpinvites.FieldCreatedByUserID) {
+		fields = append(fields, otpinvites.FieldCreatedByUserID)
 	}
 	return fields
 }
@@ -20259,8 +20370,14 @@ func (m *OtpInvitesMutation) ClearField(name string) error {
 	case otpinvites.FieldChurchID:
 		m.ClearChurchID()
 		return nil
+	case otpinvites.FieldTeamID:
+		m.ClearTeamID()
+		return nil
 	case otpinvites.FieldUsedByUserID:
 		m.ClearUsedByUserID()
+		return nil
+	case otpinvites.FieldCreatedByUserID:
+		m.ClearCreatedByUserID()
 		return nil
 	}
 	return fmt.Errorf("unknown OtpInvites nullable field %s", name)
@@ -20288,6 +20405,9 @@ func (m *OtpInvitesMutation) ResetField(name string) error {
 	case otpinvites.FieldChurchID:
 		m.ResetChurchID()
 		return nil
+	case otpinvites.FieldTeamID:
+		m.ResetTeamID()
+		return nil
 	case otpinvites.FieldRole:
 		m.ResetRole()
 		return nil
@@ -20312,12 +20432,15 @@ func (m *OtpInvitesMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *OtpInvitesMutation) AddedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.sector != nil {
 		edges = append(edges, otpinvites.EdgeSector)
 	}
 	if m.church != nil {
 		edges = append(edges, otpinvites.EdgeChurch)
+	}
+	if m.team != nil {
+		edges = append(edges, otpinvites.EdgeTeam)
 	}
 	if m.used_by_user != nil {
 		edges = append(edges, otpinvites.EdgeUsedByUser)
@@ -20337,6 +20460,10 @@ func (m *OtpInvitesMutation) AddedIDs(name string) []ent.Value {
 		if id := m.church; id != nil {
 			return []ent.Value{*id}
 		}
+	case otpinvites.EdgeTeam:
+		if id := m.team; id != nil {
+			return []ent.Value{*id}
+		}
 	case otpinvites.EdgeUsedByUser:
 		if id := m.used_by_user; id != nil {
 			return []ent.Value{*id}
@@ -20347,7 +20474,7 @@ func (m *OtpInvitesMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *OtpInvitesMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	return edges
 }
 
@@ -20359,12 +20486,15 @@ func (m *OtpInvitesMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *OtpInvitesMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.clearedsector {
 		edges = append(edges, otpinvites.EdgeSector)
 	}
 	if m.clearedchurch {
 		edges = append(edges, otpinvites.EdgeChurch)
+	}
+	if m.clearedteam {
+		edges = append(edges, otpinvites.EdgeTeam)
 	}
 	if m.clearedused_by_user {
 		edges = append(edges, otpinvites.EdgeUsedByUser)
@@ -20380,6 +20510,8 @@ func (m *OtpInvitesMutation) EdgeCleared(name string) bool {
 		return m.clearedsector
 	case otpinvites.EdgeChurch:
 		return m.clearedchurch
+	case otpinvites.EdgeTeam:
+		return m.clearedteam
 	case otpinvites.EdgeUsedByUser:
 		return m.clearedused_by_user
 	}
@@ -20395,6 +20527,9 @@ func (m *OtpInvitesMutation) ClearEdge(name string) error {
 		return nil
 	case otpinvites.EdgeChurch:
 		m.ClearChurch()
+		return nil
+	case otpinvites.EdgeTeam:
+		m.ClearTeam()
 		return nil
 	case otpinvites.EdgeUsedByUser:
 		m.ClearUsedByUser()
@@ -20412,6 +20547,9 @@ func (m *OtpInvitesMutation) ResetEdge(name string) error {
 		return nil
 	case otpinvites.EdgeChurch:
 		m.ResetChurch()
+		return nil
+	case otpinvites.EdgeTeam:
+		m.ResetTeam()
 		return nil
 	case otpinvites.EdgeUsedByUser:
 		m.ResetUsedByUser()
@@ -27463,6 +27601,9 @@ type TeamMutation struct {
 	member_teams              map[uuid.UUID]struct{}
 	removedmember_teams       map[uuid.UUID]struct{}
 	clearedmember_teams       bool
+	otp_invites               map[uuid.UUID]struct{}
+	removedotp_invites        map[uuid.UUID]struct{}
+	clearedotp_invites        bool
 	done                      bool
 	oldValue                  func(context.Context) (*Team, error)
 	predicates                []predicate.Team
@@ -28367,6 +28508,60 @@ func (m *TeamMutation) ResetMemberTeams() {
 	m.removedmember_teams = nil
 }
 
+// AddOtpInviteIDs adds the "otp_invites" edge to the OtpInvites entity by ids.
+func (m *TeamMutation) AddOtpInviteIDs(ids ...uuid.UUID) {
+	if m.otp_invites == nil {
+		m.otp_invites = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.otp_invites[ids[i]] = struct{}{}
+	}
+}
+
+// ClearOtpInvites clears the "otp_invites" edge to the OtpInvites entity.
+func (m *TeamMutation) ClearOtpInvites() {
+	m.clearedotp_invites = true
+}
+
+// OtpInvitesCleared reports if the "otp_invites" edge to the OtpInvites entity was cleared.
+func (m *TeamMutation) OtpInvitesCleared() bool {
+	return m.clearedotp_invites
+}
+
+// RemoveOtpInviteIDs removes the "otp_invites" edge to the OtpInvites entity by IDs.
+func (m *TeamMutation) RemoveOtpInviteIDs(ids ...uuid.UUID) {
+	if m.removedotp_invites == nil {
+		m.removedotp_invites = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.otp_invites, ids[i])
+		m.removedotp_invites[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedOtpInvites returns the removed IDs of the "otp_invites" edge to the OtpInvites entity.
+func (m *TeamMutation) RemovedOtpInvitesIDs() (ids []uuid.UUID) {
+	for id := range m.removedotp_invites {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// OtpInvitesIDs returns the "otp_invites" edge IDs in the mutation.
+func (m *TeamMutation) OtpInvitesIDs() (ids []uuid.UUID) {
+	for id := range m.otp_invites {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetOtpInvites resets all changes to the "otp_invites" edge.
+func (m *TeamMutation) ResetOtpInvites() {
+	m.otp_invites = nil
+	m.clearedotp_invites = false
+	m.removedotp_invites = nil
+}
+
 // Where appends a list predicates to the TeamMutation builder.
 func (m *TeamMutation) Where(ps ...predicate.Team) {
 	m.predicates = append(m.predicates, ps...)
@@ -28606,7 +28801,7 @@ func (m *TeamMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *TeamMutation) AddedEdges() []string {
-	edges := make([]string, 0, 11)
+	edges := make([]string, 0, 12)
 	if m.members != nil {
 		edges = append(edges, team.EdgeMembers)
 	}
@@ -28639,6 +28834,9 @@ func (m *TeamMutation) AddedEdges() []string {
 	}
 	if m.member_teams != nil {
 		edges = append(edges, team.EdgeMemberTeams)
+	}
+	if m.otp_invites != nil {
+		edges = append(edges, team.EdgeOtpInvites)
 	}
 	return edges
 }
@@ -28709,13 +28907,19 @@ func (m *TeamMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case team.EdgeOtpInvites:
+		ids := make([]ent.Value, 0, len(m.otp_invites))
+		for id := range m.otp_invites {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *TeamMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 11)
+	edges := make([]string, 0, 12)
 	if m.removedmembers != nil {
 		edges = append(edges, team.EdgeMembers)
 	}
@@ -28742,6 +28946,9 @@ func (m *TeamMutation) RemovedEdges() []string {
 	}
 	if m.removedmember_teams != nil {
 		edges = append(edges, team.EdgeMemberTeams)
+	}
+	if m.removedotp_invites != nil {
+		edges = append(edges, team.EdgeOtpInvites)
 	}
 	return edges
 }
@@ -28804,13 +29011,19 @@ func (m *TeamMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case team.EdgeOtpInvites:
+		ids := make([]ent.Value, 0, len(m.removedotp_invites))
+		for id := range m.removedotp_invites {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *TeamMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 11)
+	edges := make([]string, 0, 12)
 	if m.clearedmembers {
 		edges = append(edges, team.EdgeMembers)
 	}
@@ -28844,6 +29057,9 @@ func (m *TeamMutation) ClearedEdges() []string {
 	if m.clearedmember_teams {
 		edges = append(edges, team.EdgeMemberTeams)
 	}
+	if m.clearedotp_invites {
+		edges = append(edges, team.EdgeOtpInvites)
+	}
 	return edges
 }
 
@@ -28873,6 +29089,8 @@ func (m *TeamMutation) EdgeCleared(name string) bool {
 		return m.clearedchurch_teams
 	case team.EdgeMemberTeams:
 		return m.clearedmember_teams
+	case team.EdgeOtpInvites:
+		return m.clearedotp_invites
 	}
 	return false
 }
@@ -28927,6 +29145,9 @@ func (m *TeamMutation) ResetEdge(name string) error {
 		return nil
 	case team.EdgeMemberTeams:
 		m.ResetMemberTeams()
+		return nil
+	case team.EdgeOtpInvites:
+		m.ResetOtpInvites()
 		return nil
 	}
 	return fmt.Errorf("unknown Team edge %s", name)
@@ -31300,6 +31521,9 @@ type UserMutation struct {
 	appendroles                 []string
 	account_status              *user.AccountStatus
 	is_profile_complete         *bool
+	failed_pin_attempts         *int
+	addfailed_pin_attempts      *int
+	pin_locked_until            *time.Time
 	created_at                  *time.Time
 	clearedFields               map[string]struct{}
 	church                      *uuid.UUID
@@ -32211,6 +32435,111 @@ func (m *UserMutation) ResetIsProfileComplete() {
 	m.is_profile_complete = nil
 }
 
+// SetFailedPinAttempts sets the "failed_pin_attempts" field.
+func (m *UserMutation) SetFailedPinAttempts(i int) {
+	m.failed_pin_attempts = &i
+	m.addfailed_pin_attempts = nil
+}
+
+// FailedPinAttempts returns the value of the "failed_pin_attempts" field in the mutation.
+func (m *UserMutation) FailedPinAttempts() (r int, exists bool) {
+	v := m.failed_pin_attempts
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldFailedPinAttempts returns the old "failed_pin_attempts" field's value of the User entity.
+// If the User object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserMutation) OldFailedPinAttempts(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldFailedPinAttempts is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldFailedPinAttempts requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFailedPinAttempts: %w", err)
+	}
+	return oldValue.FailedPinAttempts, nil
+}
+
+// AddFailedPinAttempts adds i to the "failed_pin_attempts" field.
+func (m *UserMutation) AddFailedPinAttempts(i int) {
+	if m.addfailed_pin_attempts != nil {
+		*m.addfailed_pin_attempts += i
+	} else {
+		m.addfailed_pin_attempts = &i
+	}
+}
+
+// AddedFailedPinAttempts returns the value that was added to the "failed_pin_attempts" field in this mutation.
+func (m *UserMutation) AddedFailedPinAttempts() (r int, exists bool) {
+	v := m.addfailed_pin_attempts
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetFailedPinAttempts resets all changes to the "failed_pin_attempts" field.
+func (m *UserMutation) ResetFailedPinAttempts() {
+	m.failed_pin_attempts = nil
+	m.addfailed_pin_attempts = nil
+}
+
+// SetPinLockedUntil sets the "pin_locked_until" field.
+func (m *UserMutation) SetPinLockedUntil(t time.Time) {
+	m.pin_locked_until = &t
+}
+
+// PinLockedUntil returns the value of the "pin_locked_until" field in the mutation.
+func (m *UserMutation) PinLockedUntil() (r time.Time, exists bool) {
+	v := m.pin_locked_until
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPinLockedUntil returns the old "pin_locked_until" field's value of the User entity.
+// If the User object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserMutation) OldPinLockedUntil(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPinLockedUntil is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPinLockedUntil requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPinLockedUntil: %w", err)
+	}
+	return oldValue.PinLockedUntil, nil
+}
+
+// ClearPinLockedUntil clears the value of the "pin_locked_until" field.
+func (m *UserMutation) ClearPinLockedUntil() {
+	m.pin_locked_until = nil
+	m.clearedFields[user.FieldPinLockedUntil] = struct{}{}
+}
+
+// PinLockedUntilCleared returns if the "pin_locked_until" field was cleared in this mutation.
+func (m *UserMutation) PinLockedUntilCleared() bool {
+	_, ok := m.clearedFields[user.FieldPinLockedUntil]
+	return ok
+}
+
+// ResetPinLockedUntil resets all changes to the "pin_locked_until" field.
+func (m *UserMutation) ResetPinLockedUntil() {
+	m.pin_locked_until = nil
+	delete(m.clearedFields, user.FieldPinLockedUntil)
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (m *UserMutation) SetCreatedAt(t time.Time) {
 	m.created_at = &t
@@ -33010,7 +33339,7 @@ func (m *UserMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *UserMutation) Fields() []string {
-	fields := make([]string, 0, 18)
+	fields := make([]string, 0, 20)
 	if m.church != nil {
 		fields = append(fields, user.FieldChurchID)
 	}
@@ -33062,6 +33391,12 @@ func (m *UserMutation) Fields() []string {
 	if m.is_profile_complete != nil {
 		fields = append(fields, user.FieldIsProfileComplete)
 	}
+	if m.failed_pin_attempts != nil {
+		fields = append(fields, user.FieldFailedPinAttempts)
+	}
+	if m.pin_locked_until != nil {
+		fields = append(fields, user.FieldPinLockedUntil)
+	}
 	if m.created_at != nil {
 		fields = append(fields, user.FieldCreatedAt)
 	}
@@ -33107,6 +33442,10 @@ func (m *UserMutation) Field(name string) (ent.Value, bool) {
 		return m.AccountStatus()
 	case user.FieldIsProfileComplete:
 		return m.IsProfileComplete()
+	case user.FieldFailedPinAttempts:
+		return m.FailedPinAttempts()
+	case user.FieldPinLockedUntil:
+		return m.PinLockedUntil()
 	case user.FieldCreatedAt:
 		return m.CreatedAt()
 	}
@@ -33152,6 +33491,10 @@ func (m *UserMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldAccountStatus(ctx)
 	case user.FieldIsProfileComplete:
 		return m.OldIsProfileComplete(ctx)
+	case user.FieldFailedPinAttempts:
+		return m.OldFailedPinAttempts(ctx)
+	case user.FieldPinLockedUntil:
+		return m.OldPinLockedUntil(ctx)
 	case user.FieldCreatedAt:
 		return m.OldCreatedAt(ctx)
 	}
@@ -33282,6 +33625,20 @@ func (m *UserMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetIsProfileComplete(v)
 		return nil
+	case user.FieldFailedPinAttempts:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetFailedPinAttempts(v)
+		return nil
+	case user.FieldPinLockedUntil:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPinLockedUntil(v)
+		return nil
 	case user.FieldCreatedAt:
 		v, ok := value.(time.Time)
 		if !ok {
@@ -33296,13 +33653,21 @@ func (m *UserMutation) SetField(name string, value ent.Value) error {
 // AddedFields returns all numeric fields that were incremented/decremented during
 // this mutation.
 func (m *UserMutation) AddedFields() []string {
-	return nil
+	var fields []string
+	if m.addfailed_pin_attempts != nil {
+		fields = append(fields, user.FieldFailedPinAttempts)
+	}
+	return fields
 }
 
 // AddedField returns the numeric value that was incremented/decremented on a field
 // with the given name. The second boolean return value indicates that this field
 // was not set, or was not defined in the schema.
 func (m *UserMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case user.FieldFailedPinAttempts:
+		return m.AddedFailedPinAttempts()
+	}
 	return nil, false
 }
 
@@ -33311,6 +33676,13 @@ func (m *UserMutation) AddedField(name string) (ent.Value, bool) {
 // type.
 func (m *UserMutation) AddField(name string, value ent.Value) error {
 	switch name {
+	case user.FieldFailedPinAttempts:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddFailedPinAttempts(v)
+		return nil
 	}
 	return fmt.Errorf("unknown User numeric field %s", name)
 }
@@ -33348,6 +33720,9 @@ func (m *UserMutation) ClearedFields() []string {
 	}
 	if m.FieldCleared(user.FieldRoles) {
 		fields = append(fields, user.FieldRoles)
+	}
+	if m.FieldCleared(user.FieldPinLockedUntil) {
+		fields = append(fields, user.FieldPinLockedUntil)
 	}
 	return fields
 }
@@ -33392,6 +33767,9 @@ func (m *UserMutation) ClearField(name string) error {
 		return nil
 	case user.FieldRoles:
 		m.ClearRoles()
+		return nil
+	case user.FieldPinLockedUntil:
+		m.ClearPinLockedUntil()
 		return nil
 	}
 	return fmt.Errorf("unknown User nullable field %s", name)
@@ -33451,6 +33829,12 @@ func (m *UserMutation) ResetField(name string) error {
 		return nil
 	case user.FieldIsProfileComplete:
 		m.ResetIsProfileComplete()
+		return nil
+	case user.FieldFailedPinAttempts:
+		m.ResetFailedPinAttempts()
+		return nil
+	case user.FieldPinLockedUntil:
+		m.ResetPinLockedUntil()
 		return nil
 	case user.FieldCreatedAt:
 		m.ResetCreatedAt()

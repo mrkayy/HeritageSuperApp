@@ -2,6 +2,8 @@ package auth
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"strings"
 	"time"
@@ -10,6 +12,7 @@ import (
 	"github.com/hofchurchng/church-backend/internal/ent/member"
 	"github.com/hofchurchng/church-backend/internal/ent/otpinvites"
 	entuser "github.com/hofchurchng/church-backend/internal/ent/user"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type user struct {
@@ -110,6 +113,17 @@ func (r *Repository) CheckMemberExists(ctx context.Context, email string) (bool,
 		Exist(ctx)
 }
 
+func (r *Repository) FindMemberStageByEmail(ctx context.Context, email string) string {
+	m, err := r.db.Member.Query().
+		Where(member.EmailEqualFold(email)).
+		Select(member.FieldCurrentStage).
+		Only(ctx)
+	if err != nil || m == nil {
+		return ""
+	}
+	return string(m.CurrentStage)
+}
+
 func (r *Repository) VerifyMagicLink(ctx context.Context, code, email string) (*ent.OtpInvites, error) {
 	code = strings.TrimSpace(code)
 	email = strings.TrimSpace(email)
@@ -138,7 +152,7 @@ func (r *Repository) VerifyMagicLink(ctx context.Context, code, email string) (*
 	return invite, nil
 }
 
-func (r *Repository) CompleteMagicLinkOnboarding(ctx context.Context, code, email, firstName, lastName, passwordHash string) (user, error) {
+func (r *Repository) CompleteMagicLinkOnboarding(ctx context.Context, code, email, firstName, lastName, pinHash string) (user, error) {
 	invite, err := r.VerifyMagicLink(ctx, code, email)
 	if err != nil {
 		return user{}, err
@@ -172,6 +186,9 @@ func (r *Repository) CompleteMagicLinkOnboarding(ctx context.Context, code, emai
 		if invite.SectorID != nil {
 			upM.SetSectorID(*invite.SectorID)
 		}
+		if invite.TeamID != nil {
+			upM.SetTeamID(*invite.TeamID)
+		}
 		m, _ = upM.Save(ctx)
 	} else {
 		cpM := r.db.Member.Create().
@@ -186,6 +203,9 @@ func (r *Repository) CompleteMagicLinkOnboarding(ctx context.Context, code, emai
 		if invite.SectorID != nil {
 			cpM.SetSectorID(*invite.SectorID)
 		}
+		if invite.TeamID != nil {
+			cpM.SetTeamID(*invite.TeamID)
+		}
 		m, _ = cpM.Save(ctx)
 	}
 
@@ -197,7 +217,8 @@ func (r *Repository) CompleteMagicLinkOnboarding(ctx context.Context, code, emai
 
 	if err == nil {
 		up := r.db.User.UpdateOneID(eu.ID).
-			SetPasswordHash(passwordHash).
+			SetPasswordHash("magic-link-activated").
+			SetPinHash(pinHash).
 			SetRole(entuser.Role(roleStr)).
 			SetRoles([]string{roleStr}).
 			SetAccountStatus(entuser.AccountStatusActive).
@@ -215,15 +236,23 @@ func (r *Repository) CompleteMagicLinkOnboarding(ctx context.Context, code, emai
 		if invite.SectorID != nil {
 			up.SetSectorID(*invite.SectorID)
 		}
+		if invite.TeamID != nil {
+			up.SetTeamID(*invite.TeamID)
+		}
 
 		eu, err = up.Save(ctx)
+		if err != nil {
+			return user{}, err
+		}
+		eu, err = r.db.User.Query().Where(entuser.ID(eu.ID)).WithTeam().Only(ctx)
 		if err != nil {
 			return user{}, err
 		}
 	} else {
 		cp := r.db.User.Create().
 			SetEmail(email).
-			SetPasswordHash(passwordHash).
+			SetPasswordHash("magic-link-activated").
+			SetPinHash(pinHash).
 			SetFirstName(firstName).
 			SetLastName(lastName).
 			SetRole(entuser.Role(roleStr)).
@@ -237,8 +266,15 @@ func (r *Repository) CompleteMagicLinkOnboarding(ctx context.Context, code, emai
 		if invite.SectorID != nil {
 			cp.SetSectorID(*invite.SectorID)
 		}
+		if invite.TeamID != nil {
+			cp.SetTeamID(*invite.TeamID)
+		}
 
 		eu, err = cp.Save(ctx)
+		if err != nil {
+			return user{}, err
+		}
+		eu, err = r.db.User.Query().Where(entuser.ID(eu.ID)).WithTeam().Only(ctx)
 		if err != nil {
 			return user{}, err
 		}
@@ -247,6 +283,77 @@ func (r *Repository) CompleteMagicLinkOnboarding(ctx context.Context, code, emai
 	_ = r.db.OtpInvites.UpdateOneID(invite.ID).
 		SetUsed(true).
 		SetUsedByUserID(eu.ID).
+		Exec(ctx)
+
+	return mapEntUserToUser(eu), nil
+}
+
+func (r *Repository) GetMemberFirstName(ctx context.Context, email string) (string, error) {
+	m, err := r.db.Member.Query().
+		Where(member.EmailEqualFold(email)).
+		Select(member.FieldFirstName).
+		Only(ctx)
+	if err != nil || m == nil {
+		return "", err
+	}
+	return m.FirstName, nil
+}
+
+func (r *Repository) CreateLoginMagicLink(ctx context.Context, email string) (string, error) {
+	exists, err := r.db.Member.Query().Where(member.EmailEqualFold(email)).Exist(ctx)
+	if err != nil || !exists {
+		return "", errors.New("email is not registered in the members directory")
+	}
+
+	raw := make([]byte, 24)
+	if _, err := rand.Read(raw); err != nil {
+		return "", err
+	}
+	code := hex.EncodeToString(raw)
+
+	_, err = r.db.OtpInvites.Create().
+		SetEmail(strings.ToLower(strings.TrimSpace(email))).
+		SetOtpCode(code).
+		SetRole(otpinvites.RoleMember).
+		SetExpiresAt(time.Now().Add(24 * time.Hour)).
+		Save(ctx)
+	if err != nil {
+		return "", err
+	}
+	return code, nil
+}
+
+func (r *Repository) VerifyPin(ctx context.Context, email, pin string) (user, error) {
+	eu, err := r.db.User.Query().
+		Where(entuser.EmailEqualFold(email)).
+		WithTeam().
+		Only(ctx)
+	if err != nil {
+		return user{}, ErrInvalidCredentials
+	}
+
+	if eu.PinHash == nil {
+		return user{}, errors.New("no PIN set for this account")
+	}
+
+	if eu.PinLockedUntil != nil && time.Now().Before(*eu.PinLockedUntil) {
+		return user{}, ErrPinLocked
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(*eu.PinHash), []byte(pin)); err != nil {
+		newCount := eu.FailedPinAttempts + 1
+		up := r.db.User.UpdateOneID(eu.ID).SetFailedPinAttempts(newCount)
+		if newCount >= 5 {
+			lockUntil := time.Now().Add(15 * time.Minute)
+			up.SetPinLockedUntil(lockUntil)
+		}
+		_ = up.Exec(ctx)
+		return user{}, ErrInvalidPin
+	}
+
+	_ = r.db.User.UpdateOneID(eu.ID).
+		SetFailedPinAttempts(0).
+		ClearPinLockedUntil().
 		Exec(ctx)
 
 	return mapEntUserToUser(eu), nil

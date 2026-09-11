@@ -234,6 +234,34 @@ func (_c *UserCreate) SetNillableIsProfileComplete(v *bool) *UserCreate {
 	return _c
 }
 
+// SetFailedPinAttempts sets the "failed_pin_attempts" field.
+func (_c *UserCreate) SetFailedPinAttempts(v int) *UserCreate {
+	_c.mutation.SetFailedPinAttempts(v)
+	return _c
+}
+
+// SetNillableFailedPinAttempts sets the "failed_pin_attempts" field if the given value is not nil.
+func (_c *UserCreate) SetNillableFailedPinAttempts(v *int) *UserCreate {
+	if v != nil {
+		_c.SetFailedPinAttempts(*v)
+	}
+	return _c
+}
+
+// SetPinLockedUntil sets the "pin_locked_until" field.
+func (_c *UserCreate) SetPinLockedUntil(v time.Time) *UserCreate {
+	_c.mutation.SetPinLockedUntil(v)
+	return _c
+}
+
+// SetNillablePinLockedUntil sets the "pin_locked_until" field if the given value is not nil.
+func (_c *UserCreate) SetNillablePinLockedUntil(v *time.Time) *UserCreate {
+	if v != nil {
+		_c.SetPinLockedUntil(*v)
+	}
+	return _c
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (_c *UserCreate) SetCreatedAt(v time.Time) *UserCreate {
 	_c.mutation.SetCreatedAt(v)
@@ -508,6 +536,10 @@ func (_c *UserCreate) defaults() {
 		v := user.DefaultIsProfileComplete
 		_c.mutation.SetIsProfileComplete(v)
 	}
+	if _, ok := _c.mutation.FailedPinAttempts(); !ok {
+		v := user.DefaultFailedPinAttempts
+		_c.mutation.SetFailedPinAttempts(v)
+	}
 	if _, ok := _c.mutation.CreatedAt(); !ok {
 		v := user.DefaultCreatedAt()
 		_c.mutation.SetCreatedAt(v)
@@ -550,6 +582,9 @@ func (_c *UserCreate) check() error {
 	}
 	if _, ok := _c.mutation.IsProfileComplete(); !ok {
 		return &ValidationError{Name: "is_profile_complete", err: errors.New(`ent: missing required field "User.is_profile_complete"`)}
+	}
+	if _, ok := _c.mutation.FailedPinAttempts(); !ok {
+		return &ValidationError{Name: "failed_pin_attempts", err: errors.New(`ent: missing required field "User.failed_pin_attempts"`)}
 	}
 	if _, ok := _c.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "User.created_at"`)}
@@ -644,6 +679,14 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.IsProfileComplete(); ok {
 		_spec.SetField(user.FieldIsProfileComplete, field.TypeBool, value)
 		_node.IsProfileComplete = value
+	}
+	if value, ok := _c.mutation.FailedPinAttempts(); ok {
+		_spec.SetField(user.FieldFailedPinAttempts, field.TypeInt, value)
+		_node.FailedPinAttempts = value
+	}
+	if value, ok := _c.mutation.PinLockedUntil(); ok {
+		_spec.SetField(user.FieldPinLockedUntil, field.TypeTime, value)
+		_node.PinLockedUntil = &value
 	}
 	if value, ok := _c.mutation.CreatedAt(); ok {
 		_spec.SetField(user.FieldCreatedAt, field.TypeTime, value)

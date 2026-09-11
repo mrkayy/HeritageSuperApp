@@ -3,41 +3,34 @@ import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Building2, Mail, ShieldAlert, ArrowLeft, CheckCircle2, Sparkles, HelpCircle } from 'lucide-react';
+import { Building2, Mail, ArrowLeft, CheckCircle2, HelpCircle, Send, Info } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import api from '@/lib/api';
 
 const ClaimAccount = () => {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState<'idle' | 'success' | 'unprofiled'>('idle');
+  const [status, setStatus] = useState<'idle' | 'unprofiled' | 'magic_sent'>('idle');
 
   const handleClaimAccount = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) {
-      toast({ title: "Email Required", description: "Please enter your registered email address.", variant: "destructive" });
+      toast({ title: "Email Required", description: "Please enter your registered church email address.", variant: "destructive" });
       return;
     }
 
     try {
       setLoading(true);
       setStatus('idle');
-
-      // Check member existence
-      const apiBase = import.meta.env.VITE_API_BASE_URL || "/api";
-      // Redirect to Google OAuth / Magic link flow with email
-      window.location.href = `${apiBase}/auth/login/google?email=${encodeURIComponent(email.trim())}`;
+      await api.post('/auth/magic-link/request', { email: email.trim() });
+      setStatus('magic_sent');
+      toast({ title: "Activation Link Sent", description: `We've sent an activation link to ${email.trim()}.` });
     } catch (err: any) {
-      if (err.response?.status === 404 || err.response?.data?.message?.includes('not profiled') || err.message?.includes('not_profiled')) {
+      const msg = err.response?.data?.message || err.response?.data?.error || '';
+      if (err.response?.status === 404 || msg.toLowerCase().includes('not profiled') || msg.toLowerCase().includes('not found')) {
         setStatus('unprofiled');
       } else {
-        toast({
-          title: "Error",
-          description: err.response?.data?.message || err.message || "Failed to process account claim request.",
-          variant: "destructive",
-        });
+        toast({ title: "Error", description: msg || "Failed to process account claim request.", variant: "destructive" });
       }
     } finally {
       setLoading(false);
@@ -45,106 +38,122 @@ const ClaimAccount = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center page-background p-4">
-      <div className="w-full max-w-md space-y-6">
-        {/* Header Branding */}
+    <div className="min-h-[100dvh] flex flex-col items-center justify-center page-background p-4 sm:p-8">
+      <div className="w-full max-w-sm space-y-8">
+
         <div className="text-center space-y-2">
-          <div className="mx-auto w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center shadow-xs">
-            <Building2 className="h-8 w-8 text-primary" />
+          <div className="w-14 h-14 mx-auto flex items-center justify-center bg-white/80 dark:bg-slate-900/80 rounded-2xl shadow-sm border border-border/50 p-2">
+            <img src="/logo-design.png" alt="Heritage Logo" className="w-10 h-10 object-contain" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+          <div className="flex items-center justify-center gap-1.5 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+            <Building2 className="w-3 h-3" />
             Heritage of Faith International Church
-          </h1>
+          </div>
+          <h1 className="text-xl font-bold text-foreground">Claim Your Account</h1>
           <p className="text-xs text-muted-foreground">
-            Member Account Activation & Single-Sign-On Center
+            Enter the email you used when registering at church
           </p>
         </div>
 
-        {status === 'unprofiled' ? (
-          /* Un-profiled Rejection Card */
-          <Card className="glass-card border-amber-500/30 shadow-lg animate-in fade-in zoom-in-95">
-            <CardHeader className="text-center pb-3">
-              <div className="mx-auto w-12 h-12 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center mb-2">
-                <HelpCircle className="h-6 w-6" />
+        <div className="rounded-2xl border border-border/60 bg-card shadow-sm p-6">
+
+          {status === 'magic_sent' ? (
+            <div className="space-y-5 text-center">
+              <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                <CheckCircle2 className="h-6 w-6" />
               </div>
-              <CardTitle className="text-lg font-bold text-foreground">Record Not Found</CardTitle>
-            </CardHeader>
-            <CardContent className="text-center space-y-4 pt-0">
-              <div className="p-4 rounded-xl bg-amber-500/5 border border-amber-500/20 text-xs text-amber-900 dark:text-amber-300 leading-relaxed">
-                "We couldn't find your record. Please visit the Information Center at church or reach out to the Membership Team."
+              <div className="space-y-1">
+                <h2 className="font-semibold text-base text-foreground">Check Your Inbox</h2>
+                <p className="text-xs text-muted-foreground">Activation link sent to</p>
+                <p className="text-sm font-semibold text-primary">{email}</p>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Account claiming requires prior member profiling by the church staff. Once profiled, your email will be authorized for single-click activation.
+              <div className="p-3 bg-muted/50 rounded-lg text-[11px] text-muted-foreground text-left space-y-1.5 border border-border/40">
+                <p className="font-semibold text-foreground flex items-center gap-1.5">
+                  <Info className="w-3 h-3 text-primary shrink-0" /> What to do next:
+                </p>
+                <ol className="list-decimal list-inside space-y-1 pl-0.5">
+                  <li>Click the activation button in your email</li>
+                  <li>Verify your name and upload your profile photo</li>
+                  <li>Set your 6-digit security PIN</li>
+                </ol>
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                The link expires in 72 hours and can only be used once.
               </p>
-            </CardContent>
-            <CardFooter className="flex flex-col gap-2 pt-2">
-              <Button 
-                variant="outline" 
-                onClick={() => setStatus('idle')} 
-                className="w-full text-xs"
-              >
-                Try Another Email Address
-              </Button>
-              <Link to="/login" className="w-full">
-                <Button variant="ghost" className="w-full text-xs text-muted-foreground">
-                  <ArrowLeft className="w-3.5 h-3.5 mr-1" /> Back to Main Login
+              <div className="flex flex-col gap-2 pt-1">
+                <Button variant="outline" size="sm" onClick={() => { setStatus('idle'); setEmail(''); }} className="w-full text-xs">
+                  Try a different email
                 </Button>
-              </Link>
-            </CardFooter>
-          </Card>
-        ) : (
-          /* Main Claim Account Form Card */
-          <Card className="glass-card shadow-lg border border-border/50">
-            <CardHeader className="space-y-1 text-center pb-4">
-              <div className="flex items-center justify-center gap-1.5 mb-1">
-                <Badge variant="outline" className="text-primary border-primary/30 text-[10px]">
-                  <Sparkles className="w-3 h-3 mr-1" /> Account Claiming
-                </Badge>
-              </div>
-              <CardTitle className="text-xl font-bold">Claim Your Member Account</CardTitle>
-              <CardDescription className="text-xs">
-                Enter your registered church email address to verify your member profile and activate your account.
-              </CardDescription>
-            </CardHeader>
-
-            <CardContent>
-              <form onSubmit={handleClaimAccount} className="space-y-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="claim-email" className="text-xs font-medium">Registered Email Address</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input 
-                      id="claim-email"
-                      type="email"
-                      placeholder="e.g. member@hofchurchng.org"
-                      value={email}
-                      onChange={e => setEmail(e.target.value)}
-                      className="pl-9 text-xs"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <Button type="submit" disabled={loading} className="w-full text-xs py-5">
-                  {loading ? "Verifying Member Profile..." : "Send Login / Claim Link"}
-                </Button>
-              </form>
-            </CardContent>
-
-            <CardFooter className="flex flex-col gap-3 pt-2 text-center border-t border-border/40">
-              <div className="text-xs text-muted-foreground flex items-center justify-center gap-1">
-                Already have password / Security PIN?
-                <Link to="/login" className="text-primary hover:underline font-semibold ml-1">
-                  Sign In
+                <Link to="/login" className="w-full">
+                  <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground">
+                    <ArrowLeft className="w-3.5 h-3.5 mr-1.5" /> Back to Login
+                  </Button>
                 </Link>
               </div>
+            </div>
 
-              <div className="text-[11px] text-muted-foreground pt-1">
-                Need administrative access? <Link to="/admin-login" className="text-foreground hover:underline font-medium">Admin Portal</Link>
+          ) : status === 'unprofiled' ? (
+            <div className="space-y-5 text-center">
+              <div className="mx-auto w-12 h-12 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                <HelpCircle className="h-6 w-6" />
               </div>
-            </CardFooter>
-          </Card>
-        )}
+              <div className="space-y-3">
+                <h2 className="font-semibold text-base text-foreground">Member Record Not Found</h2>
+                <p className="text-xs p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-900 dark:text-amber-300 leading-relaxed text-left">
+                  Your record needs to be profiled by church staff first. Visit the Information Center at church or contact the Membership Team on Sunday.
+                </p>
+                <p className="text-[11px] text-muted-foreground text-left leading-relaxed">
+                  Account claiming requires prior member profiling. Once profiled, your email will be authorized for activation.
+                </p>
+              </div>
+              <div className="flex flex-col gap-2 pt-1">
+                <Button variant="outline" size="sm" onClick={() => setStatus('idle')} className="w-full text-xs">
+                  Try another email
+                </Button>
+                <Link to="/login" className="w-full">
+                  <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground">
+                    <ArrowLeft className="w-3.5 h-3.5 mr-1.5" /> Back to Login
+                  </Button>
+                </Link>
+              </div>
+            </div>
+
+          ) : (
+            <form onSubmit={handleClaimAccount} className="space-y-5">
+              <div className="space-y-1.5">
+                <Label htmlFor="claim-email" className="text-xs font-medium">Registered Church Email</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="claim-email"
+                    type="email"
+                    placeholder="yourname@gmail.com"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    className="pl-9 h-11 text-xs"
+                    required
+                    autoFocus
+                  />
+                </div>
+              </div>
+
+              <Button type="submit" disabled={loading} className="w-full h-11 text-xs gap-2">
+                <Send className="w-3.5 h-3.5" />
+                {loading ? "Verifying..." : "Send Activation Link"}
+              </Button>
+
+              <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-1 border-t border-border/40">
+                <Link to="/login" className="hover:underline flex items-center gap-1">
+                  <ArrowLeft className="w-3 h-3" /> Back to Login
+                </Link>
+                <Link to="/admin-login" className="hover:underline">
+                  Admin Portal
+                </Link>
+              </div>
+            </form>
+          )}
+
+        </div>
       </div>
     </div>
   );

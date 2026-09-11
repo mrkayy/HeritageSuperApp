@@ -80,6 +80,7 @@ type CreateLeadershipInviteDTO struct {
 	Role      string  `json:"role"`
 	ChurchID  *string `json:"church_id,omitempty"`
 	SectorID  *string `json:"sector_id,omitempty"`
+	TeamID    *string `json:"team_id,omitempty"`
 }
 
 // ---------------------------------------------------------------------------

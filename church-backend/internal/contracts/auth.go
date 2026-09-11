@@ -11,13 +11,14 @@ import "context"
 // reads the current user through this shared struct, never through the
 // auth module's internal types.
 type AuthedUser struct {
-	ID          string   `json:"id"`
-	Email       string   `json:"email"`
-	Roles       []string `json:"roles"`
-	CurrentRole string   `json:"currentRole"`
-	TeamID      string   `json:"teamId"`
-	TeamName    string   `json:"teamName"`
-	ChurchID    string   `json:"churchId"`
+	ID           string   `json:"id"`
+	Email        string   `json:"email"`
+	Roles        []string `json:"roles"`
+	CurrentRole  string   `json:"currentRole"`
+	TeamID       string   `json:"teamId"`
+	TeamName     string   `json:"teamName"`
+	ChurchID     string   `json:"churchId"`
+	CurrentStage string   `json:"currentStage"`
 }
 
 type ctxKey string

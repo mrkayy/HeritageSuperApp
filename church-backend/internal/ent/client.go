@@ -3995,6 +3995,22 @@ func (c *OtpInvitesClient) QueryChurch(_m *OtpInvites) *LocalChurchQuery {
 	return query
 }
 
+// QueryTeam queries the team edge of a OtpInvites.
+func (c *OtpInvitesClient) QueryTeam(_m *OtpInvites) *TeamQuery {
+	query := (&TeamClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(otpinvites.Table, otpinvites.FieldID, id),
+			sqlgraph.To(team.Table, team.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, otpinvites.TeamTable, otpinvites.TeamColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryUsedByUser queries the used_by_user edge of a OtpInvites.
 func (c *OtpInvitesClient) QueryUsedByUser(_m *OtpInvites) *UserQuery {
 	query := (&UserClient{config: c.config}).Query()
@@ -5596,6 +5612,22 @@ func (c *TeamClient) QueryMemberTeams(_m *Team) *MemberTeamQuery {
 			sqlgraph.From(team.Table, team.FieldID, id),
 			sqlgraph.To(memberteam.Table, memberteam.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, team.MemberTeamsTable, team.MemberTeamsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryOtpInvites queries the otp_invites edge of a Team.
+func (c *TeamClient) QueryOtpInvites(_m *Team) *OtpInvitesQuery {
+	query := (&OtpInvitesClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(team.Table, team.FieldID, id),
+			sqlgraph.To(otpinvites.Table, otpinvites.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, team.OtpInvitesTable, team.OtpInvitesColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil

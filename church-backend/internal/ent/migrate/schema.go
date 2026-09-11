@@ -556,10 +556,11 @@ var (
 		{Name: "role", Type: field.TypeEnum, Enums: []string{"super_admin", "general_overseer", "resident_pastor", "church_admin", "sector_lead", "team_lead", "steward", "member", "first_timer", "guest"}},
 		{Name: "used", Type: field.TypeBool, Default: false},
 		{Name: "expires_at", Type: field.TypeTime},
-		{Name: "created_by_user_id", Type: field.TypeUUID},
+		{Name: "created_by_user_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "church_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "sector_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "team_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "used_by_user_id", Type: field.TypeUUID, Nullable: true},
 	}
 	// OtpInvitesTable holds the schema information for the "otp_invites" table.
@@ -581,8 +582,14 @@ var (
 				OnDelete:   schema.SetNull,
 			},
 			{
-				Symbol:     "otp_invites_users_used_invites",
+				Symbol:     "otp_invites_team_otp_invites",
 				Columns:    []*schema.Column{OtpInvitesColumns[12]},
+				RefColumns: []*schema.Column{TeamColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "otp_invites_users_used_invites",
+				Columns:    []*schema.Column{OtpInvitesColumns[13]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -935,6 +942,8 @@ var (
 		{Name: "roles", Type: field.TypeJSON, Nullable: true},
 		{Name: "account_status", Type: field.TypeEnum, Enums: []string{"active", "inactive", "suspended", "pending"}, Default: "pending"},
 		{Name: "is_profile_complete", Type: field.TypeBool, Default: false},
+		{Name: "failed_pin_attempts", Type: field.TypeInt, Default: 0},
+		{Name: "pin_locked_until", Type: field.TypeTime, Nullable: true},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "church_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "sector_id", Type: field.TypeUUID, Nullable: true},
@@ -948,19 +957,19 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "users_local_church_users",
-				Columns:    []*schema.Column{UsersColumns[16]},
+				Columns:    []*schema.Column{UsersColumns[18]},
 				RefColumns: []*schema.Column{LocalChurchColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "users_sector_users",
-				Columns:    []*schema.Column{UsersColumns[17]},
+				Columns:    []*schema.Column{UsersColumns[19]},
 				RefColumns: []*schema.Column{SectorColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "users_team_users",
-				Columns:    []*schema.Column{UsersColumns[18]},
+				Columns:    []*schema.Column{UsersColumns[20]},
 				RefColumns: []*schema.Column{TeamColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -1210,7 +1219,8 @@ func init() {
 	}
 	OtpInvitesTable.ForeignKeys[0].RefTable = LocalChurchTable
 	OtpInvitesTable.ForeignKeys[1].RefTable = SectorTable
-	OtpInvitesTable.ForeignKeys[2].RefTable = UsersTable
+	OtpInvitesTable.ForeignKeys[2].RefTable = TeamTable
+	OtpInvitesTable.ForeignKeys[3].RefTable = UsersTable
 	OtpInvitesTable.Annotation = &entsql.Annotation{
 		Table: "otp_invites",
 	}

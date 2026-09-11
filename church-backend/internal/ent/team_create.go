@@ -15,6 +15,7 @@ import (
 	"github.com/hofchurchng/church-backend/internal/ent/localchurch"
 	"github.com/hofchurchng/church-backend/internal/ent/member"
 	"github.com/hofchurchng/church-backend/internal/ent/memberteam"
+	"github.com/hofchurchng/church-backend/internal/ent/otpinvites"
 	"github.com/hofchurchng/church-backend/internal/ent/outreachreport"
 	"github.com/hofchurchng/church-backend/internal/ent/sector"
 	"github.com/hofchurchng/church-backend/internal/ent/soul"
@@ -265,6 +266,21 @@ func (_c *TeamCreate) AddMemberTeams(v ...*MemberTeam) *TeamCreate {
 		ids[i] = v[i].ID
 	}
 	return _c.AddMemberTeamIDs(ids...)
+}
+
+// AddOtpInviteIDs adds the "otp_invites" edge to the OtpInvites entity by IDs.
+func (_c *TeamCreate) AddOtpInviteIDs(ids ...uuid.UUID) *TeamCreate {
+	_c.mutation.AddOtpInviteIDs(ids...)
+	return _c
+}
+
+// AddOtpInvites adds the "otp_invites" edges to the OtpInvites entity.
+func (_c *TeamCreate) AddOtpInvites(v ...*OtpInvites) *TeamCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddOtpInviteIDs(ids...)
 }
 
 // Mutation returns the TeamMutation object of the builder.
@@ -549,6 +565,22 @@ func (_c *TeamCreate) createSpec() (*Team, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(memberteam.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.OtpInvitesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   team.OtpInvitesTable,
+			Columns: []string{team.OtpInvitesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(otpinvites.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

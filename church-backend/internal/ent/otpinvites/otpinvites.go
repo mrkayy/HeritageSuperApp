@@ -28,6 +28,8 @@ const (
 	FieldSectorID = "sector_id"
 	// FieldChurchID holds the string denoting the church_id field in the database.
 	FieldChurchID = "church_id"
+	// FieldTeamID holds the string denoting the team_id field in the database.
+	FieldTeamID = "team_id"
 	// FieldRole holds the string denoting the role field in the database.
 	FieldRole = "role"
 	// FieldUsedByUserID holds the string denoting the used_by_user_id field in the database.
@@ -44,12 +46,16 @@ const (
 	EdgeSector = "sector"
 	// EdgeChurch holds the string denoting the church edge name in mutations.
 	EdgeChurch = "church"
+	// EdgeTeam holds the string denoting the team edge name in mutations.
+	EdgeTeam = "team"
 	// EdgeUsedByUser holds the string denoting the used_by_user edge name in mutations.
 	EdgeUsedByUser = "used_by_user"
 	// SectorFieldID holds the string denoting the ID field of the Sector.
 	SectorFieldID = "sector_id"
 	// LocalChurchFieldID holds the string denoting the ID field of the LocalChurch.
 	LocalChurchFieldID = "church_id"
+	// TeamFieldID holds the string denoting the ID field of the Team.
+	TeamFieldID = "team_id"
 	// UserFieldID holds the string denoting the ID field of the User.
 	UserFieldID = "user_id"
 	// Table holds the table name of the otpinvites in the database.
@@ -68,6 +74,13 @@ const (
 	ChurchInverseTable = "local_church"
 	// ChurchColumn is the table column denoting the church relation/edge.
 	ChurchColumn = "church_id"
+	// TeamTable is the table that holds the team relation/edge.
+	TeamTable = "otp_invites"
+	// TeamInverseTable is the table name for the Team entity.
+	// It exists in this package in order to avoid circular dependency with the "team" package.
+	TeamInverseTable = "team"
+	// TeamColumn is the table column denoting the team relation/edge.
+	TeamColumn = "team_id"
 	// UsedByUserTable is the table that holds the used_by_user relation/edge.
 	UsedByUserTable = "otp_invites"
 	// UsedByUserInverseTable is the table name for the User entity.
@@ -86,6 +99,7 @@ var Columns = []string{
 	FieldLastName,
 	FieldSectorID,
 	FieldChurchID,
+	FieldTeamID,
 	FieldRole,
 	FieldUsedByUserID,
 	FieldUsed,
@@ -186,6 +200,11 @@ func ByChurchID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldChurchID, opts...).ToFunc()
 }
 
+// ByTeamID orders the results by the team_id field.
+func ByTeamID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTeamID, opts...).ToFunc()
+}
+
 // ByRole orders the results by the role field.
 func ByRole(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldRole, opts...).ToFunc()
@@ -230,6 +249,13 @@ func ByChurchField(field string, opts ...sql.OrderTermOption) OrderOption {
 	}
 }
 
+// ByTeamField orders the results by team field.
+func ByTeamField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newTeamStep(), sql.OrderByField(field, opts...))
+	}
+}
+
 // ByUsedByUserField orders the results by used_by_user field.
 func ByUsedByUserField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -248,6 +274,13 @@ func newChurchStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(ChurchInverseTable, LocalChurchFieldID),
 		sqlgraph.Edge(sqlgraph.M2O, true, ChurchTable, ChurchColumn),
+	)
+}
+func newTeamStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(TeamInverseTable, TeamFieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, TeamTable, TeamColumn),
 	)
 }
 func newUsedByUserStep() *sqlgraph.Step {

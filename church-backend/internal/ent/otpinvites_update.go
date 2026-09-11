@@ -16,6 +16,7 @@ import (
 	"github.com/hofchurchng/church-backend/internal/ent/otpinvites"
 	"github.com/hofchurchng/church-backend/internal/ent/predicate"
 	"github.com/hofchurchng/church-backend/internal/ent/sector"
+	"github.com/hofchurchng/church-backend/internal/ent/team"
 	"github.com/hofchurchng/church-backend/internal/ent/user"
 )
 
@@ -140,6 +141,26 @@ func (_u *OtpInvitesUpdate) ClearChurchID() *OtpInvitesUpdate {
 	return _u
 }
 
+// SetTeamID sets the "team_id" field.
+func (_u *OtpInvitesUpdate) SetTeamID(v uuid.UUID) *OtpInvitesUpdate {
+	_u.mutation.SetTeamID(v)
+	return _u
+}
+
+// SetNillableTeamID sets the "team_id" field if the given value is not nil.
+func (_u *OtpInvitesUpdate) SetNillableTeamID(v *uuid.UUID) *OtpInvitesUpdate {
+	if v != nil {
+		_u.SetTeamID(*v)
+	}
+	return _u
+}
+
+// ClearTeamID clears the value of the "team_id" field.
+func (_u *OtpInvitesUpdate) ClearTeamID() *OtpInvitesUpdate {
+	_u.mutation.ClearTeamID()
+	return _u
+}
+
 // SetRole sets the "role" field.
 func (_u *OtpInvitesUpdate) SetRole(v otpinvites.Role) *OtpInvitesUpdate {
 	_u.mutation.SetRole(v)
@@ -216,6 +237,12 @@ func (_u *OtpInvitesUpdate) SetNillableCreatedByUserID(v *uuid.UUID) *OtpInvites
 	return _u
 }
 
+// ClearCreatedByUserID clears the value of the "created_by_user_id" field.
+func (_u *OtpInvitesUpdate) ClearCreatedByUserID() *OtpInvitesUpdate {
+	_u.mutation.ClearCreatedByUserID()
+	return _u
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (_u *OtpInvitesUpdate) SetCreatedAt(v time.Time) *OtpInvitesUpdate {
 	_u.mutation.SetCreatedAt(v)
@@ -240,6 +267,11 @@ func (_u *OtpInvitesUpdate) SetChurch(v *LocalChurch) *OtpInvitesUpdate {
 	return _u.SetChurchID(v.ID)
 }
 
+// SetTeam sets the "team" edge to the Team entity.
+func (_u *OtpInvitesUpdate) SetTeam(v *Team) *OtpInvitesUpdate {
+	return _u.SetTeamID(v.ID)
+}
+
 // SetUsedByUser sets the "used_by_user" edge to the User entity.
 func (_u *OtpInvitesUpdate) SetUsedByUser(v *User) *OtpInvitesUpdate {
 	return _u.SetUsedByUserID(v.ID)
@@ -259,6 +291,12 @@ func (_u *OtpInvitesUpdate) ClearSector() *OtpInvitesUpdate {
 // ClearChurch clears the "church" edge to the LocalChurch entity.
 func (_u *OtpInvitesUpdate) ClearChurch() *OtpInvitesUpdate {
 	_u.mutation.ClearChurch()
+	return _u
+}
+
+// ClearTeam clears the "team" edge to the Team entity.
+func (_u *OtpInvitesUpdate) ClearTeam() *OtpInvitesUpdate {
+	_u.mutation.ClearTeam()
 	return _u
 }
 
@@ -347,6 +385,9 @@ func (_u *OtpInvitesUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 	if value, ok := _u.mutation.CreatedByUserID(); ok {
 		_spec.SetField(otpinvites.FieldCreatedByUserID, field.TypeUUID, value)
 	}
+	if _u.mutation.CreatedByUserIDCleared() {
+		_spec.ClearField(otpinvites.FieldCreatedByUserID, field.TypeUUID)
+	}
 	if value, ok := _u.mutation.CreatedAt(); ok {
 		_spec.SetField(otpinvites.FieldCreatedAt, field.TypeTime, value)
 	}
@@ -401,6 +442,35 @@ func (_u *OtpInvitesUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(localchurch.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.TeamCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   otpinvites.TeamTable,
+			Columns: []string{otpinvites.TeamColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(team.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.TeamIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   otpinvites.TeamTable,
+			Columns: []string{otpinvites.TeamColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(team.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -565,6 +635,26 @@ func (_u *OtpInvitesUpdateOne) ClearChurchID() *OtpInvitesUpdateOne {
 	return _u
 }
 
+// SetTeamID sets the "team_id" field.
+func (_u *OtpInvitesUpdateOne) SetTeamID(v uuid.UUID) *OtpInvitesUpdateOne {
+	_u.mutation.SetTeamID(v)
+	return _u
+}
+
+// SetNillableTeamID sets the "team_id" field if the given value is not nil.
+func (_u *OtpInvitesUpdateOne) SetNillableTeamID(v *uuid.UUID) *OtpInvitesUpdateOne {
+	if v != nil {
+		_u.SetTeamID(*v)
+	}
+	return _u
+}
+
+// ClearTeamID clears the value of the "team_id" field.
+func (_u *OtpInvitesUpdateOne) ClearTeamID() *OtpInvitesUpdateOne {
+	_u.mutation.ClearTeamID()
+	return _u
+}
+
 // SetRole sets the "role" field.
 func (_u *OtpInvitesUpdateOne) SetRole(v otpinvites.Role) *OtpInvitesUpdateOne {
 	_u.mutation.SetRole(v)
@@ -641,6 +731,12 @@ func (_u *OtpInvitesUpdateOne) SetNillableCreatedByUserID(v *uuid.UUID) *OtpInvi
 	return _u
 }
 
+// ClearCreatedByUserID clears the value of the "created_by_user_id" field.
+func (_u *OtpInvitesUpdateOne) ClearCreatedByUserID() *OtpInvitesUpdateOne {
+	_u.mutation.ClearCreatedByUserID()
+	return _u
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (_u *OtpInvitesUpdateOne) SetCreatedAt(v time.Time) *OtpInvitesUpdateOne {
 	_u.mutation.SetCreatedAt(v)
@@ -665,6 +761,11 @@ func (_u *OtpInvitesUpdateOne) SetChurch(v *LocalChurch) *OtpInvitesUpdateOne {
 	return _u.SetChurchID(v.ID)
 }
 
+// SetTeam sets the "team" edge to the Team entity.
+func (_u *OtpInvitesUpdateOne) SetTeam(v *Team) *OtpInvitesUpdateOne {
+	return _u.SetTeamID(v.ID)
+}
+
 // SetUsedByUser sets the "used_by_user" edge to the User entity.
 func (_u *OtpInvitesUpdateOne) SetUsedByUser(v *User) *OtpInvitesUpdateOne {
 	return _u.SetUsedByUserID(v.ID)
@@ -684,6 +785,12 @@ func (_u *OtpInvitesUpdateOne) ClearSector() *OtpInvitesUpdateOne {
 // ClearChurch clears the "church" edge to the LocalChurch entity.
 func (_u *OtpInvitesUpdateOne) ClearChurch() *OtpInvitesUpdateOne {
 	_u.mutation.ClearChurch()
+	return _u
+}
+
+// ClearTeam clears the "team" edge to the Team entity.
+func (_u *OtpInvitesUpdateOne) ClearTeam() *OtpInvitesUpdateOne {
+	_u.mutation.ClearTeam()
 	return _u
 }
 
@@ -802,6 +909,9 @@ func (_u *OtpInvitesUpdateOne) sqlSave(ctx context.Context) (_node *OtpInvites, 
 	if value, ok := _u.mutation.CreatedByUserID(); ok {
 		_spec.SetField(otpinvites.FieldCreatedByUserID, field.TypeUUID, value)
 	}
+	if _u.mutation.CreatedByUserIDCleared() {
+		_spec.ClearField(otpinvites.FieldCreatedByUserID, field.TypeUUID)
+	}
 	if value, ok := _u.mutation.CreatedAt(); ok {
 		_spec.SetField(otpinvites.FieldCreatedAt, field.TypeTime, value)
 	}
@@ -856,6 +966,35 @@ func (_u *OtpInvitesUpdateOne) sqlSave(ctx context.Context) (_node *OtpInvites, 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(localchurch.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.TeamCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   otpinvites.TeamTable,
+			Columns: []string{otpinvites.TeamColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(team.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.TeamIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   otpinvites.TeamTable,
+			Columns: []string{otpinvites.TeamColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(team.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

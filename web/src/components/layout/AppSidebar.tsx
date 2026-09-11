@@ -162,16 +162,14 @@ export function AppSidebar() {
   const isExecutive = ['super_admin', 'church_admin', 'resident_pastor', 'general_overseer'].some(r => userRoles.includes(r));
   const userTeamName = ((user as any)?.team_name || user?.teamName || '').toLowerCase();
 
-  const isMembershipMember = isExecutive || 
-    userTeamName.includes('membership') || 
-    userRoles.includes('team_lead') || 
-    userRoles.includes('steward');
+  // Team access is determined by teamName (JWT claim), not by role tier.
+  // 'steward' and 'team_lead' are seniority levels, not team identifiers —
+  // they must NOT grant cross-team sidebar visibility.
+  const isMembershipMember = isExecutive || userTeamName.includes('membership');
 
-  const isInfoCenterMember = isExecutive || 
-    userTeamName.includes('info') || 
-    userTeamName.includes('information') || 
-    userRoles.includes('team_lead') || 
-    userRoles.includes('steward');
+  const isInfoCenterMember = isExecutive ||
+    userTeamName.includes('info') ||
+    userTeamName.includes('information');
 
   const isAdminPanelVisible = adminPanelEnabled && (isExecutive || ['super_admin', 'church_admin'].some(r => userRoles.includes(r)));
 
@@ -481,7 +479,16 @@ export function AppSidebar() {
           {!isCollapsed && (
             <div className="flex-1 min-w-0">
               <p className="text-xs md:text-sm font-medium truncate">{user?.firstName} {user?.lastName}</p>
-              <p className="text-xs text-muted-foreground capitalize">{user?.role?.replace('_', ' ')}</p>
+              <p className="text-[10px] text-muted-foreground capitalize leading-tight">
+                <span className="font-medium text-foreground/70">Role:</span>{' '}
+                {user?.role?.replace(/_/g, ' ')}
+              </p>
+              {user?.currentStage && (
+                <p className="text-[10px] text-primary/70 capitalize leading-tight">
+                  <span className="font-medium">Stage:</span>{' '}
+                  {user.currentStage.replace(/_/g, ' ')}
+                </p>
+              )}
             </div>
           )}
         </div>

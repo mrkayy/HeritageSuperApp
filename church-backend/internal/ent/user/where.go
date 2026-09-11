@@ -126,6 +126,16 @@ func IsProfileComplete(v bool) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldIsProfileComplete, v))
 }
 
+// FailedPinAttempts applies equality check predicate on the "failed_pin_attempts" field. It's identical to FailedPinAttemptsEQ.
+func FailedPinAttempts(v int) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldFailedPinAttempts, v))
+}
+
+// PinLockedUntil applies equality check predicate on the "pin_locked_until" field. It's identical to PinLockedUntilEQ.
+func PinLockedUntil(v time.Time) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldPinLockedUntil, v))
+}
+
 // CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
 func CreatedAt(v time.Time) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldCreatedAt, v))
@@ -964,6 +974,96 @@ func IsProfileCompleteEQ(v bool) predicate.User {
 // IsProfileCompleteNEQ applies the NEQ predicate on the "is_profile_complete" field.
 func IsProfileCompleteNEQ(v bool) predicate.User {
 	return predicate.User(sql.FieldNEQ(FieldIsProfileComplete, v))
+}
+
+// FailedPinAttemptsEQ applies the EQ predicate on the "failed_pin_attempts" field.
+func FailedPinAttemptsEQ(v int) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldFailedPinAttempts, v))
+}
+
+// FailedPinAttemptsNEQ applies the NEQ predicate on the "failed_pin_attempts" field.
+func FailedPinAttemptsNEQ(v int) predicate.User {
+	return predicate.User(sql.FieldNEQ(FieldFailedPinAttempts, v))
+}
+
+// FailedPinAttemptsIn applies the In predicate on the "failed_pin_attempts" field.
+func FailedPinAttemptsIn(vs ...int) predicate.User {
+	return predicate.User(sql.FieldIn(FieldFailedPinAttempts, vs...))
+}
+
+// FailedPinAttemptsNotIn applies the NotIn predicate on the "failed_pin_attempts" field.
+func FailedPinAttemptsNotIn(vs ...int) predicate.User {
+	return predicate.User(sql.FieldNotIn(FieldFailedPinAttempts, vs...))
+}
+
+// FailedPinAttemptsGT applies the GT predicate on the "failed_pin_attempts" field.
+func FailedPinAttemptsGT(v int) predicate.User {
+	return predicate.User(sql.FieldGT(FieldFailedPinAttempts, v))
+}
+
+// FailedPinAttemptsGTE applies the GTE predicate on the "failed_pin_attempts" field.
+func FailedPinAttemptsGTE(v int) predicate.User {
+	return predicate.User(sql.FieldGTE(FieldFailedPinAttempts, v))
+}
+
+// FailedPinAttemptsLT applies the LT predicate on the "failed_pin_attempts" field.
+func FailedPinAttemptsLT(v int) predicate.User {
+	return predicate.User(sql.FieldLT(FieldFailedPinAttempts, v))
+}
+
+// FailedPinAttemptsLTE applies the LTE predicate on the "failed_pin_attempts" field.
+func FailedPinAttemptsLTE(v int) predicate.User {
+	return predicate.User(sql.FieldLTE(FieldFailedPinAttempts, v))
+}
+
+// PinLockedUntilEQ applies the EQ predicate on the "pin_locked_until" field.
+func PinLockedUntilEQ(v time.Time) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldPinLockedUntil, v))
+}
+
+// PinLockedUntilNEQ applies the NEQ predicate on the "pin_locked_until" field.
+func PinLockedUntilNEQ(v time.Time) predicate.User {
+	return predicate.User(sql.FieldNEQ(FieldPinLockedUntil, v))
+}
+
+// PinLockedUntilIn applies the In predicate on the "pin_locked_until" field.
+func PinLockedUntilIn(vs ...time.Time) predicate.User {
+	return predicate.User(sql.FieldIn(FieldPinLockedUntil, vs...))
+}
+
+// PinLockedUntilNotIn applies the NotIn predicate on the "pin_locked_until" field.
+func PinLockedUntilNotIn(vs ...time.Time) predicate.User {
+	return predicate.User(sql.FieldNotIn(FieldPinLockedUntil, vs...))
+}
+
+// PinLockedUntilGT applies the GT predicate on the "pin_locked_until" field.
+func PinLockedUntilGT(v time.Time) predicate.User {
+	return predicate.User(sql.FieldGT(FieldPinLockedUntil, v))
+}
+
+// PinLockedUntilGTE applies the GTE predicate on the "pin_locked_until" field.
+func PinLockedUntilGTE(v time.Time) predicate.User {
+	return predicate.User(sql.FieldGTE(FieldPinLockedUntil, v))
+}
+
+// PinLockedUntilLT applies the LT predicate on the "pin_locked_until" field.
+func PinLockedUntilLT(v time.Time) predicate.User {
+	return predicate.User(sql.FieldLT(FieldPinLockedUntil, v))
+}
+
+// PinLockedUntilLTE applies the LTE predicate on the "pin_locked_until" field.
+func PinLockedUntilLTE(v time.Time) predicate.User {
+	return predicate.User(sql.FieldLTE(FieldPinLockedUntil, v))
+}
+
+// PinLockedUntilIsNil applies the IsNil predicate on the "pin_locked_until" field.
+func PinLockedUntilIsNil() predicate.User {
+	return predicate.User(sql.FieldIsNull(FieldPinLockedUntil))
+}
+
+// PinLockedUntilNotNil applies the NotNil predicate on the "pin_locked_until" field.
+func PinLockedUntilNotNil() predicate.User {
+	return predicate.User(sql.FieldNotNull(FieldPinLockedUntil))
 }
 
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.

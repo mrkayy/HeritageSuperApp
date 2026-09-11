@@ -53,8 +53,28 @@ func corsMiddleware(allowedOrigins []string) gin.HandlerFunc {
 // logWriter receives request logs alongside stdout; pass nil for stdout-only logging.
 func New(cfg config.Config, client *ent.Client, logWriter io.Writer) *gin.Engine {
 	// --- build modules ---
+	// Email service must be built before auth service (auth needs it for magic links)
+	emailRenderer, err := email.NewRenderer()
+	if err != nil {
+		panic("failed to initialize email template renderer: " + err.Error())
+	}
+	var mailer email.Mailer
+	if cfg.SMTPHost != "" {
+		mailer = email.NewSMTPMailer(email.SMTPConfig{
+			Host:      cfg.SMTPHost,
+			Port:      cfg.SMTPPort,
+			Username:  cfg.SMTPUsername,
+			Password:  cfg.SMTPPassword,
+			FromEmail: cfg.SMTPFromEmail,
+			FromName:  cfg.SMTPFromName,
+		})
+	} else {
+		mailer = email.NewLogMailer()
+	}
+	emailSvc := email.NewEmailService(mailer, emailRenderer)
+
 	authRepo := auth.NewRepository(client)
-	authSvc := auth.NewService(authRepo, cfg.JWTSecret)
+	authSvc := auth.NewService(authRepo, cfg.JWTSecret, emailSvc, cfg.FrontendURL)
 	authHandler := auth.NewHandler(
 		authSvc,
 		cfg.JWTSecret,
@@ -97,26 +117,6 @@ func New(cfg config.Config, client *ent.Client, logWriter io.Writer) *gin.Engine
 	featureflagsHandler := featureflags.NewHandler(featureflagsSvc)
 
 	dashboardHandler := dashboard.NewHandler(client)
-
-	// --- Platform Email Service ---
-	emailRenderer, err := email.NewRenderer()
-	if err != nil {
-		panic("failed to initialize email template renderer: " + err.Error())
-	}
-	var mailer email.Mailer
-	if cfg.SMTPHost != "" {
-		mailer = email.NewSMTPMailer(email.SMTPConfig{
-			Host:      cfg.SMTPHost,
-			Port:      cfg.SMTPPort,
-			Username:  cfg.SMTPUsername,
-			Password:  cfg.SMTPPassword,
-			FromEmail: cfg.SMTPFromEmail,
-			FromName:  cfg.SMTPFromName,
-		})
-	} else {
-		mailer = email.NewLogMailer()
-	}
-	emailSvc := email.NewEmailService(mailer, emailRenderer)
 
 	adminRepo := admin.NewRepository(client)
 	adminSvc := admin.NewService(adminRepo, emailSvc, cfg.FrontendURL)
@@ -196,15 +196,9 @@ func New(cfg config.Config, client *ent.Client, logWriter io.Writer) *gin.Engine
 	featureFlagsGroup := api.Group("/feature-flags", requireAuth)
 	featureflagsHandler.Register(featureFlagsGroup)
 
-	requireAdminOrPastorOrLead := middleware.RequireAnyRole(
-		string(contracts.RoleTeamLead),
-		string(contracts.RoleResidentPastor),
-		string(contracts.RoleChurchAdmin),
-		string(contracts.RoleSuperAdmin),
-		string(contracts.RoleSteward),
-	)
-
-	membersGroup := api.Group("/members", requireAuth, requireAdminOrPastorOrLead, middleware.RequireFeature(featureflagsSvc, "feature_membership_team"))
+	membersGroup := api.Group("/members", requireAuth,
+		middleware.RequireTeamAccess(contracts.TeamMembership),
+		middleware.RequireFeature(featureflagsSvc, "feature_membership_team"))
 	membershipHandler.Register(membersGroup)
 
 	teamsGroup := api.Group("/teams", requireAuth)
@@ -231,7 +225,9 @@ func New(cfg config.Config, client *ent.Client, logWriter io.Writer) *gin.Engine
 	transportGroup := api.Group("/transportation", requireAuth, middleware.RequireFeature(featureflagsSvc, "feature_transport"))
 	transportHandler.Register(transportGroup)
 
-	infoCenterGroup := api.Group("/info-center", requireAuth, middleware.RequireFeature(featureflagsSvc, "feature_info_center"))
+	infoCenterGroup := api.Group("/info-center", requireAuth,
+		middleware.RequireTeamAccess(contracts.TeamInfoCenter),
+		middleware.RequireFeature(featureflagsSvc, "feature_info_center"))
 	infocenterHandler.Register(infoCenterGroup)
 
 	dashboardGroup := api.Group("/dashboard", requireAuth)

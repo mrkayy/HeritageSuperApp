@@ -446,11 +446,11 @@ func init() {
 	// otpinvites.DefaultLastName holds the default value on creation for the last_name field.
 	otpinvites.DefaultLastName = otpinvitesDescLastName.Default.(string)
 	// otpinvitesDescUsed is the schema descriptor for used field.
-	otpinvitesDescUsed := otpinvitesFields[9].Descriptor()
+	otpinvitesDescUsed := otpinvitesFields[10].Descriptor()
 	// otpinvites.DefaultUsed holds the default value on creation for the used field.
 	otpinvites.DefaultUsed = otpinvitesDescUsed.Default.(bool)
 	// otpinvitesDescCreatedAt is the schema descriptor for created_at field.
-	otpinvitesDescCreatedAt := otpinvitesFields[12].Descriptor()
+	otpinvitesDescCreatedAt := otpinvitesFields[13].Descriptor()
 	// otpinvites.DefaultCreatedAt holds the default value on creation for the created_at field.
 	otpinvites.DefaultCreatedAt = otpinvitesDescCreatedAt.Default.(func() time.Time)
 	// otpinvitesDescID is the schema descriptor for id field.
@@ -633,8 +633,12 @@ func init() {
 	userDescIsProfileComplete := userFields[17].Descriptor()
 	// user.DefaultIsProfileComplete holds the default value on creation for the is_profile_complete field.
 	user.DefaultIsProfileComplete = userDescIsProfileComplete.Default.(bool)
+	// userDescFailedPinAttempts is the schema descriptor for failed_pin_attempts field.
+	userDescFailedPinAttempts := userFields[18].Descriptor()
+	// user.DefaultFailedPinAttempts holds the default value on creation for the failed_pin_attempts field.
+	user.DefaultFailedPinAttempts = userDescFailedPinAttempts.Default.(int)
 	// userDescCreatedAt is the schema descriptor for created_at field.
-	userDescCreatedAt := userFields[18].Descriptor()
+	userDescCreatedAt := userFields[20].Descriptor()
 	// user.DefaultCreatedAt holds the default value on creation for the created_at field.
 	user.DefaultCreatedAt = userDescCreatedAt.Default.(func() time.Time)
 	// userDescID is the schema descriptor for id field.

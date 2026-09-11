@@ -51,6 +51,13 @@ Any specific API endpoints, filters, or business logic you expect on the server 
 
 ## Teams
 
+> [!IMPORTANT]
+> **Strict Team Isolation & Page Access Governance:**
+> - Members assigned to a specific team (e.g., Membership Team, Information Center Team, Transport Team, Choir Team, Ushering Team, Media Team) can **ONLY** view and access the frontend menus, sidebar sections, page routes, and backend APIs belonging to their assigned team.
+> - A member of the **Membership Team** must **NOT** see or access frontend menus, sidebar items, or page routes belonging to the **Information Center Team**, and vice-versa. This strict team isolation applies across **all teams** on the platform.
+> - Generic roles (`steward`, `team_lead`, `worker`) **MUST NOT** grant fallback access to other teams' pages or APIs. Access is strictly gated by matching `team_id` / `team_name` assignment.
+> - **Executive Exemption**: Executive roles (`super_admin`, `general_overseer`, `resident_pastor`, `church_admin`) maintain cross-team oversight and can view all departmental dashboards and pages within their authorized tenant scope.
+
 ### 📋 Information Center Team
 > Manages visitor registration, member directory, attendance tracking, foundation class recommendation, books & merchandise store, and announcements. Scoped strictly to the local church.
 
@@ -63,7 +70,7 @@ Any specific API endpoints, filters, or business logic you expect on the server 
 As an Information Center Worker, I want to capture complete details for first-time church visitors on a mobile, tablet, or desktop interface, so that their initial visit is properly documented and ready for membership workflows.
 
 **Who can use this:**  
-`info_center_worker`, `info_center_lead`, `church_admin` (scoped strictly to local church).
+`steward` (Information Center), `assistant_team_lead` (Information Center), `team_lead` (Information Center), `church_admin` (scoped strictly to local church).
 
 **What it looks like (UI):**  
 - Lives under sidebar: **Information Center > New Visitor**.
@@ -115,7 +122,7 @@ As an Information Center Worker, I want to capture complete details for first-ti
 As an Information Center Worker, I want to search and mark returning visitors present during service, so that their attendance count increments accurately and prompts next-step recommendations.
 
 **Who can use this:**  
-`info_center_worker`, `info_center_lead`, `church_admin`.
+`steward` (Information Center), `assistant_team_lead` (Information Center), `team_lead` (Information Center), `church_admin`.
 
 **What it looks like (UI):**  
 - Lives under sidebar: **Information Center > Attendance Tracking**.
@@ -152,7 +159,7 @@ As an Information Center Worker, I want to search and mark returning visitors pr
 As an Information Center Worker / Lead, I want to review visitors who have met attendance criteria and recommend them for Foundation Class, so that they automatically appear as actionable tasks for the Membership Team.
 
 **Who can use this:**  
-`info_center_worker`, `info_center_lead`, `church_admin`.
+`steward` (Information Center), `assistant_team_lead` (Information Center), `team_lead` (Information Center), `church_admin`.
 
 **What it looks like (UI):**  
 - Tab menu item under **Information Center > Foundation Class Recommendations** (also mirrored in **Membership Team > Inflow Queue**).
@@ -192,7 +199,7 @@ As an Information Center Worker / Lead, I want to review visitors who have met a
 As an Information Center Worker, I want to manage local church inventory for books (primarily authored by the General Overseer) and merchandise (T-shirts, hoodies, caps) and record sales paid via bank transfer, so that stock is tracked and transfer receipts are logged.
 
 **Who can use this:**  
-`info_center_worker`, `info_center_lead`, `church_admin`.
+`steward` (Information Center), `assistant_team_lead` (Information Center), `team_lead` (Information Center), `church_admin`.
 
 **What it looks like (UI):**  
 - Lives under sidebar: **Information Center > Books & Merchandise**.
@@ -238,8 +245,8 @@ As an Information Center Worker, I want to manage local church inventory for boo
 As an Information Center Worker / Church Minister, I want a centralized announcements hub where active church announcements can be viewed during service and broadcast to the Member Dashboard, with automatic expiration dates so obsolete announcements disappear.
 
 **Who can use this:**  
-- Create/Edit/Archive: `info_center_lead`, `church_admin`, `resident_pastor`.
-- View during service: `info_center_worker`, `resident_pastor`, `ministers`.
+- Create/Edit/Archive: `team_lead` (Information Center), `assistant_team_lead` (Information Center), `church_admin`, `resident_pastor`.
+- View during service: `steward` (Information Center), `resident_pastor`, `ministers`.
 - View on Member Dashboard: `member`, `steward`.
 
 **What it looks like (UI):**  
@@ -673,11 +680,10 @@ As a Membership Team Lead / Church Admin, I want to transfer a member who has re
 
 ---
 
-### 🙏 Soul / Evangelism Team
-> Manages soul-winning records, follow-ups, and spiritual journals.
+### 🙏 Soul Winning & Evangelism (Universal App Feature)
+> **Note:** Soul Winning & Evangelism is a universal core platform feature available to **all church members, stewards, and leaders** across every team, not a team-restricted department. Features for soul registration, soul journals, and personal evangelism tracking will be detailed under Global Features in a future update.
 
-<!-- Add features below -->
-
+<!-- Details to be expanded later -->
 
 ---
 
@@ -1108,9 +1114,13 @@ As a Church Leader or Worker, I want the system to support holding multiple role
    - `resident_pastor` has unrestricted read and oversight access across all teams and data in their local church.
    - `church_admin` sits beneath `resident_pastor` and manages operational configurations.
    - All `department_lead`, `assistant_team_lead`, and `sector_lead` roles inherently inherit all standard `steward` capabilities (soul-winning logging, personal dashboard, etc.).
-2. **Granular Delegation:**
+2. **Strict Team-Isolated Page & API Access Control:**
+   - **Frontend Navigation & Menu Isolation (`AppSidebar.tsx`):** Non-executive team members (`steward`, `team_lead`, `worker`) ONLY see the sidebar section, menus, and links for their explicitly assigned team (`user.team_name` / `user.team_id`). Generic roles MUST NOT trigger fallback visibility into other teams' sidebar groups (e.g. a Membership Team worker will **never** see the Information Center Team sidebar menu, and vice-versa for all teams).
+   - **Frontend Page Route Protection (`TeamRouteGate` / `ProtectedRoute`):** Navigating directly via browser URL bar (e.g., `/teams/info-center/*` or `/teams/membership/*`) requires verification against the user's assigned `team_name` / `team_id`. Unassigned attempts redirect to an Access Denied / 403 screen.
+   - **Backend API Scoping Middleware (`RequireTeamRole` / `RequireTeamAccess`):** Backend REST endpoints for team modules (e.g. `/api/v1/info-center/*`, `/api/v1/members/*`, `/api/v1/transportation/*`) enforce JWT claim matching for `team_id` or `team_name` in addition to role authorization.
+3. **Granular Delegation:**
    - Team Leads can appoint Assistant Leads and explicitly toggle which specific permissions are granted.
-3. **Multi-Role Aggregation:**
+4. **Multi-Role Aggregation:**
    - Permissions are additive. The API middleware evaluates the active context role or combined role permissions for each endpoint.
 
 **Data needed:**  
@@ -1122,8 +1132,10 @@ As a Church Leader or Worker, I want the system to support holding multiple role
 - `GET/POST /api/v1/churches/{church_id}/roles`
 - `PUT /api/v1/churches/{church_id}/teams/{team_id}/delegations/{user_id}`
 - `GET /api/v1/churches/{church_id}/sectors/{sector_id}/members`
+- Middleware `RequireTeamAccess("team_identifier")` enforced across all `/api/v1/{team_module}/*` router groups.
 
 **Acceptance Criteria:**  
+- [ ] Enforces strict team isolation across frontend menus, page routes, and backend APIs (e.g. Membership worker cannot see or access Information Center pages/APIs, and vice-versa across all teams).
 - [ ] Users can be assigned multiple roles across different teams/sectors.
 - [ ] Resident Pastor has global read/oversight visibility across all local church teams.
 - [ ] Church Admin sits beneath Resident Pastor in permissions.

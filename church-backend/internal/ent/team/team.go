@@ -49,6 +49,8 @@ const (
 	EdgeChurchTeams = "church_teams"
 	// EdgeMemberTeams holds the string denoting the member_teams edge name in mutations.
 	EdgeMemberTeams = "member_teams"
+	// EdgeOtpInvites holds the string denoting the otp_invites edge name in mutations.
+	EdgeOtpInvites = "otp_invites"
 	// MemberFieldID holds the string denoting the ID field of the Member.
 	MemberFieldID = "id"
 	// LocalChurchFieldID holds the string denoting the ID field of the LocalChurch.
@@ -71,6 +73,8 @@ const (
 	ChurchTeamsFieldID = "church_team_id"
 	// MemberTeamFieldID holds the string denoting the ID field of the MemberTeam.
 	MemberTeamFieldID = "id"
+	// OtpInvitesFieldID holds the string denoting the ID field of the OtpInvites.
+	OtpInvitesFieldID = "id"
 	// Table holds the table name of the team in the database.
 	Table = "team"
 	// MembersTable is the table that holds the members relation/edge.
@@ -150,6 +154,13 @@ const (
 	MemberTeamsInverseTable = "member_teams"
 	// MemberTeamsColumn is the table column denoting the member_teams relation/edge.
 	MemberTeamsColumn = "team_id"
+	// OtpInvitesTable is the table that holds the otp_invites relation/edge.
+	OtpInvitesTable = "otp_invites"
+	// OtpInvitesInverseTable is the table name for the OtpInvites entity.
+	// It exists in this package in order to avoid circular dependency with the "otpinvites" package.
+	OtpInvitesInverseTable = "otp_invites"
+	// OtpInvitesColumn is the table column denoting the otp_invites relation/edge.
+	OtpInvitesColumn = "team_id"
 )
 
 // Columns holds all SQL columns for team fields.
@@ -361,6 +372,20 @@ func ByMemberTeams(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newMemberTeamsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByOtpInvitesCount orders the results by otp_invites count.
+func ByOtpInvitesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newOtpInvitesStep(), opts...)
+	}
+}
+
+// ByOtpInvites orders the results by otp_invites terms.
+func ByOtpInvites(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newOtpInvitesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newMembersStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -436,5 +461,12 @@ func newMemberTeamsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(MemberTeamsInverseTable, MemberTeamFieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, MemberTeamsTable, MemberTeamsColumn),
+	)
+}
+func newOtpInvitesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(OtpInvitesInverseTable, OtpInvitesFieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, OtpInvitesTable, OtpInvitesColumn),
 	)
 }

@@ -16,6 +16,7 @@ import (
 	"github.com/hofchurchng/church-backend/internal/ent/localchurch"
 	"github.com/hofchurchng/church-backend/internal/ent/member"
 	"github.com/hofchurchng/church-backend/internal/ent/memberteam"
+	"github.com/hofchurchng/church-backend/internal/ent/otpinvites"
 	"github.com/hofchurchng/church-backend/internal/ent/outreachreport"
 	"github.com/hofchurchng/church-backend/internal/ent/predicate"
 	"github.com/hofchurchng/church-backend/internal/ent/sector"
@@ -279,6 +280,21 @@ func (_u *TeamUpdate) AddMemberTeams(v ...*MemberTeam) *TeamUpdate {
 	return _u.AddMemberTeamIDs(ids...)
 }
 
+// AddOtpInviteIDs adds the "otp_invites" edge to the OtpInvites entity by IDs.
+func (_u *TeamUpdate) AddOtpInviteIDs(ids ...uuid.UUID) *TeamUpdate {
+	_u.mutation.AddOtpInviteIDs(ids...)
+	return _u
+}
+
+// AddOtpInvites adds the "otp_invites" edges to the OtpInvites entity.
+func (_u *TeamUpdate) AddOtpInvites(v ...*OtpInvites) *TeamUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddOtpInviteIDs(ids...)
+}
+
 // Mutation returns the TeamMutation object of the builder.
 func (_u *TeamUpdate) Mutation() *TeamMutation {
 	return _u.mutation
@@ -483,6 +499,27 @@ func (_u *TeamUpdate) RemoveMemberTeams(v ...*MemberTeam) *TeamUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveMemberTeamIDs(ids...)
+}
+
+// ClearOtpInvites clears all "otp_invites" edges to the OtpInvites entity.
+func (_u *TeamUpdate) ClearOtpInvites() *TeamUpdate {
+	_u.mutation.ClearOtpInvites()
+	return _u
+}
+
+// RemoveOtpInviteIDs removes the "otp_invites" edge to OtpInvites entities by IDs.
+func (_u *TeamUpdate) RemoveOtpInviteIDs(ids ...uuid.UUID) *TeamUpdate {
+	_u.mutation.RemoveOtpInviteIDs(ids...)
+	return _u
+}
+
+// RemoveOtpInvites removes "otp_invites" edges to OtpInvites entities.
+func (_u *TeamUpdate) RemoveOtpInvites(v ...*OtpInvites) *TeamUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveOtpInviteIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -1008,6 +1045,51 @@ func (_u *TeamUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.OtpInvitesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   team.OtpInvitesTable,
+			Columns: []string{team.OtpInvitesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(otpinvites.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedOtpInvitesIDs(); len(nodes) > 0 && !_u.mutation.OtpInvitesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   team.OtpInvitesTable,
+			Columns: []string{team.OtpInvitesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(otpinvites.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.OtpInvitesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   team.OtpInvitesTable,
+			Columns: []string{team.OtpInvitesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(otpinvites.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{team.Label}
@@ -1267,6 +1349,21 @@ func (_u *TeamUpdateOne) AddMemberTeams(v ...*MemberTeam) *TeamUpdateOne {
 	return _u.AddMemberTeamIDs(ids...)
 }
 
+// AddOtpInviteIDs adds the "otp_invites" edge to the OtpInvites entity by IDs.
+func (_u *TeamUpdateOne) AddOtpInviteIDs(ids ...uuid.UUID) *TeamUpdateOne {
+	_u.mutation.AddOtpInviteIDs(ids...)
+	return _u
+}
+
+// AddOtpInvites adds the "otp_invites" edges to the OtpInvites entity.
+func (_u *TeamUpdateOne) AddOtpInvites(v ...*OtpInvites) *TeamUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddOtpInviteIDs(ids...)
+}
+
 // Mutation returns the TeamMutation object of the builder.
 func (_u *TeamUpdateOne) Mutation() *TeamMutation {
 	return _u.mutation
@@ -1471,6 +1568,27 @@ func (_u *TeamUpdateOne) RemoveMemberTeams(v ...*MemberTeam) *TeamUpdateOne {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveMemberTeamIDs(ids...)
+}
+
+// ClearOtpInvites clears all "otp_invites" edges to the OtpInvites entity.
+func (_u *TeamUpdateOne) ClearOtpInvites() *TeamUpdateOne {
+	_u.mutation.ClearOtpInvites()
+	return _u
+}
+
+// RemoveOtpInviteIDs removes the "otp_invites" edge to OtpInvites entities by IDs.
+func (_u *TeamUpdateOne) RemoveOtpInviteIDs(ids ...uuid.UUID) *TeamUpdateOne {
+	_u.mutation.RemoveOtpInviteIDs(ids...)
+	return _u
+}
+
+// RemoveOtpInvites removes "otp_invites" edges to OtpInvites entities.
+func (_u *TeamUpdateOne) RemoveOtpInvites(v ...*OtpInvites) *TeamUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveOtpInviteIDs(ids...)
 }
 
 // Where appends a list predicates to the TeamUpdate builder.
@@ -2019,6 +2137,51 @@ func (_u *TeamUpdateOne) sqlSave(ctx context.Context) (_node *Team, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(memberteam.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.OtpInvitesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   team.OtpInvitesTable,
+			Columns: []string{team.OtpInvitesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(otpinvites.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedOtpInvitesIDs(); len(nodes) > 0 && !_u.mutation.OtpInvitesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   team.OtpInvitesTable,
+			Columns: []string{team.OtpInvitesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(otpinvites.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.OtpInvitesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   team.OtpInvitesTable,
+			Columns: []string{team.OtpInvitesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(otpinvites.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
