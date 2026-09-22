@@ -76,6 +76,11 @@ func (User) Fields() []ent.Field {
 			Default("pending"),
 		field.Bool("is_profile_complete").
 			Default(false),
+		field.Int("failed_pin_attempts").
+			Default(0),
+		field.Time("pin_locked_until").
+			Optional().
+			Nillable(),
 		field.Time("created_at").
 			Default(time.Now),
 	}

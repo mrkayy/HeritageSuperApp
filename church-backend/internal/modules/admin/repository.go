@@ -364,12 +364,20 @@ func (r *Repository) CreateLeadershipInvite(ctx context.Context, input contracts
 		}
 	}
 
+	var teamUUID *uuid.UUID
+	if input.TeamID != nil && *input.TeamID != "" {
+		if tid, err := uuid.Parse(*input.TeamID); err == nil {
+			builder.SetTeamID(tid)
+			teamUUID = &tid
+		}
+	}
+
 	inv, err := builder.Save(ctx)
 	if err != nil {
 		return contracts.LeadershipInviteDTO{}, err
 	}
 
-	r.syncLeadershipInviteToMemberAndUser(ctx, input.Email, input.FirstName, input.LastName, input.Role, churchUUID, sectorUUID)
+	r.syncLeadershipInviteToMemberAndUser(ctx, input.Email, input.FirstName, input.LastName, input.Role, churchUUID, sectorUUID, teamUUID)
 
 	return contracts.LeadershipInviteDTO{
 		ID:        inv.ID.String(),
@@ -384,7 +392,7 @@ func (r *Repository) CreateLeadershipInvite(ctx context.Context, input contracts
 	}, nil
 }
 
-func (r *Repository) syncLeadershipInviteToMemberAndUser(ctx context.Context, email, firstName, lastName, roleStr string, churchID, sectorID *uuid.UUID) {
+func (r *Repository) syncLeadershipInviteToMemberAndUser(ctx context.Context, email, firstName, lastName, roleStr string, churchID, sectorID, teamID *uuid.UUID) {
 	if email == "" {
 		return
 	}
@@ -408,6 +416,9 @@ func (r *Repository) syncLeadershipInviteToMemberAndUser(ctx context.Context, em
 		if sectorID != nil {
 			up.SetSectorID(*sectorID)
 		}
+		if teamID != nil {
+			up.SetTeamID(*teamID)
+		}
 		m, _ = up.Save(ctx)
 	} else {
 		cp := r.client.Member.Create().
@@ -421,6 +432,9 @@ func (r *Repository) syncLeadershipInviteToMemberAndUser(ctx context.Context, em
 		}
 		if sectorID != nil {
 			cp.SetSectorID(*sectorID)
+		}
+		if teamID != nil {
+			cp.SetTeamID(*teamID)
 		}
 		m, _ = cp.Save(ctx)
 	}
@@ -443,6 +457,9 @@ func (r *Repository) syncLeadershipInviteToMemberAndUser(ctx context.Context, em
 		if sectorID != nil {
 			up.SetSectorID(*sectorID)
 		}
+		if teamID != nil {
+			up.SetTeamID(*teamID)
+		}
 		_, _ = up.Save(ctx)
 	} else {
 		cp := r.client.User.Create().
@@ -460,6 +477,9 @@ func (r *Repository) syncLeadershipInviteToMemberAndUser(ctx context.Context, em
 		}
 		if sectorID != nil {
 			cp.SetSectorID(*sectorID)
+		}
+		if teamID != nil {
+			cp.SetTeamID(*teamID)
 		}
 		_, _ = cp.Save(ctx)
 	}

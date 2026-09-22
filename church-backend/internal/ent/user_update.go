@@ -341,6 +341,47 @@ func (_u *UserUpdate) SetNillableIsProfileComplete(v *bool) *UserUpdate {
 	return _u
 }
 
+// SetFailedPinAttempts sets the "failed_pin_attempts" field.
+func (_u *UserUpdate) SetFailedPinAttempts(v int) *UserUpdate {
+	_u.mutation.ResetFailedPinAttempts()
+	_u.mutation.SetFailedPinAttempts(v)
+	return _u
+}
+
+// SetNillableFailedPinAttempts sets the "failed_pin_attempts" field if the given value is not nil.
+func (_u *UserUpdate) SetNillableFailedPinAttempts(v *int) *UserUpdate {
+	if v != nil {
+		_u.SetFailedPinAttempts(*v)
+	}
+	return _u
+}
+
+// AddFailedPinAttempts adds value to the "failed_pin_attempts" field.
+func (_u *UserUpdate) AddFailedPinAttempts(v int) *UserUpdate {
+	_u.mutation.AddFailedPinAttempts(v)
+	return _u
+}
+
+// SetPinLockedUntil sets the "pin_locked_until" field.
+func (_u *UserUpdate) SetPinLockedUntil(v time.Time) *UserUpdate {
+	_u.mutation.SetPinLockedUntil(v)
+	return _u
+}
+
+// SetNillablePinLockedUntil sets the "pin_locked_until" field if the given value is not nil.
+func (_u *UserUpdate) SetNillablePinLockedUntil(v *time.Time) *UserUpdate {
+	if v != nil {
+		_u.SetPinLockedUntil(*v)
+	}
+	return _u
+}
+
+// ClearPinLockedUntil clears the value of the "pin_locked_until" field.
+func (_u *UserUpdate) ClearPinLockedUntil() *UserUpdate {
+	_u.mutation.ClearPinLockedUntil()
+	return _u
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (_u *UserUpdate) SetCreatedAt(v time.Time) *UserUpdate {
 	_u.mutation.SetCreatedAt(v)
@@ -946,6 +987,18 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.IsProfileComplete(); ok {
 		_spec.SetField(user.FieldIsProfileComplete, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.FailedPinAttempts(); ok {
+		_spec.SetField(user.FieldFailedPinAttempts, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedFailedPinAttempts(); ok {
+		_spec.AddField(user.FieldFailedPinAttempts, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.PinLockedUntil(); ok {
+		_spec.SetField(user.FieldPinLockedUntil, field.TypeTime, value)
+	}
+	if _u.mutation.PinLockedUntilCleared() {
+		_spec.ClearField(user.FieldPinLockedUntil, field.TypeTime)
 	}
 	if value, ok := _u.mutation.CreatedAt(); ok {
 		_spec.SetField(user.FieldCreatedAt, field.TypeTime, value)
@@ -1893,6 +1946,47 @@ func (_u *UserUpdateOne) SetNillableIsProfileComplete(v *bool) *UserUpdateOne {
 	return _u
 }
 
+// SetFailedPinAttempts sets the "failed_pin_attempts" field.
+func (_u *UserUpdateOne) SetFailedPinAttempts(v int) *UserUpdateOne {
+	_u.mutation.ResetFailedPinAttempts()
+	_u.mutation.SetFailedPinAttempts(v)
+	return _u
+}
+
+// SetNillableFailedPinAttempts sets the "failed_pin_attempts" field if the given value is not nil.
+func (_u *UserUpdateOne) SetNillableFailedPinAttempts(v *int) *UserUpdateOne {
+	if v != nil {
+		_u.SetFailedPinAttempts(*v)
+	}
+	return _u
+}
+
+// AddFailedPinAttempts adds value to the "failed_pin_attempts" field.
+func (_u *UserUpdateOne) AddFailedPinAttempts(v int) *UserUpdateOne {
+	_u.mutation.AddFailedPinAttempts(v)
+	return _u
+}
+
+// SetPinLockedUntil sets the "pin_locked_until" field.
+func (_u *UserUpdateOne) SetPinLockedUntil(v time.Time) *UserUpdateOne {
+	_u.mutation.SetPinLockedUntil(v)
+	return _u
+}
+
+// SetNillablePinLockedUntil sets the "pin_locked_until" field if the given value is not nil.
+func (_u *UserUpdateOne) SetNillablePinLockedUntil(v *time.Time) *UserUpdateOne {
+	if v != nil {
+		_u.SetPinLockedUntil(*v)
+	}
+	return _u
+}
+
+// ClearPinLockedUntil clears the value of the "pin_locked_until" field.
+func (_u *UserUpdateOne) ClearPinLockedUntil() *UserUpdateOne {
+	_u.mutation.ClearPinLockedUntil()
+	return _u
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (_u *UserUpdateOne) SetCreatedAt(v time.Time) *UserUpdateOne {
 	_u.mutation.SetCreatedAt(v)
@@ -2528,6 +2622,18 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 	}
 	if value, ok := _u.mutation.IsProfileComplete(); ok {
 		_spec.SetField(user.FieldIsProfileComplete, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.FailedPinAttempts(); ok {
+		_spec.SetField(user.FieldFailedPinAttempts, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedFailedPinAttempts(); ok {
+		_spec.AddField(user.FieldFailedPinAttempts, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.PinLockedUntil(); ok {
+		_spec.SetField(user.FieldPinLockedUntil, field.TypeTime, value)
+	}
+	if _u.mutation.PinLockedUntilCleared() {
+		_spec.ClearField(user.FieldPinLockedUntil, field.TypeTime)
 	}
 	if value, ok := _u.mutation.CreatedAt(); ok {
 		_spec.SetField(user.FieldCreatedAt, field.TypeTime, value)

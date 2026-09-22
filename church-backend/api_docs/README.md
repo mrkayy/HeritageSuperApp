@@ -1,23 +1,23 @@
 # API Documentation & Frontend Integration Guide
 
-This directory contains endpoint definitions for testing and integrating with the Go modular monolith backend.
+This directory contains endpoint definitions, architectural guides, and `.http` test files for the Heritage MMC backend.
 
 ## 1. How to Run the REST Requests
-The file [auth.http](file:///Users/mac/Desktop/HeritageSuperApp/church-backend/api_docs/auth.http) uses the standard HTTP format. You can execute these requests directly inside your IDE using extensions like:
+Execute these requests directly in your IDE using:
 * **VS Code**: [REST Client](https://marketplace.visualstudio.com/items?itemName=humao.rest-client)
-* **IntelliJ / WebStorm**: Built-in HTTP Client support.
+* **IntelliJ / WebStorm / GoLand**: Built-in HTTP Client support.
 
-Simply update `@authToken` in [auth.http](file:///Users/mac/Desktop/HeritageSuperApp/church-backend/api_docs/auth.http) with the JWT token received from a login response to test the protected endpoints.
+Available test scripts:
+- [`auth.http`](file:///Users/mac/Desktop/HeritageSuperApp/church-backend/api_docs/auth.http): Authentication, Google OAuth, and profile testing.
+- [`email.http`](file:///Users/mac/Desktop/HeritageSuperApp/church-backend/api_docs/email.http): Email notification dispatcher and live SMTP delivery testing.
 
 ---
 
-## 2. Authentication & Signup Flows
+## 2. Authentication & Leadership Onboarding
 
-The backend uses a single sign-on model where authentication is centralized under the `auth` module.
+The backend uses a centralized authentication and role-gated access model.
 
 ### A. Admin / Local Login (Email & Password)
-Used for administrative testing or system credentials.
-
 * **Endpoint**: `POST /api/auth/login`
 * **Request Body**:
   ```json
@@ -26,12 +26,12 @@ Used for administrative testing or system credentials.
     "password": "Password123@"
   }
   ```
-* **Response**: Returns a JSON object containing the JWT token, email, and user roles.
+* **Response**: Returns JWT token, user roles, church affiliation, and permissions.
 
 ---
 
-### B. Google OAuth & Auto-Registration (Signup) Flow
-The application **does not** allow random public signups. Users can only register if they are pre-profiled (registered in the church members database).
+### B. Google OAuth & Auto-Registration Flow
+Public signups are restricted. Only pre-profiled church members or invited leaders can authenticate via Google:
 
 ```mermaid
 sequenceDiagram
@@ -57,97 +57,121 @@ sequenceDiagram
     end
 ```
 
-#### Step-by-Step Implementation:
-1. **Initiate Sign-In**:
-   The frontend must redirect the browser to the backend OAuth initiation endpoint:
-   ```http
-   GET http://localhost:8080/api/auth/login/google?email=user_email@gmail.com
-   ```
-2. **Backend Validation & Redirection**:
-   * If the email is **not profiled**, the backend redirects the browser back to:
-     `{FRONTEND_URL}/login?error=not_profiled`
-   * If the email **is profiled**, the backend initiates the Google OAuth sequence, redirecting the browser to Google's authentication page.
-3. **Capture Token on Frontend**:
-   After the user logs into Google, the backend processes the callback and redirects the browser back to the frontend with the authorization token as a query parameter:
-   ```
-   {FRONTEND_URL}/login?token=eyJhbGciOiJIUzI1NiIsInR5cCI6...
-   ```
-   Your frontend router must listen on the `/login` route, extract the `token` parameter from the URL, store it in local storage/cookies, and redirect the user to the dashboard.
+---
+
+### C. Leadership Magic Link & Account Claim Flow
+Super Admins can invite branch pastors and church admins. Upon invite creation, the backend automatically generates a single-use token and delivers a branded **Account Approved** magic link email.
+
+* **Endpoint**: `POST /api/super-admin/leadership/invite`
+* **Request Body**:
+  ```json
+  {
+    "email": "pastor.david@hofchurch.org",
+    "first_name": "David",
+    "last_name": "Olukayode",
+    "role": "resident_pastor",
+    "church_id": "97e6822c-a2b1-4f10-91de-001234567890"
+  }
+  ```
+* **Magic Link Destination**:
+  `{FRONTEND_URL}/auth/magic-login?code={otp_code}&email={email}`
 
 ---
 
-## 3. Consuming Protected Routes
-For any endpoint marked with `(Admin gated)` or `requireAuth` in the Go code, you must include the token in the `Authorization` header as a Bearer token:
+## 3. Email Notification & Dispatch System
 
-```http
-GET /api/profile/me
-Authorization: Bearer <your_jwt_token>
-Accept: application/json
+The backend features an integrated Go SMTP transport layer and responsive HTML email rendering engine using `html/template` and `//go:embed`.
+
+### A. Environment Configuration (`.env`)
+```env
+SMTP_HOST="smtp.gmail.com"
+SMTP_PORT="587"
+SMTP_USER="your-email@gmail.com"
+SMTP_PASS="your-16-char-app-password"
+SMTP_FROM_EMAIL="your-email@gmail.com"
+SMTP_FROM_NAME="Heritage MMC"
 ```
+
+### B. Live Email Testing & Manual Dispatch Endpoint
+Super Admins can test any of the 10 email templates directly from the frontend UI (`/super-admin/settings`) or via REST API.
+
+* **Endpoint**: `POST /api/super-admin/email/send-test`
+* **Headers**: `Authorization: Bearer <SUPER_ADMIN_JWT>`
+* **Request Body**:
+  ```json
+  {
+    "template": "magic_link",
+    "to_email": "josepholukayode05@gmail.com",
+    "name": "Pastor Joseph"
+  }
+  ```
+* **Response**:
+  ```json
+  {
+    "success": true,
+    "message": "Test email for 'magic_link' sent successfully to josepholukayode05@gmail.com"
+  }
+  ```
+
+### C. Supported Email Templates & Keys
+
+| Template Key | Workflow / Purpose | Sample Trigger Data |
+| :--- | :--- | :--- |
+| `magic_link` | Account Approved & Leadership Onboarding | Recipient name, role, action URL, center |
+| `birthday` | Member Birthday Greeting & Pastoral Blessing | Member name, scripture verse & ref, pastor blessing |
+| `otp` | Two-Factor / Security Verification Code | 6-digit PIN, purpose, expiry minutes, IP address |
+| `welcome_visitor` | First-Timer / Soul Welcome & Follow-Up | Visitor name, service attended, next service time |
+| `new_member_welcome` | Official Member Portal Registration | Member name, Member ID (`HOF-2026-XXXX`), portal link |
+| `anniversary` | Wedding & Milestone Anniversary | Couple names, years celebrating, scripture blessing |
+| `team_assignment` | Ministry Unit / Department Assignment | Member name, team name, role, leader contact, schedule |
+| `event_reminder` | Program, Conference & Service Reminder | Event title, date, time, venue, live stream link |
+| `donation_receipt` | Tithe & Kingdom Giving Receipt | Donor name, receipt #, formatted amount, transaction ref |
+| `pastoral_care` | Pastoral Check-in & Prayer Support | Member name, pastoral note, prayer request URL |
 
 ---
 
-## 4. Backend Logging System (Development & Production)
-The backend logs all incoming API requests and outgoing responses for debugging and auditing.
+## 4. Active Backend Routes Inventory
 
-### Request & Response Payload Logging
-- **Log Location**: Writes structured JSON data to `app.log` in the backend root directory and mirrors logs to `stdout`.
-- **Logged Properties**:
-  - `timestamp`: RFC3339 time format
-  - `client_ip`: The IP address of the request origin
-  - `method` & `uri`: HTTP Verb and request path
-  - `status`: HTTP response status code
-  - `latency_ms`: Duration of request processing in milliseconds
-  - `request_body`: The JSON payload sent by the client. Sensitive fields (`password`, `password_hash`, `token`) are automatically replaced with `[REDACTED]`.
-  - `response_body`: The JSON payload returned by the server.
-  - `error`: Populated with the error message if the handler fails.
-
-### JWT Claims Verification Logs
-When a request hits a protected endpoint, the `RequireAuth` middleware prints a console log upon successful token verification containing:
-```
-[RequireAuth] Claims verified - UserID: <id>, Email: <email>, Roles: <roles>
-```
-
----
-
-## 5. Summary of Active Backend Modules & Routes
-
-Below is the complete inventory of active routes registered in `cmd/server/main.go`:
-
-| Module | Route Prefix | HTTP Method | Path | Auth / Role Requirement |
+| Module | Route Prefix | Method | Endpoint | Auth / Permission |
 | :--- | :--- | :--- | :--- | :--- |
 | **Health** | `/api` | `GET` | `/health-check` | Public |
 | **Auth** | `/api/auth` | `POST` | `/login` | Public |
 | | | `GET` | `/login/google` | Public |
 | | | `GET` | `/callback/google` | Public |
+| | | `GET` | `/magic-link/verify` | Public |
+| | | `POST` | `/magic-link/claim` | Public |
 | | | `GET` | `/me` | Bearer Token |
-| **Profile** | `/api/profile` | `GET` | `/me` | Bearer Token |
-| | | `PUT` | `/me` | Bearer Token |
-| | | `GET` | `/me/kids` | Bearer Token |
-| | | `POST` | `/me/kids` | Bearer Token |
-| | | `PUT` | `/me/kids/:kidID` | Bearer Token |
-| | | `DELETE` | `/me/kids/:kidID` | Bearer Token |
-| | | `GET` | `/:userID` | Bearer Token (Any Role) |
-| **Users** | `/api/users` | `GET` | `/` | Bearer Token |
-| **Members** | `/api/members` | `GET` | `/` | Bearer Token + (`team_lead`, `resident_pastor`, `church_admin`) |
-| | | `GET` | `/:id` | Bearer Token + (`team_lead`, `resident_pastor`, `church_admin`) |
-| | | `POST` | `/` | Bearer Token + (`team_lead`, `resident_pastor`, `church_admin`) |
-| | | `POST` | `/profile` | Bearer Token + (`team_lead`, `resident_pastor`, `church_admin`) |
-| | | `PUT` | `/:id` | Bearer Token + (`team_lead`, `resident_pastor`, `church_admin`) |
-| | | `DELETE` | `/:id` | Bearer Token + (`team_lead`, `resident_pastor`, `church_admin`) |
-| **Teams** | `/api/teams` | `GET`, `POST` | `/` | Bearer Token |
+| **Profile** | `/api/profile` | `GET`, `PUT` | `/me` | Bearer Token |
+| | | `GET`, `POST` | `/me/kids` | Bearer Token |
+| | | `PUT`, `DELETE`| `/me/kids/:kidID` | Bearer Token |
+| | | `GET` | `/:userID` | Bearer Token |
+| **Super Admin** | `/api/super-admin`| `GET`, `POST`| `/churches` | Super Admin |
+| | | `PUT` | `/churches/:id` | Super Admin |
+| | | `POST` | `/churches/:id/reassign-leadership` | Super Admin |
+| | | `POST` | `/churches/:id/toggle-status` | Super Admin |
+| | | `GET` | `/leadership/invites` | Super Admin |
+| | | `POST` | `/leadership/invite` | Super Admin (Triggers Email) |
+| | | `DELETE` | `/leadership/invites/:id` | Super Admin |
+| | | `GET` | `/audit-logs` | Super Admin |
+| | | `GET`, `PUT` | `/settings` | Super Admin |
+| | | `GET`, `PUT` | `/settings/permissions` | Super Admin |
+| | | `GET` | `/settings/diagnostics` | Super Admin |
+| | | `GET`, `PUT` | `/settings/churches/:id` | Super Admin |
+| | | `POST` | `/email/send-test` | Super Admin (Live SMTP Test) |
+| **General Overseer**| `/api/go` | `GET` | `/members/search` | General Overseer |
+| | | `GET` | `/members/:id/360-dossier` | General Overseer |
+| **Analytics** | `/api/analytics` | `GET` | `/executive-summary` | Executive / Super Admin |
+| **Members** | `/api/members` | `GET`, `POST`| `/` | Branch Admin / Leader |
+| | | `GET`, `PUT`, `DELETE` | `/:id` | Branch Admin / Leader |
+| **Teams** | `/api/teams` | `GET`, `POST`| `/` | Bearer Token |
 | | | `GET`, `PUT`, `DELETE` | `/:id` | Bearer Token |
-| **Sectors** | `/api/sectors` | `GET`, `POST` | `/` | Bearer Token |
+| **Sectors** | `/api/sectors` | `GET`, `POST`| `/` | Bearer Token |
 | | | `GET`, `PUT`, `DELETE` | `/:id` | Bearer Token |
-| **Churches** | `/api/churches` | `GET`, `POST` | `/` | Bearer Token |
-| | | `GET`, `PUT`, `DELETE` | `/:id` | Bearer Token |
-| **Souls** | `/api/souls` | `POST`, `GET` | `/` | Bearer Token |
+| **Souls** | `/api/souls` | `GET`, `POST`| `/` | Bearer Token |
 | | | `GET`, `PATCH`, `DELETE` | `/:id` | Bearer Token |
-| | | `POST`, `GET` | `/:id/journal` | Bearer Token |
-| **Follow-Up** | `/api/follow-up` | `POST`, `GET` | `/` | Bearer Token |
+| | | `GET`, `POST`| `/:id/journal` | Bearer Token |
+| **Follow-Up** | `/api/follow-up` | `GET`, `POST`| `/` | Bearer Token |
 | | | `GET`, `PATCH`, `DELETE` | `/:id` | Bearer Token |
-| **Transport** | `/api/transportation` | `POST`, `GET` | `/` | Bearer Token |
+| **Transport** | `/api/transportation` | `GET`, `POST`| `/` | Bearer Token |
 | | | `GET`, `PATCH`, `DELETE` | `/:id` | Bearer Token |
 | **Dashboard** | `/api/dashboard` | `GET` | `/admin` | Bearer Token |
-
-

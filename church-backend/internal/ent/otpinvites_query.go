@@ -16,6 +16,7 @@ import (
 	"github.com/hofchurchng/church-backend/internal/ent/otpinvites"
 	"github.com/hofchurchng/church-backend/internal/ent/predicate"
 	"github.com/hofchurchng/church-backend/internal/ent/sector"
+	"github.com/hofchurchng/church-backend/internal/ent/team"
 	"github.com/hofchurchng/church-backend/internal/ent/user"
 )
 
@@ -28,6 +29,7 @@ type OtpInvitesQuery struct {
 	predicates     []predicate.OtpInvites
 	withSector     *SectorQuery
 	withChurch     *LocalChurchQuery
+	withTeam       *TeamQuery
 	withUsedByUser *UserQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -102,6 +104,28 @@ func (_q *OtpInvitesQuery) QueryChurch() *LocalChurchQuery {
 			sqlgraph.From(otpinvites.Table, otpinvites.FieldID, selector),
 			sqlgraph.To(localchurch.Table, localchurch.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, otpinvites.ChurchTable, otpinvites.ChurchColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryTeam chains the current query on the "team" edge.
+func (_q *OtpInvitesQuery) QueryTeam() *TeamQuery {
+	query := (&TeamClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(otpinvites.Table, otpinvites.FieldID, selector),
+			sqlgraph.To(team.Table, team.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, otpinvites.TeamTable, otpinvites.TeamColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -325,6 +349,7 @@ func (_q *OtpInvitesQuery) Clone() *OtpInvitesQuery {
 		predicates:     append([]predicate.OtpInvites{}, _q.predicates...),
 		withSector:     _q.withSector.Clone(),
 		withChurch:     _q.withChurch.Clone(),
+		withTeam:       _q.withTeam.Clone(),
 		withUsedByUser: _q.withUsedByUser.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
@@ -351,6 +376,17 @@ func (_q *OtpInvitesQuery) WithChurch(opts ...func(*LocalChurchQuery)) *OtpInvit
 		opt(query)
 	}
 	_q.withChurch = query
+	return _q
+}
+
+// WithTeam tells the query-builder to eager-load the nodes that are connected to
+// the "team" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *OtpInvitesQuery) WithTeam(opts ...func(*TeamQuery)) *OtpInvitesQuery {
+	query := (&TeamClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withTeam = query
 	return _q
 }
 
@@ -443,9 +479,10 @@ func (_q *OtpInvitesQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*O
 	var (
 		nodes       = []*OtpInvites{}
 		_spec       = _q.querySpec()
-		loadedTypes = [3]bool{
+		loadedTypes = [4]bool{
 			_q.withSector != nil,
 			_q.withChurch != nil,
+			_q.withTeam != nil,
 			_q.withUsedByUser != nil,
 		}
 	)
@@ -476,6 +513,12 @@ func (_q *OtpInvitesQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*O
 	if query := _q.withChurch; query != nil {
 		if err := _q.loadChurch(ctx, query, nodes, nil,
 			func(n *OtpInvites, e *LocalChurch) { n.Edges.Church = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withTeam; query != nil {
+		if err := _q.loadTeam(ctx, query, nodes, nil,
+			func(n *OtpInvites, e *Team) { n.Edges.Team = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -552,6 +595,38 @@ func (_q *OtpInvitesQuery) loadChurch(ctx context.Context, query *LocalChurchQue
 	}
 	return nil
 }
+func (_q *OtpInvitesQuery) loadTeam(ctx context.Context, query *TeamQuery, nodes []*OtpInvites, init func(*OtpInvites), assign func(*OtpInvites, *Team)) error {
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*OtpInvites)
+	for i := range nodes {
+		if nodes[i].TeamID == nil {
+			continue
+		}
+		fk := *nodes[i].TeamID
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(team.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "team_id" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
 func (_q *OtpInvitesQuery) loadUsedByUser(ctx context.Context, query *UserQuery, nodes []*OtpInvites, init func(*OtpInvites), assign func(*OtpInvites, *User)) error {
 	ids := make([]uuid.UUID, 0, len(nodes))
 	nodeids := make(map[uuid.UUID][]*OtpInvites)
@@ -615,6 +690,9 @@ func (_q *OtpInvitesQuery) querySpec() *sqlgraph.QuerySpec {
 		}
 		if _q.withChurch != nil {
 			_spec.Node.AddColumnOnce(otpinvites.FieldChurchID)
+		}
+		if _q.withTeam != nil {
+			_spec.Node.AddColumnOnce(otpinvites.FieldTeamID)
 		}
 		if _q.withUsedByUser != nil {
 			_spec.Node.AddColumnOnce(otpinvites.FieldUsedByUserID)

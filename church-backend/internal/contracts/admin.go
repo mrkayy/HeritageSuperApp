@@ -59,18 +59,18 @@ type ReassignLeadershipDTO struct {
 // ---------------------------------------------------------------------------
 
 type LeadershipInviteDTO struct {
-	ID        string    `json:"id"`
-	Email     string    `json:"email"`
-	FirstName string    `json:"first_name"`
-	LastName  string    `json:"last_name"`
-	Role      string    `json:"role"`
-	ChurchID  *string   `json:"church_id,omitempty"`
-	ChurchName *string  `json:"church_name,omitempty"`
-	SectorID  *string   `json:"sector_id,omitempty"`
-	OtpCode   string    `json:"otp_code"`
-	Used      bool      `json:"used"`
-	ExpiresAt time.Time `json:"expires_at"`
-	CreatedAt time.Time `json:"created_at"`
+	ID         string    `json:"id"`
+	Email      string    `json:"email"`
+	FirstName  string    `json:"first_name"`
+	LastName   string    `json:"last_name"`
+	Role       string    `json:"role"`
+	ChurchID   *string   `json:"church_id,omitempty"`
+	ChurchName *string   `json:"church_name,omitempty"`
+	SectorID   *string   `json:"sector_id,omitempty"`
+	OtpCode    string    `json:"otp_code"`
+	Used       bool      `json:"used"`
+	ExpiresAt  time.Time `json:"expires_at"`
+	CreatedAt  time.Time `json:"created_at"`
 }
 
 type CreateLeadershipInviteDTO struct {
@@ -80,6 +80,7 @@ type CreateLeadershipInviteDTO struct {
 	Role      string  `json:"role"`
 	ChurchID  *string `json:"church_id,omitempty"`
 	SectorID  *string `json:"sector_id,omitempty"`
+	TeamID    *string `json:"team_id,omitempty"`
 }
 
 // ---------------------------------------------------------------------------
@@ -109,13 +110,13 @@ type UniversalMemberSearchResultDTO struct {
 }
 
 type Member360DossierDTO struct {
-	Member       Member               `json:"member"`
-	ChurchName   string               `json:"church_name"`
-	Stages       []StageHistoryDTO    `json:"stages"`
-	Attendance   []AttendanceRecordDTO `json:"attendance"`
-	Teams        []string             `json:"teams"`
-	TotalVisits  int                  `json:"total_visits"`
-	SitReps      []SitRepItemDTO      `json:"sit_reps"`
+	Member      Member                `json:"member"`
+	ChurchName  string                `json:"church_name"`
+	Stages      []StageHistoryDTO     `json:"stages"`
+	Attendance  []AttendanceRecordDTO `json:"attendance"`
+	Teams       []string              `json:"teams"`
+	TotalVisits int                   `json:"total_visits"`
+	SitReps     []SitRepItemDTO       `json:"sit_reps"`
 }
 
 type StageHistoryDTO struct {
@@ -124,10 +125,10 @@ type StageHistoryDTO struct {
 }
 
 type SitRepItemDTO struct {
-	Category    string    `json:"category"`
-	Notes       string    `json:"notes"`
-	ReportedAt  time.Time `json:"reported_at"`
-	ReportedBy  string    `json:"reported_by"`
+	Category   string    `json:"category"`
+	Notes      string    `json:"notes"`
+	ReportedAt time.Time `json:"reported_at"`
+	ReportedBy string    `json:"reported_by"`
 }
 
 // ---------------------------------------------------------------------------
@@ -135,22 +136,22 @@ type SitRepItemDTO struct {
 // ---------------------------------------------------------------------------
 
 type ExecutiveSummaryDTO struct {
-	TotalActiveMembers   int                   `json:"total_active_members"`
-	TotalVisitors        int                   `json:"total_visitors"`
-	TotalFirstTimers     int                   `json:"total_first_timers"`
-	TotalFoundationClass int                   `json:"total_foundation_class"`
-	TotalStewards        int                   `json:"total_stewards"`
-	TotalSoulsWon        int                   `json:"total_souls_won"`
+	TotalActiveMembers   int                    `json:"total_active_members"`
+	TotalVisitors        int                    `json:"total_visitors"`
+	TotalFirstTimers     int                    `json:"total_first_timers"`
+	TotalFoundationClass int                    `json:"total_foundation_class"`
+	TotalStewards        int                    `json:"total_stewards"`
+	TotalSoulsWon        int                    `json:"total_souls_won"`
 	BranchPerformance    []BranchPerformanceDTO `json:"branch_performance"`
 }
 
 type BranchPerformanceDTO struct {
-	ChurchID       string `json:"church_id"`
-	ChurchName     string `json:"church_name"`
-	MemberCount    int    `json:"member_count"`
-	VisitorCount   int    `json:"visitor_count"`
-	FirstTimerCount int   `json:"first_timer_count"`
-	SoulsWonCount  int    `json:"souls_won_count"`
+	ChurchID        string `json:"church_id"`
+	ChurchName      string `json:"church_name"`
+	MemberCount     int    `json:"member_count"`
+	VisitorCount    int    `json:"visitor_count"`
+	FirstTimerCount int    `json:"first_timer_count"`
+	SoulsWonCount   int    `json:"souls_won_count"`
 }
 
 // ---------------------------------------------------------------------------
@@ -258,3 +259,13 @@ type SystemDiagnosticsDTO struct {
 	ActiveFeatureFlags int       `json:"active_feature_flags"`
 }
 
+type SendTestEmailDTO struct {
+	Template string `json:"template"` // "magic_link", "birthday", "otp", "welcome_visitor", "new_member_welcome", "anniversary", "team_assignment", "event_reminder", "donation_receipt", "pastoral_care"
+	ToEmail  string `json:"to_email"`
+	Name     string `json:"name,omitempty"`
+}
+
+type SendTestEmailResponseDTO struct {
+	Success bool   `json:"success"`
+	Message string `json:"message"`
+}

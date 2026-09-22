@@ -10,7 +10,7 @@ import AppLayout from "./components/layout/AppLayout";
 import Login from "./pages/auth/Login";
 import AdminLogin from "./pages/auth/AdminLogin";
 import Register from "./pages/auth/Register";
-import ClaimAccount from "./pages/auth/ClaimAccount";
+// import ClaimAccount from "./pages/auth/ClaimAccount";
 import MagicLogin from "./pages/auth/MagicLogin";
 import Dashboard from "./pages/Dashboard";
 import SoulRegistration from "./pages/SoulRegistration";
@@ -50,8 +50,19 @@ import ProfilingQueue from "./pages/teams/ProfilingQueue";
 import MembershipTeamGuide from "./pages/teams/MembershipTeamGuide";
 import InfoCenterGuide from "./pages/teams/InfoCenterGuide";
 
+import { MakerCheckerQueue } from "./pages/membership/MakerCheckerQueue";
+import { FirstTimerCRM } from "./pages/membership/FirstTimerCRM";
+import { DiscipleshipAcademy } from "./pages/membership/DiscipleshipAcademy";
+import { VolunteerIntake } from "./pages/membership/VolunteerIntake";
+import { CelebrationsLandmarks } from "./pages/membership/CelebrationsLandmarks";
+import { SitRepPastoralLog } from "./pages/membership/SitRepPastoralLog";
+import { VisitorProfilingQueue } from "./pages/membership/VisitorProfilingQueue";
+import { InterBranchTransfers } from "./pages/membership/InterBranchTransfers";
+
 import { FeatureFlagProvider } from "./contexts/FeatureFlagContext";
 import FeatureFlagGate from "./components/auth/FeatureFlagGate";
+import TeamRouteGate from "./components/auth/TeamRouteGate";
+import Forbidden from "./pages/Forbidden";
 
 const App = () => (
   <AuthProvider>
@@ -77,11 +88,11 @@ const App = () => (
                   <Register />
                 </PublicRoute>
               } />
-              <Route path="/claim-account" element={
+              {/* <Route path="/claim-account" element={
                 <PublicRoute>
                   <ClaimAccount />
                 </PublicRoute>
-              } />
+              } /> */}
               <Route path="/auth/magic-login" element={
                 <PublicRoute>
                   <MagicLogin />
@@ -163,79 +174,150 @@ const App = () => (
 
                 {/* Team specific capability routes */}
                 <Route path="teams/membership" element={
-                  <FeatureFlagGate flagKey="feature_membership_team">
-                    <MembershipDashboard />
-                  </FeatureFlagGate>
+                  <TeamRouteGate allowedTeam="membership">
+                    <FeatureFlagGate flagKey="feature_membership_team">
+                      <MembershipDashboard />
+                    </FeatureFlagGate>
+                  </TeamRouteGate>
                 } />
                 <Route path="teams/membership/members" element={
-                  <FeatureFlagGate flagKey="feature_membership_team">
-                    <MembershipTeamCRM />
-                  </FeatureFlagGate>
+                  <TeamRouteGate allowedTeam="membership">
+                    <FeatureFlagGate flagKey="feature_membership_team">
+                      <MembershipTeamCRM />
+                    </FeatureFlagGate>
+                  </TeamRouteGate>
                 } />
                 <Route path="teams/membership/birthdays" element={
-                  <FeatureFlagGate flagKey="feature_membership_team">
-                    <BirthdayTracker />
-                  </FeatureFlagGate>
+                  <TeamRouteGate allowedTeam="membership">
+                    <FeatureFlagGate flagKey="feature_membership_team">
+                      <BirthdayTracker />
+                    </FeatureFlagGate>
+                  </TeamRouteGate>
                 } />
                 <Route path="teams/membership/anniversaries" element={
-                  <FeatureFlagGate flagKey="feature_membership_team">
-                    <AnniversaryTracker />
-                  </FeatureFlagGate>
+                  <TeamRouteGate allowedTeam="membership">
+                    <FeatureFlagGate flagKey="feature_membership_team">
+                      <AnniversaryTracker />
+                    </FeatureFlagGate>
+                  </TeamRouteGate>
                 } />
                 <Route path="teams/membership/journey" element={
-                  <FeatureFlagGate flagKey="feature_membership_team">
-                    <MemberJourney />
-                  </FeatureFlagGate>
+                  <TeamRouteGate allowedTeam="membership">
+                    <FeatureFlagGate flagKey="feature_membership_team">
+                      <MemberJourney />
+                    </FeatureFlagGate>
+                  </TeamRouteGate>
                 } />
                 <Route path="teams/membership/profiling-queue" element={
-                  <FeatureFlagGate flagKey="feature_membership_team">
-                    <ProfilingQueue />
-                  </FeatureFlagGate>
+                  <TeamRouteGate allowedTeam="membership">
+                    <FeatureFlagGate flagKey="feature_membership_team">
+                      <ProfilingQueue />
+                    </FeatureFlagGate>
+                  </TeamRouteGate>
                 } />
                 <Route path="teams/membership/guide" element={
-                  <FeatureFlagGate flagKey="feature_membership_team">
-                    <MembershipTeamGuide />
-                  </FeatureFlagGate>
+                  <TeamRouteGate allowedTeam="membership">
+                    <FeatureFlagGate flagKey="feature_membership_team">
+                      <MembershipTeamGuide />
+                    </FeatureFlagGate>
+                  </TeamRouteGate>
+                } />
+
+                {/* Membership Suite Features */}
+                <Route path="membership/maker-checker" element={
+                  <TeamRouteGate allowedTeam="membership">
+                    <MakerCheckerQueue />
+                  </TeamRouteGate>
+                } />
+                <Route path="membership/first-timer-crm" element={
+                  <TeamRouteGate allowedTeam="membership">
+                    <FirstTimerCRM />
+                  </TeamRouteGate>
+                } />
+                <Route path="membership/academy" element={
+                  <TeamRouteGate allowedTeam="membership">
+                    <DiscipleshipAcademy />
+                  </TeamRouteGate>
+                } />
+                <Route path="membership/volunteers" element={
+                  <TeamRouteGate allowedTeam="membership">
+                    <VolunteerIntake />
+                  </TeamRouteGate>
+                } />
+                <Route path="membership/celebrations" element={
+                  <TeamRouteGate allowedTeam="membership">
+                    <CelebrationsLandmarks />
+                  </TeamRouteGate>
+                } />
+                <Route path="membership/sitrep" element={
+                  <TeamRouteGate allowedTeam="membership">
+                    <SitRepPastoralLog />
+                  </TeamRouteGate>
+                } />
+                <Route path="membership/visitor-profiling" element={
+                  <TeamRouteGate allowedTeam="membership">
+                    <VisitorProfilingQueue />
+                  </TeamRouteGate>
+                } />
+                <Route path="membership/transfers" element={
+                  <TeamRouteGate allowedTeam="membership">
+                    <InterBranchTransfers />
+                  </TeamRouteGate>
                 } />
 
                 {/* Information Center routes */}
                 <Route path="teams/info-center" element={
-                  <FeatureFlagGate flagKey="feature_info_center">
-                    <InfoCenterDashboard />
-                  </FeatureFlagGate>
+                  <TeamRouteGate allowedTeam="information_center">
+                    <FeatureFlagGate flagKey="feature_info_center">
+                      <InfoCenterDashboard />
+                    </FeatureFlagGate>
+                  </TeamRouteGate>
                 } />
                 <Route path="teams/info-center/members" element={
-                  <FeatureFlagGate flagKey="feature_info_center">
-                    <InfoCenterMembers />
-                  </FeatureFlagGate>
+                  <TeamRouteGate allowedTeam="information_center">
+                    <FeatureFlagGate flagKey="feature_info_center">
+                      <InfoCenterMembers />
+                    </FeatureFlagGate>
+                  </TeamRouteGate>
                 } />
                 <Route path="teams/info-center/journey" element={
-                  <FeatureFlagGate flagKey="feature_info_center">
-                    <MemberJourney />
-                  </FeatureFlagGate>
+                  <TeamRouteGate allowedTeam="information_center">
+                    <FeatureFlagGate flagKey="feature_info_center">
+                      <MemberJourney />
+                    </FeatureFlagGate>
+                  </TeamRouteGate>
                 } />
                 <Route path="teams/info-center/new-visitor" element={
-                  <FeatureFlagGate flagKey="feature_info_center">
-                    <VisitorIntake />
-                  </FeatureFlagGate>
+                  <TeamRouteGate allowedTeam="information_center">
+                    <FeatureFlagGate flagKey="feature_info_center">
+                      <VisitorIntake />
+                    </FeatureFlagGate>
+                  </TeamRouteGate>
                 } />
                 <Route path="teams/info-center/attendance" element={
-                  <FeatureFlagGate flagKey="feature_info_center">
-                    <AttendanceTracking />
-                  </FeatureFlagGate>
+                  <TeamRouteGate allowedTeam="information_center">
+                    <FeatureFlagGate flagKey="feature_info_center">
+                      <AttendanceTracking />
+                    </FeatureFlagGate>
+                  </TeamRouteGate>
                 } />
                 <Route path="teams/info-center/foundation-class" element={
-                  <FeatureFlagGate flagKey="feature_info_center">
-                    <FoundationCandidates />
-                  </FeatureFlagGate>
+                  <TeamRouteGate allowedTeam="information_center">
+                    <FeatureFlagGate flagKey="feature_info_center">
+                      <FoundationCandidates />
+                    </FeatureFlagGate>
+                  </TeamRouteGate>
                 } />
                 <Route path="teams/info-center/guide" element={
-                  <FeatureFlagGate flagKey="feature_info_center">
-                    <InfoCenterGuide />
-                  </FeatureFlagGate>
+                  <TeamRouteGate allowedTeam="information_center">
+                    <FeatureFlagGate flagKey="feature_info_center">
+                      <InfoCenterGuide />
+                    </FeatureFlagGate>
+                  </TeamRouteGate>
                 } />
               </Route>
 
+              <Route path="/403" element={<Forbidden />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

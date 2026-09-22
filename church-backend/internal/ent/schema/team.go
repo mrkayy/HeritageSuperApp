@@ -62,6 +62,7 @@ func (Team) Edges() []ent.Edge {
 		edge.To("user_teams", UserTeam.Type),
 		edge.To("church_teams", ChurchTeams.Type),
 		edge.To("member_teams", MemberTeam.Type),
+		edge.To("otp_invites", OtpInvites.Type),
 	}
 }
 

@@ -50,6 +50,10 @@ const (
 	FieldAccountStatus = "account_status"
 	// FieldIsProfileComplete holds the string denoting the is_profile_complete field in the database.
 	FieldIsProfileComplete = "is_profile_complete"
+	// FieldFailedPinAttempts holds the string denoting the failed_pin_attempts field in the database.
+	FieldFailedPinAttempts = "failed_pin_attempts"
+	// FieldPinLockedUntil holds the string denoting the pin_locked_until field in the database.
+	FieldPinLockedUntil = "pin_locked_until"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
 	// EdgeChurch holds the string denoting the church edge name in mutations.
@@ -241,6 +245,8 @@ var Columns = []string{
 	FieldRoles,
 	FieldAccountStatus,
 	FieldIsProfileComplete,
+	FieldFailedPinAttempts,
+	FieldPinLockedUntil,
 	FieldCreatedAt,
 }
 
@@ -259,6 +265,8 @@ var (
 	DefaultRoles []string
 	// DefaultIsProfileComplete holds the default value on creation for the "is_profile_complete" field.
 	DefaultIsProfileComplete bool
+	// DefaultFailedPinAttempts holds the default value on creation for the "failed_pin_attempts" field.
+	DefaultFailedPinAttempts int
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
 	// DefaultID holds the default value on creation for the "id" field.
@@ -413,6 +421,16 @@ func ByAccountStatus(opts ...sql.OrderTermOption) OrderOption {
 // ByIsProfileComplete orders the results by the is_profile_complete field.
 func ByIsProfileComplete(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldIsProfileComplete, opts...).ToFunc()
+}
+
+// ByFailedPinAttempts orders the results by the failed_pin_attempts field.
+func ByFailedPinAttempts(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldFailedPinAttempts, opts...).ToFunc()
+}
+
+// ByPinLockedUntil orders the results by the pin_locked_until field.
+func ByPinLockedUntil(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPinLockedUntil, opts...).ToFunc()
 }
 
 // ByCreatedAt orders the results by the created_at field.

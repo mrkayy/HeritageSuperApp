@@ -1,0 +1,127 @@
+### Variables
+@baseUrl = http://localhost:8080/api
+@authToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Impvc2VwaG9sdWtheW9kZTA1K2FkbWluQGdtYWlsLmNvbSIsImV4cCI6MTc4ODQzMDQyNSwiaWF0IjoxNzg4MzQ0MDI1LCJyb2xlcyI6WyJzdXBlcl9hZG1pbiJdLCJzdWIiOiI2OTFhNWMwYy03YmM2LTQ2N2ItOTIyZS0zMWU0NDY0MWY2NTAiLCJ0ZWFtSWQiOiIiLCJ0ZWFtTmFtZSI6IiJ9.BWkFRX63CriNIl4B0cXfzFWhZfuoyoDY_unvvhqHRKk
+
+@testEmail = josepholukayode05@gmail.com
+
+### 1. Send Test Email: Magic Link / Leadership Invite
+POST {{baseUrl}}/super-admin/email/send-test
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "template": "magic_link",
+  "to_email": "{{testEmail}}",
+  "name": "Pastor Joseph"
+}
+
+### 2. Send Test Email: Birthday Greeting & Pastoral Blessing
+POST {{baseUrl}}/super-admin/email/send-test
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "template": "birthday",
+  "to_email": "{{testEmail}}",
+  "name": "Brother Emmanuel"
+}
+
+### 3. Send Test Email: OTP / Two-Factor Verification
+POST {{baseUrl}}/super-admin/email/send-test
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "template": "otp",
+  "to_email": "{{testEmail}}",
+  "name": "Deacon Joshua"
+}
+
+### 4. Send Test Email: First-Timer & Soul Welcome
+POST {{baseUrl}}/super-admin/email/send-test
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "template": "welcome_visitor",
+  "to_email": "{{testEmail}}",
+  "name": "David Adeleke"
+}
+
+### 5. Send Test Email: New Member Portal Onboarding
+POST {{baseUrl}}/super-admin/email/send-test
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "template": "new_member_welcome",
+  "to_email": "{{testEmail}}",
+  "name": "Sister Sarah"
+}
+
+### 6. Send Test Email: Wedding Anniversary Celebration
+POST {{baseUrl}}/super-admin/email/send-test
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "template": "anniversary",
+  "to_email": "{{testEmail}}",
+  "name": "Mr. & Mrs. Okonkwo"
+}
+
+### 7. Send Test Email: Ministry / Team Assignment
+POST {{baseUrl}}/super-admin/email/send-test
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "template": "team_assignment",
+  "to_email": "{{testEmail}}",
+  "name": "Samuel Doe"
+}
+
+### 8. Send Test Email: Event & Service Reminder
+POST {{baseUrl}}/super-admin/email/send-test
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "template": "event_reminder",
+  "to_email": "{{testEmail}}",
+  "name": "Church Family"
+}
+
+### 9. Send Test Email: Donation & Tithe Receipt
+POST {{baseUrl}}/super-admin/email/send-test
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "template": "donation_receipt",
+  "to_email": "{{testEmail}}",
+  "name": "Emmanuel Ade"
+}
+
+### 10. Send Test Email: Pastoral Care Check-in
+POST {{baseUrl}}/super-admin/email/send-test
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "template": "pastoral_care",
+  "to_email": "{{testEmail}}",
+  "name": "Sister Deborah"
+}
+
+### 11. Create Real Leadership Invite (Dispatches Magic Link Email Automatically)
+POST {{baseUrl}}/super-admin/leadership/invite
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "email": "{{testEmail}}",
+  "first_name": "Joseph",
+  "last_name": "Olukayode",
+  "role": "resident_pastor"
+}

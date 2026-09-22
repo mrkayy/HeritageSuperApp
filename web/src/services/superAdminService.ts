@@ -63,6 +63,7 @@ export interface CreateLeadershipInvitePayload {
   role: string;
   church_id?: string;
   sector_id?: string;
+  team_id?: string;
 }
 
 export interface AuditLog {

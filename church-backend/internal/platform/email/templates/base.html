@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="x-apple-disable-message-reformatting">
+  <meta name="format-detection" content="telephone=no,address=no,email=no,date=no,url=no">
+  <title>{{.ChurchName}}</title>
+  <!--[if mso]>
+  <noscript>
+    <xml>
+      <o:OfficeDocumentSettings>
+        <o:AllowPNG/>
+        <o:PixelsPerInch>96</o:PixelsPerInch>
+      </o:OfficeDocumentSettings>
+    </xml>
+  </noscript>
+  <![endif]-->
+  <style>
+    html, body {
+      margin: 0 !important;
+      padding: 0 !important;
+      height: 100% !important;
+      width: 100% !important;
+      background-color: #edf2f7;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    * {
+      -ms-text-size-adjust: 100%;
+      -webkit-text-size-adjust: 100%;
+    }
+    table, td {
+      mso-table-lspace: 0pt !important;
+      mso-table-rspace: 0pt !important;
+      border-collapse: collapse !important;
+    }
+    img {
+      -ms-interpolation-mode: bicubic;
+      border: 0;
+      height: auto;
+      line-height: 100%;
+      outline: none;
+      text-decoration: none;
+    }
+    a {
+      color: #0088cc;
+      text-decoration: none;
+    }
+    @media screen and (max-width: 540px) {
+      .email-container {
+        width: 100% !important;
+        margin: auto !important;
+      }
+      .mobile-card {
+        padding: 32px 20px !important;
+      }
+      .mobile-padding {
+        padding-left: 16px !important;
+        padding-right: 16px !important;
+      }
+      .btn-mobile {
+        display: block !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+      }
+    }
+  </style>
+</head>
+<body style="margin: 0; padding: 0; width: 100%; background-color: #edf2f7; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%;">
+  {{if .Preheader}}
+  <div style="display: none; font-size: 1px; line-height: 1px; max-height: 0px; max-width: 0px; opacity: 0; overflow: hidden; mso-hide: all; font-family: sans-serif;">
+    {{.Preheader}}
+    &nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;
+  </div>
+  {{end}}
+
+  <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #edf2f7; table-layout: fixed;">
+    <tr>
+      <td align="center" style="padding: 40px 16px 48px 16px;">
+
+        <!--[if (gte mso 9)|(IE)]>
+        <table role="presentation" align="center" border="0" cellspacing="0" cellpadding="0" width="500">
+        <tr>
+        <td align="center" valign="top" width="500">
+        <![endif]-->
+
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" class="email-container" style="max-width: 500px; margin: 0 auto;">
+
+          <!-- Brand Logo -->
+          <tr>
+            <td align="center" style="padding-bottom: 32px;">
+              <a href="{{if .WebsiteURL}}{{.WebsiteURL}}{{else}}https://hofchurch.org{{end}}" target="_blank" style="text-decoration: none;">
+                <img src="{{.LogoURL}}" alt="{{.ChurchName}}" width="64" height="64" style="display: block; width: 64px; height: 64px; border-radius: 50%; margin: 0 auto;" />
+              </a>
+            </td>
+          </tr>
+
+          <!-- White Card -->
+          <tr>
+            <td>
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #ffffff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">
+                <tr>
+                  <td align="center" style="padding: 48px 36px;" class="mobile-card">
+                    {{template "header_title" .}}
+                    {{template "content" .}}
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td align="center" style="padding: 32px 16px 0 16px;">
+
+              <!-- Nav Links -->
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto 24px auto;">
+                <tr>
+                  <td align="center" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; font-weight: 600;">
+                    <a href="{{if .WebsiteURL}}{{.WebsiteURL}}{{else}}https://hofchurch.org{{end}}" target="_blank" style="color: #374151; text-decoration: none;">Help Center</a>
+                    <span style="color: #d1d5db; padding: 0 10px;">|</span>
+                    <a href="{{if .WebsiteURL}}{{.WebsiteURL}}{{else}}https://mmc.hofchurch.org{{end}}" target="_blank" style="color: #374151; text-decoration: none;">Log In</a>
+                    <span style="color: #d1d5db; padding: 0 10px;">|</span>
+                    <a href="{{if .WebsiteURL}}{{.WebsiteURL}}{{else}}https://hofchurch.org{{end}}" target="_blank" style="color: #374151; text-decoration: none;">Contact Us</a>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Social Icons -->
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto 20px auto;">
+                <tr>
+                  <td style="padding: 0 5px;">
+                    <a href="https://facebook.com" target="_blank" style="text-decoration: none; display: inline-block; width: 36px; height: 36px; background-color: #0088cc; border-radius: 50%; text-align: center; line-height: 36px; color: #ffffff; font-weight: 700; font-size: 16px; font-family: sans-serif;">f</a>
+                  </td>
+                  <td style="padding: 0 5px;">
+                    <a href="https://twitter.com" target="_blank" style="text-decoration: none; display: inline-block; width: 36px; height: 36px; background-color: #0088cc; border-radius: 50%; text-align: center; line-height: 36px; color: #ffffff; font-weight: 700; font-size: 14px; font-family: sans-serif;">X</a>
+                  </td>
+                  <td style="padding: 0 5px;">
+                    <a href="https://linkedin.com" target="_blank" style="text-decoration: none; display: inline-block; width: 36px; height: 36px; background-color: #0088cc; border-radius: 50%; text-align: center; line-height: 36px; color: #ffffff; font-weight: 700; font-size: 13px; font-family: sans-serif;">in</a>
+                  </td>
+                  <td style="padding: 0 5px;">
+                    <a href="https://instagram.com" target="_blank" style="text-decoration: none; display: inline-block; width: 36px; height: 36px; background-color: #0088cc; border-radius: 50%; text-align: center; line-height: 36px; color: #ffffff; font-weight: 700; font-size: 11px; font-family: sans-serif;">IG</a>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Copyright -->
+              <p style="margin: 0; font-size: 12px; line-height: 18px; color: #9ca3af; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+                &copy; {{.ChurchName}}
+              </p>
+
+            </td>
+          </tr>
+
+        </table>
+
+        <!--[if (gte mso 9)|(IE)]>
+        </td>
+        </tr>
+        </table>
+        <![endif]-->
+
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

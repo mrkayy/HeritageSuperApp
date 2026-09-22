@@ -86,6 +86,11 @@ func ChurchID(v uuid.UUID) predicate.OtpInvites {
 	return predicate.OtpInvites(sql.FieldEQ(FieldChurchID, v))
 }
 
+// TeamID applies equality check predicate on the "team_id" field. It's identical to TeamIDEQ.
+func TeamID(v uuid.UUID) predicate.OtpInvites {
+	return predicate.OtpInvites(sql.FieldEQ(FieldTeamID, v))
+}
+
 // UsedByUserID applies equality check predicate on the "used_by_user_id" field. It's identical to UsedByUserIDEQ.
 func UsedByUserID(v uuid.UUID) predicate.OtpInvites {
 	return predicate.OtpInvites(sql.FieldEQ(FieldUsedByUserID, v))
@@ -451,6 +456,36 @@ func ChurchIDNotNil() predicate.OtpInvites {
 	return predicate.OtpInvites(sql.FieldNotNull(FieldChurchID))
 }
 
+// TeamIDEQ applies the EQ predicate on the "team_id" field.
+func TeamIDEQ(v uuid.UUID) predicate.OtpInvites {
+	return predicate.OtpInvites(sql.FieldEQ(FieldTeamID, v))
+}
+
+// TeamIDNEQ applies the NEQ predicate on the "team_id" field.
+func TeamIDNEQ(v uuid.UUID) predicate.OtpInvites {
+	return predicate.OtpInvites(sql.FieldNEQ(FieldTeamID, v))
+}
+
+// TeamIDIn applies the In predicate on the "team_id" field.
+func TeamIDIn(vs ...uuid.UUID) predicate.OtpInvites {
+	return predicate.OtpInvites(sql.FieldIn(FieldTeamID, vs...))
+}
+
+// TeamIDNotIn applies the NotIn predicate on the "team_id" field.
+func TeamIDNotIn(vs ...uuid.UUID) predicate.OtpInvites {
+	return predicate.OtpInvites(sql.FieldNotIn(FieldTeamID, vs...))
+}
+
+// TeamIDIsNil applies the IsNil predicate on the "team_id" field.
+func TeamIDIsNil() predicate.OtpInvites {
+	return predicate.OtpInvites(sql.FieldIsNull(FieldTeamID))
+}
+
+// TeamIDNotNil applies the NotNil predicate on the "team_id" field.
+func TeamIDNotNil() predicate.OtpInvites {
+	return predicate.OtpInvites(sql.FieldNotNull(FieldTeamID))
+}
+
 // RoleEQ applies the EQ predicate on the "role" field.
 func RoleEQ(v Role) predicate.OtpInvites {
 	return predicate.OtpInvites(sql.FieldEQ(FieldRole, v))
@@ -591,6 +626,16 @@ func CreatedByUserIDLTE(v uuid.UUID) predicate.OtpInvites {
 	return predicate.OtpInvites(sql.FieldLTE(FieldCreatedByUserID, v))
 }
 
+// CreatedByUserIDIsNil applies the IsNil predicate on the "created_by_user_id" field.
+func CreatedByUserIDIsNil() predicate.OtpInvites {
+	return predicate.OtpInvites(sql.FieldIsNull(FieldCreatedByUserID))
+}
+
+// CreatedByUserIDNotNil applies the NotNil predicate on the "created_by_user_id" field.
+func CreatedByUserIDNotNil() predicate.OtpInvites {
+	return predicate.OtpInvites(sql.FieldNotNull(FieldCreatedByUserID))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.OtpInvites {
 	return predicate.OtpInvites(sql.FieldEQ(FieldCreatedAt, v))
@@ -669,6 +714,29 @@ func HasChurch() predicate.OtpInvites {
 func HasChurchWith(preds ...predicate.LocalChurch) predicate.OtpInvites {
 	return predicate.OtpInvites(func(s *sql.Selector) {
 		step := newChurchStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasTeam applies the HasEdge predicate on the "team" edge.
+func HasTeam() predicate.OtpInvites {
+	return predicate.OtpInvites(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, TeamTable, TeamColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasTeamWith applies the HasEdge predicate on the "team" edge with a given conditions (other predicates).
+func HasTeamWith(preds ...predicate.Team) predicate.OtpInvites {
+	return predicate.OtpInvites(func(s *sql.Selector) {
+		step := newTeamStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

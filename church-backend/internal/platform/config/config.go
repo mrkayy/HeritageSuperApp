@@ -5,6 +5,7 @@ import (
 	"bufio"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -16,6 +17,12 @@ type Config struct {
 	GoogleClientID     string
 	GoogleClientSecret string
 	GoogleCallbackURL  string
+	SMTPHost           string
+	SMTPPort           int
+	SMTPUsername       string
+	SMTPPassword       string
+	SMTPFromEmail      string
+	SMTPFromName       string
 }
 
 func loadEnv() {
@@ -52,6 +59,11 @@ func loadEnv() {
 func Load() Config {
 	loadEnv()
 
+	portInt, _ := strconv.Atoi(getenv("SMTP_PORT", "587"))
+	if portInt == 0 {
+		portInt = 587
+	}
+
 	return Config{
 		Port:               getenv("PORT", "3080"),
 		DatabaseURL:        getenv("DATABASE_URL", "postgres://postgres:password@localhost:5432/hof_church?sslmode=disable"),
@@ -60,6 +72,12 @@ func Load() Config {
 		GoogleClientID:     getenv("GOOGLE_CLIENT_ID", ""),
 		GoogleClientSecret: getenv("GOOGLE_CLIENT_SECRET", ""),
 		GoogleCallbackURL:  getenv("GOOGLE_CALLBACK_URL", "http://localhost:8080/api/auth/callback/google"),
+		SMTPHost:           getenv("SMTP_HOST", ""),
+		SMTPPort:           portInt,
+		SMTPUsername:       getenv("SMTP_USER", getenv("SMTP_USERNAME", "")),
+		SMTPPassword:       getenv("SMTP_PASS", getenv("SMTP_PASSWORD", "")),
+		SMTPFromEmail:      getenv("SMTP_FROM_EMAIL", "no-reply@hofchurch.org"),
+		SMTPFromName:       getenv("SMTP_FROM_NAME", "Heritage MMC"),
 	}
 }
 

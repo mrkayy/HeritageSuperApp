@@ -12,6 +12,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/hofchurchng/church-backend/internal/contracts"
+	"github.com/hofchurchng/church-backend/internal/ent"
 	"github.com/hofchurchng/church-backend/internal/ent/member"
 	"github.com/hofchurchng/church-backend/internal/ent/membershipstagehistory"
 )
@@ -36,19 +37,19 @@ type BulkImportResult struct {
 }
 
 type headerMap struct {
-	firstNameIdx  int
-	surnameIdx    int
-	fullNameIdx   int
-	emailIdx      int
-	phoneIdx      int
-	addressIdx    int
-	genderIdx     int
-	dobIdx        int
-	maritalIdx    int
+	firstNameIdx   int
+	surnameIdx     int
+	fullNameIdx    int
+	emailIdx       int
+	phoneIdx       int
+	addressIdx     int
+	genderIdx      int
+	dobIdx         int
+	maritalIdx     int
 	anniversaryIdx int
-	occupationIdx int
-	stageIdx      int
-	roleIdx       int
+	occupationIdx  int
+	stageIdx       int
+	roleIdx        int
 }
 
 func parseCSVHeader(header []string) headerMap {
@@ -151,7 +152,6 @@ func parseDayMonth(val string) (*int16, *int16) {
 	if m := reNum.FindStringSubmatch(val); len(m) >= 3 {
 		num1, _ := strconv.Atoi(m[1])
 		num2, _ := strconv.Atoi(m[2])
-		// Assume day / month or month / day
 		if num1 >= 1 && num1 <= 31 && num2 >= 1 && num2 <= 12 {
 			d := int16(num1)
 			m := int16(num2)
@@ -167,15 +167,150 @@ func sanitizePhone(val string) *string {
 	if cleaned == "" || strings.EqualFold(cleaned, "nil") || strings.EqualFold(cleaned, "no phone number") || strings.EqualFold(cleaned, "wrong number") {
 		return nil
 	}
-	// Add leading zero if truncated (e.g., "9158500313" -> "09158500313")
 	if len(cleaned) == 10 && (cleaned[0] == '7' || cleaned[0] == '8' || cleaned[0] == '9') {
 		cleaned = "0" + cleaned
 	}
 	return &cleaned
 }
 
+// ---------------------------------------------------------------------------
+// Levenshtein Distance & Fuzzy Matching Utilities
+// ---------------------------------------------------------------------------
+
+// LevenshteinDistance calculates the minimum edit distance between two strings
+func LevenshteinDistance(s1, s2 string) int {
+	s1 = strings.ToLower(strings.TrimSpace(s1))
+	s2 = strings.ToLower(strings.TrimSpace(s2))
+
+	r1, r2 := []rune(s1), []rune(s2)
+	len1, len2 := len(r1), len(r2)
+
+	if len1 == 0 {
+		return len2
+	}
+	if len2 == 0 {
+		return len1
+	}
+
+	column := make([]int, len1+1)
+	for i := 0; i <= len1; i++ {
+		column[i] = i
+	}
+
+	for j := 1; j <= len2; j++ {
+		column[0] = j
+		lastDiagonal := j - 1
+		for i := 1; i <= len1; i++ {
+			oldColumn := column[i]
+			cost := 0
+			if r1[i-1] != r2[j-1] {
+				cost = 1
+			}
+			column[i] = minInt(column[i]+1, minInt(column[i-1]+1, lastDiagonal+cost))
+			lastDiagonal = oldColumn
+		}
+	}
+	return column[len1]
+}
+
+func minInt(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func calculateSimilarityRatio(s1, s2 string) float64 {
+	dist := LevenshteinDistance(s1, s2)
+	maxLen := len([]rune(s1))
+	if len2 := len([]rune(s2)); len2 > maxLen {
+		maxLen = len2
+	}
+	if maxLen == 0 {
+		return 1.0
+	}
+	return 1.0 - (float64(dist) / float64(maxLen))
+}
+
+func normalizePhoneNumber(phone string) string {
+	cleaned := strings.Map(func(r rune) rune {
+		if r >= '0' && r <= '9' {
+			return r
+		}
+		return -1
+	}, phone)
+
+	if strings.HasPrefix(cleaned, "234") && len(cleaned) == 13 {
+		cleaned = "0" + cleaned[3:]
+	} else if len(cleaned) == 10 && (cleaned[0] == '7' || cleaned[0] == '8' || cleaned[0] == '9') {
+		cleaned = "0" + cleaned
+	}
+	return cleaned
+}
+
+// findMatchingMember finds an existing member using Email or Levenshtein distance on Name & Phone
+func (s *Service) findMatchingMember(ctx context.Context, firstName, surname string, email string, phone *string) (*ent.Member, error) {
+	// 1. Exact Email match
+	if email != "" && strings.Contains(email, "@") {
+		if m, err := s.repo.db.Member.Query().Where(member.Email(email)).First(ctx); err == nil && m != nil {
+			return m, nil
+		}
+	}
+
+	// 2. Fetch all members to perform Levenshtein fuzzy matching on (Name, Phone)
+	members, err := s.repo.db.Member.Query().All(ctx)
+	if err != nil || len(members) == 0 {
+		return nil, err
+	}
+
+	inputFullName := strings.ToLower(strings.TrimSpace(firstName + " " + surname))
+	inputPhone := ""
+	if phone != nil {
+		inputPhone = normalizePhoneNumber(*phone)
+	}
+
+	var bestMatch *ent.Member
+	lowestDist := 999
+
+	for _, m := range members {
+		mFullName := strings.ToLower(strings.TrimSpace(m.FirstName + " " + m.Surname))
+		mPhone := ""
+		if m.PhoneNumber != nil {
+			mPhone = normalizePhoneNumber(*m.PhoneNumber)
+		}
+
+		nameDist := LevenshteinDistance(inputFullName, mFullName)
+		nameSim := calculateSimilarityRatio(inputFullName, mFullName)
+
+		phoneMatched := false
+		phoneDist := 999
+		if inputPhone != "" && mPhone != "" {
+			phoneDist = LevenshteinDistance(inputPhone, mPhone)
+			if inputPhone == mPhone || phoneDist <= 1 {
+				phoneMatched = true
+			}
+		}
+
+		// Fuzzy match logic:
+		// A: Phone match/near-match (phoneDist <= 1) AND (nameDist <= 3 OR nameSim >= 0.70)
+		// B: Name distance <= 2 AND (inputPhone == "" || mPhone == "" || phoneDist <= 2)
+		if (phoneMatched && (nameDist <= 3 || nameSim >= 0.70)) || (nameDist <= 2 && (inputPhone == "" || mPhone == "" || phoneDist <= 2)) {
+			if nameDist < lowestDist {
+				lowestDist = nameDist
+				bestMatch = m
+			}
+		}
+	}
+
+	if bestMatch != nil {
+		return bestMatch, nil
+	}
+
+	return nil, nil
+}
+
 // BulkImportCSV handles fast goroutine-based bulk profiling of CSV member records
-func (s *Service) BulkImportCSV(ctx context.Context, r io.Reader, creatorID *uuid.UUID) (BulkImportResult, error) {
+func (s *Service) BulkImportCSV(ctx context.Context, r io.Reader, creatorID *uuid.UUID, churchID *uuid.UUID) (BulkImportResult, error) {
 	reader := csv.NewReader(r)
 	reader.FieldsPerRecord = -1 // Allow variable column counts
 	reader.TrimLeadingSpace = true
@@ -206,7 +341,7 @@ func (s *Service) BulkImportCSV(ctx context.Context, r io.Reader, creatorID *uui
 		go func() {
 			defer wg.Done()
 			for job := range jobs {
-				err := s.processCSVRow(ctx, job.Row, hm, creatorID)
+				err := s.processCSVRow(ctx, job.Row, hm, creatorID, churchID)
 				if err != nil {
 					name := "Row " + strconv.Itoa(job.Index+1)
 					if hm.firstNameIdx != -1 && hm.firstNameIdx < len(job.Row) {
@@ -218,7 +353,7 @@ func (s *Service) BulkImportCSV(ctx context.Context, r io.Reader, creatorID *uui
 						Error: err.Error(),
 					}
 				} else {
-					results <- BulkRowErrorDetail{Row: 0} // 0 indicates success
+					results <- BulkRowErrorDetail{Row: 0}
 				}
 			}
 		}()
@@ -252,7 +387,7 @@ func (s *Service) BulkImportCSV(ctx context.Context, r io.Reader, creatorID *uui
 	return res, nil
 }
 
-func (s *Service) processCSVRow(ctx context.Context, row []string, hm headerMap, creatorID *uuid.UUID) error {
+func (s *Service) processCSVRow(ctx context.Context, row []string, hm headerMap, creatorID *uuid.UUID, churchID *uuid.UUID) error {
 	getVal := func(idx int) string {
 		if idx >= 0 && idx < len(row) {
 			return strings.TrimSpace(row[idx])
@@ -331,9 +466,48 @@ func (s *Service) processCSVRow(ctx context.Context, row []string, hm headerMap,
 		jobPtr = &occupation
 	}
 
-	// 1. If email is present, check if member or user exists
+	var churchIDStr *string
+	if churchID != nil {
+		cStr := churchID.String()
+		churchIDStr = &cStr
+	}
+
+	// Check if member already exists via Email or Levenshtein distance on Name & Phone
+	existingMember, _ := s.findMatchingMember(ctx, firstName, surname, email, phone)
+	if existingMember != nil {
+		// Update existing member record
+		var emailPtr *string
+		if email != "" {
+			emailPtr = &email
+		}
+		targetChurchID := churchIDStr
+		if existingMember.LocalChurchID != nil && *existingMember.LocalChurchID != uuid.Nil {
+			cid := existingMember.LocalChurchID.String()
+			targetChurchID = &cid
+		}
+
+		_, err := s.repo.Update(ctx, existingMember.ID.String(), AddMemberInput{
+			FirstName:               firstName,
+			Surname:                 surname,
+			Role:                    roleStr,
+			Email:                   emailPtr,
+			PhoneNumber:             phone,
+			HomeAddress:             addrPtr,
+			Gender:                  gender,
+			DateOfBirthDay:          dobDay,
+			DateOfBirthMonth:        dobMonth,
+			MaritalStatus:           marital,
+			WeddingAnniversaryDay:   annDay,
+			WeddingAnniversaryMonth: annMonth,
+			JobOccupation:           jobPtr,
+			CurrentStage:            &stageStr,
+			LocalChurchID:           targetChurchID,
+		})
+		return err
+	}
+
+	// If email present and no match, try profiling member with user account creation
 	if email != "" && strings.Contains(email, "@") {
-		// Try profiling with user account creation
 		_, err := s.repo.ProfileNewMember(ctx, ProfileMemberInput{
 			FirstName:    firstName,
 			Surname:      surname,
@@ -341,10 +515,10 @@ func (s *Service) processCSVRow(ctx context.Context, row []string, hm headerMap,
 			Role:         roleStr,
 			CurrentStage: &stageStr,
 			CreatedBy:    creatorID,
+			ChurchID:     churchIDStr,
 		})
 		if err == nil {
-			// Now update extended fields (phone, DOB, anniversary, etc.)
-			if memberRec, err := s.repo.db.Member.Query().Where(member.Email(email)).Only(ctx); err == nil {
+			if memberRec, getErr := s.repo.db.Member.Query().Where(member.Email(email)).Only(ctx); getErr == nil {
 				u := s.repo.db.Member.UpdateOneID(memberRec.ID)
 				if phone != nil { u.SetPhoneNumber(*phone) }
 				if addrPtr != nil { u.SetHomeAddress(*addrPtr) }
@@ -355,35 +529,14 @@ func (s *Service) processCSVRow(ctx context.Context, row []string, hm headerMap,
 				if annDay != nil { u.SetWeddingAnniversaryDay(*annDay) }
 				if annMonth != nil { u.SetWeddingAnniversaryMonth(*annMonth) }
 				if jobPtr != nil { u.SetJobOccupation(*jobPtr) }
+				if churchID != nil { u.SetLocalChurchID(*churchID) }
 				_ = u.Exec(ctx)
 			}
 			return nil
 		}
-		// If error is duplicate email, attempt update instead of failing
-		if strings.Contains(err.Error(), "already exists") || strings.Contains(err.Error(), "unique constraint") {
-			if memberRec, getErr := s.repo.db.Member.Query().Where(member.Email(email)).Only(ctx); getErr == nil {
-				_, _ = s.repo.Update(ctx, memberRec.ID.String(), AddMemberInput{
-					FirstName:               firstName,
-					Surname:                 surname,
-					Role:                    roleStr,
-					Email:                   &email,
-					PhoneNumber:             phone,
-					HomeAddress:             addrPtr,
-					Gender:                  gender,
-					DateOfBirthDay:          dobDay,
-					DateOfBirthMonth:        dobMonth,
-					MaritalStatus:           marital,
-					WeddingAnniversaryDay:   annDay,
-					WeddingAnniversaryMonth: annMonth,
-					JobOccupation:           jobPtr,
-					CurrentStage:            &stageStr,
-				})
-				return nil
-			}
-		}
 	}
 
-	// 2. If no email or profiling failed without email, create member record directly
+	// Create new member record with uploader's default local church ID
 	var emailPtr *string
 	if email != "" {
 		emailPtr = &email
@@ -405,15 +558,22 @@ func (s *Service) processCSVRow(ctx context.Context, row []string, hm headerMap,
 		JobOccupation:           jobPtr,
 		CurrentStage:            &stageStr,
 		CreatedBy:               creatorID,
+		LocalChurchID:           churchIDStr,
 	})
 
 	return err
 }
 
-func (s *Service) BulkImportJSON(ctx context.Context, members []AddMemberInput, creatorID *uuid.UUID) (BulkImportResult, error) {
+func (s *Service) BulkImportJSON(ctx context.Context, members []AddMemberInput, creatorID *uuid.UUID, churchID *uuid.UUID) (BulkImportResult, error) {
 	totalRecords := len(members)
 	if totalRecords == 0 {
 		return BulkImportResult{}, fmt.Errorf("no members provided")
+	}
+
+	var churchIDStr *string
+	if churchID != nil {
+		cStr := churchID.String()
+		churchIDStr = &cStr
 	}
 
 	jobs := make(chan AddMemberInput, totalRecords)
@@ -427,8 +587,24 @@ func (s *Service) BulkImportJSON(ctx context.Context, members []AddMemberInput, 
 		go func() {
 			defer wg.Done()
 			for job := range jobs {
+				if (job.LocalChurchID == nil || *job.LocalChurchID == "") && churchIDStr != nil {
+					job.LocalChurchID = churchIDStr
+				}
+
+				var emailStr string
+				if job.Email != nil {
+					emailStr = *job.Email
+				}
+
+				existingMember, _ := s.findMatchingMember(ctx, job.FirstName, job.Surname, emailStr, job.PhoneNumber)
 				var err error
-				if job.Email != nil && *job.Email != "" {
+				if existingMember != nil {
+					if (job.LocalChurchID == nil || *job.LocalChurchID == "") && existingMember.LocalChurchID != nil {
+						cid := existingMember.LocalChurchID.String()
+						job.LocalChurchID = &cid
+					}
+					_, err = s.repo.Update(ctx, existingMember.ID.String(), job)
+				} else if emailStr != "" {
 					stageStr := "first_time_guest"
 					if job.CurrentStage != nil {
 						stageStr = *job.CurrentStage
@@ -436,35 +612,36 @@ func (s *Service) BulkImportJSON(ctx context.Context, members []AddMemberInput, 
 					_, err = s.repo.ProfileNewMember(ctx, ProfileMemberInput{
 						FirstName:    job.FirstName,
 						Surname:      job.Surname,
-						Email:        *job.Email,
+						Email:        emailStr,
 						Role:         job.Role,
 						CurrentStage: &stageStr,
 						CreatedBy:    creatorID,
+						ChurchID:     job.LocalChurchID,
 					})
-				}
-
-				if err != nil && (strings.Contains(err.Error(), "already exists") || strings.Contains(err.Error(), "unique constraint")) {
-					if memberRec, getErr := s.repo.db.Member.Query().Where(member.Email(*job.Email)).Only(ctx); getErr == nil {
-						_, err = s.repo.Update(ctx, memberRec.ID.String(), job)
+					if err == nil {
+						if memberRec, getErr := s.repo.db.Member.Query().Where(member.Email(emailStr)).Only(ctx); getErr == nil {
+							u := s.repo.db.Member.UpdateOneID(memberRec.ID)
+							if job.PhoneNumber != nil { u.SetPhoneNumber(*job.PhoneNumber) }
+							if job.HomeAddress != nil { u.SetHomeAddress(*job.HomeAddress) }
+							if job.Gender != nil { u.SetGender(member.Gender(*job.Gender)) }
+							if job.DateOfBirthDay != nil { u.SetDateOfBirthDay(*job.DateOfBirthDay) }
+							if job.DateOfBirthMonth != nil { u.SetDateOfBirthMonth(*job.DateOfBirthMonth) }
+							if job.MaritalStatus != nil { u.SetMaritalStatus(member.MaritalStatus(*job.MaritalStatus)) }
+							if job.WeddingAnniversaryDay != nil { u.SetWeddingAnniversaryDay(*job.WeddingAnniversaryDay) }
+							if job.WeddingAnniversaryMonth != nil { u.SetWeddingAnniversaryMonth(*job.WeddingAnniversaryMonth) }
+							if job.JobOccupation != nil { u.SetJobOccupation(*job.JobOccupation) }
+							if job.LocalChurchID != nil && *job.LocalChurchID != "" {
+								if cu, err := uuid.Parse(*job.LocalChurchID); err == nil {
+									u.SetLocalChurchID(cu)
+								}
+							}
+							_ = u.Exec(ctx)
+						}
+					} else {
+						_, err = s.repo.Add(ctx, job)
 					}
-				} else if err != nil {
-					// Other profiling error
-				} else if job.Email == nil || *job.Email == "" {
-					_, err = s.repo.Add(ctx, job)
 				} else {
-					if memberRec, getErr := s.repo.db.Member.Query().Where(member.Email(*job.Email)).Only(ctx); getErr == nil {
-						u := s.repo.db.Member.UpdateOneID(memberRec.ID)
-						if job.PhoneNumber != nil { u.SetPhoneNumber(*job.PhoneNumber) }
-						if job.HomeAddress != nil { u.SetHomeAddress(*job.HomeAddress) }
-						if job.Gender != nil { u.SetGender(member.Gender(*job.Gender)) }
-						if job.DateOfBirthDay != nil { u.SetDateOfBirthDay(*job.DateOfBirthDay) }
-						if job.DateOfBirthMonth != nil { u.SetDateOfBirthMonth(*job.DateOfBirthMonth) }
-						if job.MaritalStatus != nil { u.SetMaritalStatus(member.MaritalStatus(*job.MaritalStatus)) }
-						if job.WeddingAnniversaryDay != nil { u.SetWeddingAnniversaryDay(*job.WeddingAnniversaryDay) }
-						if job.WeddingAnniversaryMonth != nil { u.SetWeddingAnniversaryMonth(*job.WeddingAnniversaryMonth) }
-						if job.JobOccupation != nil { u.SetJobOccupation(*job.JobOccupation) }
-						_ = u.Exec(ctx)
-					}
+					_, err = s.repo.Add(ctx, job)
 				}
 
 				if err != nil {

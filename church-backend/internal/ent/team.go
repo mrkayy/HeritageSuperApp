@@ -62,9 +62,11 @@ type TeamEdges struct {
 	ChurchTeams []*ChurchTeams `json:"church_teams,omitempty"`
 	// MemberTeams holds the value of the member_teams edge.
 	MemberTeams []*MemberTeam `json:"member_teams,omitempty"`
+	// OtpInvites holds the value of the otp_invites edge.
+	OtpInvites []*OtpInvites `json:"otp_invites,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [11]bool
+	loadedTypes [12]bool
 }
 
 // MembersOrErr returns the Members value or an error if the edge
@@ -168,6 +170,15 @@ func (e TeamEdges) MemberTeamsOrErr() ([]*MemberTeam, error) {
 		return e.MemberTeams, nil
 	}
 	return nil, &NotLoadedError{edge: "member_teams"}
+}
+
+// OtpInvitesOrErr returns the OtpInvites value or an error if the edge
+// was not loaded in eager-loading.
+func (e TeamEdges) OtpInvitesOrErr() ([]*OtpInvites, error) {
+	if e.loadedTypes[11] {
+		return e.OtpInvites, nil
+	}
+	return nil, &NotLoadedError{edge: "otp_invites"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -309,6 +320,11 @@ func (_m *Team) QueryChurchTeams() *ChurchTeamsQuery {
 // QueryMemberTeams queries the "member_teams" edge of the Team entity.
 func (_m *Team) QueryMemberTeams() *MemberTeamQuery {
 	return NewTeamClient(_m.config).QueryMemberTeams(_m)
+}
+
+// QueryOtpInvites queries the "otp_invites" edge of the Team entity.
+func (_m *Team) QueryOtpInvites() *OtpInvitesQuery {
+	return NewTeamClient(_m.config).QueryOtpInvites(_m)
 }
 
 // Update returns a builder for updating this Team.

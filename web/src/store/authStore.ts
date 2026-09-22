@@ -7,12 +7,15 @@ export interface User {
   email: string;
   first_name: string;
   last_name: string;
+  /** Permission level — controls what pages/APIs the user can access */
   role: string;
   roles?: string[];
   team_id?: string;
   team_name?: string;
   sector_id?: string;
   church_id?: string;
+  /** Discipleship journey stage — tracks spiritual progression, NOT a permission concept */
+  current_stage?: string;
 }
 
 interface AuthState {

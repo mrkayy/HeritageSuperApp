@@ -41,11 +41,14 @@ func (h *Handler) RegisterPublic(g *gin.RouterGroup) {
 	g.GET("/callback/google", h.callbackGoogle)
 	g.GET("/magic-link/verify", h.verifyMagicLink)
 	g.POST("/magic-link/complete", h.completeMagicLink)
+	g.POST("/magic-link/request", h.requestMagicLink)
+	g.POST("/pin/verify", h.verifyPin)
 }
 
 // RegisterProtected mounts endpoints that require validation.
 func (h *Handler) RegisterProtected(g *gin.RouterGroup) {
 	g.GET("/me", h.me)
+	g.POST("/pin/reset-request", h.requestPinReset)
 }
 
 type loginRequest struct {
@@ -87,13 +90,18 @@ func (h *Handler) me(c *gin.Context) {
 		currentRole = u.Roles[0]
 	}
 
+	// current_stage comes from the members table (discipleship journey),
+	// not the users table (permission roles). These are intentionally separate.
+	currentStage := h.svc.repo.FindMemberStageByEmail(c.Request.Context(), userCtx.Email)
+
 	c.JSON(http.StatusOK, contracts.AuthedUser{
-		ID:          u.ID,
-		Email:       u.Email,
-		Roles:       u.Roles,
-		CurrentRole: currentRole,
-		TeamID:      u.TeamID,
-		TeamName:    u.TeamName,
+		ID:           u.ID,
+		Email:        u.Email,
+		Roles:        u.Roles,
+		CurrentRole:  currentRole,
+		TeamID:       u.TeamID,
+		TeamName:     u.TeamName,
+		CurrentStage: currentStage,
 	})
 }
 
@@ -173,22 +181,76 @@ func (h *Handler) completeMagicLink(c *gin.Context) {
 		Email     string `json:"email"`
 		FirstName string `json:"first_name"`
 		LastName  string `json:"last_name"`
-		Password  string `json:"password"`
+		Pin       string `json:"pin"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid request body"})
 		return
 	}
 
-	if req.Code == "" || req.Email == "" || req.Password == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "code, email and password are required"})
+	if req.Code == "" || req.Email == "" || req.Pin == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "code, email and pin are required"})
 		return
 	}
 
-	res, err := h.svc.CompleteMagicLinkOnboarding(c.Request.Context(), req.Code, req.Email, req.FirstName, req.LastName, req.Password)
+	if len(req.Pin) < 4 || len(req.Pin) > 6 {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "pin must be 4 to 6 digits"})
+		return
+	}
+
+	res, err := h.svc.CompleteMagicLinkOnboarding(c.Request.Context(), req.Code, req.Email, req.FirstName, req.LastName, req.Pin)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, res)
+}
+
+func (h *Handler) requestMagicLink(c *gin.Context) {
+	var req struct {
+		Email string `json:"email"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil || req.Email == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "email is required"})
+		return
+	}
+
+	if err := h.svc.RequestLoginMagicLink(c.Request.Context(), req.Email); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "magic link sent — check your inbox"})
+}
+
+func (h *Handler) verifyPin(c *gin.Context) {
+	var req struct {
+		Email string `json:"email"`
+		Pin   string `json:"pin"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil || req.Email == "" || req.Pin == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "email and pin are required"})
+		return
+	}
+
+	res, err := h.svc.VerifyPin(c.Request.Context(), req.Email, req.Pin)
+	if err != nil {
+		status := http.StatusUnauthorized
+		c.JSON(status, gin.H{"message": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, res)
+}
+
+func (h *Handler) requestPinReset(c *gin.Context) {
+	userCtx, ok := contracts.UserFromContext(c.Request.Context())
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	if err := h.svc.RequestPinReset(c.Request.Context(), userCtx.Email); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "PIN reset link sent to your email"})
 }

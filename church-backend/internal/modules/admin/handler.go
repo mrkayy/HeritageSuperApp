@@ -40,6 +40,9 @@ func (h *Handler) RegisterSuperAdminRoutes(g *gin.RouterGroup) {
 	g.GET("/settings/diagnostics", h.getSystemDiagnostics)
 	g.GET("/settings/churches/:id", h.getChurchSettings)
 	g.PUT("/settings/churches/:id", h.updateChurchSettings)
+
+	// Email Dispatch & Testing
+	g.POST("/email/send-test", h.sendTestEmail)
 }
 
 func (h *Handler) RegisterGeneralOverseerRoutes(g *gin.RouterGroup) {
@@ -375,4 +378,29 @@ func (h *Handler) updateChurchSettings(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, dto)
+}
+
+func (h *Handler) sendTestEmail(c *gin.Context) {
+	actor, ok := contracts.UserFromContext(c.Request.Context())
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
+		return
+	}
+
+	var req contracts.SendTestEmailDTO
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid request body, to_email and template are required"})
+		return
+	}
+
+	resp, err := h.svc.SendTestEmail(c.Request.Context(), req, actor)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, resp)
 }

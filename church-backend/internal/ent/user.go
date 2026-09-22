@@ -56,6 +56,10 @@ type User struct {
 	AccountStatus user.AccountStatus `json:"account_status,omitempty"`
 	// IsProfileComplete holds the value of the "is_profile_complete" field.
 	IsProfileComplete bool `json:"is_profile_complete,omitempty"`
+	// FailedPinAttempts holds the value of the "failed_pin_attempts" field.
+	FailedPinAttempts int `json:"failed_pin_attempts,omitempty"`
+	// PinLockedUntil holds the value of the "pin_locked_until" field.
+	PinLockedUntil *time.Time `json:"pin_locked_until,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -253,9 +257,11 @@ func (*User) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case user.FieldIsProfileComplete:
 			values[i] = new(sql.NullBool)
+		case user.FieldFailedPinAttempts:
+			values[i] = new(sql.NullInt64)
 		case user.FieldUsername, user.FieldFirstName, user.FieldLastName, user.FieldEmail, user.FieldPasswordHash, user.FieldPinHash, user.FieldPhoneNumber, user.FieldProfileImageURL, user.FieldAddress, user.FieldRole, user.FieldAccountStatus:
 			values[i] = new(sql.NullString)
-		case user.FieldDateOfBirth, user.FieldCreatedAt:
+		case user.FieldDateOfBirth, user.FieldPinLockedUntil, user.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
 		case user.FieldID:
 			values[i] = new(uuid.UUID)
@@ -392,6 +398,19 @@ func (_m *User) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field is_profile_complete", values[i])
 			} else if value.Valid {
 				_m.IsProfileComplete = value.Bool
+			}
+		case user.FieldFailedPinAttempts:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field failed_pin_attempts", values[i])
+			} else if value.Valid {
+				_m.FailedPinAttempts = int(value.Int64)
+			}
+		case user.FieldPinLockedUntil:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field pin_locked_until", values[i])
+			} else if value.Valid {
+				_m.PinLockedUntil = new(time.Time)
+				*_m.PinLockedUntil = value.Time
 			}
 		case user.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -578,6 +597,14 @@ func (_m *User) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("is_profile_complete=")
 	builder.WriteString(fmt.Sprintf("%v", _m.IsProfileComplete))
+	builder.WriteString(", ")
+	builder.WriteString("failed_pin_attempts=")
+	builder.WriteString(fmt.Sprintf("%v", _m.FailedPinAttempts))
+	builder.WriteString(", ")
+	if v := _m.PinLockedUntil; v != nil {
+		builder.WriteString("pin_locked_until=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
 	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))

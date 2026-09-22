@@ -41,3 +41,12 @@ type ChurchReader interface {
 	GetChurch(ctx context.Context, id string) (LocalChurch, error)
 	ListChurches(ctx context.Context) ([]LocalChurch, error)
 }
+
+// TeamName constants — canonical identifiers stored in users.team_name and
+// embedded in the JWT teamName claim. These are what RequireTeamAccess
+// compares against. Never hardcode these strings in handler code.
+const (
+	TeamInfoCenter = "information_center"
+	TeamMembership = "membership"
+	TeamTransport  = "transport"
+)

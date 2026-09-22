@@ -12,20 +12,30 @@ import (
 // Tx is a transactional client that is created by calling Client.Tx().
 type Tx struct {
 	config
+	// AcademyCohort is the client for interacting with the AcademyCohort builders.
+	AcademyCohort *AcademyCohortClient
 	// AttendanceRecord is the client for interacting with the AttendanceRecord builders.
 	AttendanceRecord *AttendanceRecordClient
 	// AuditLog is the client for interacting with the AuditLog builders.
 	AuditLog *AuditLogClient
+	// CallLog is the client for interacting with the CallLog builders.
+	CallLog *CallLogClient
 	// ChurchEvent is the client for interacting with the ChurchEvent builders.
 	ChurchEvent *ChurchEventClient
 	// ChurchSetting is the client for interacting with the ChurchSetting builders.
 	ChurchSetting *ChurchSettingClient
 	// ChurchTeams is the client for interacting with the ChurchTeams builders.
 	ChurchTeams *ChurchTeamsClient
+	// CohortEnrollment is the client for interacting with the CohortEnrollment builders.
+	CohortEnrollment *CohortEnrollmentClient
+	// ContinuousAssessment is the client for interacting with the ContinuousAssessment builders.
+	ContinuousAssessment *ContinuousAssessmentClient
 	// Districts is the client for interacting with the Districts builders.
 	Districts *DistrictsClient
 	// FeatureFlag is the client for interacting with the FeatureFlag builders.
 	FeatureFlag *FeatureFlagClient
+	// FirstTimerAssignment is the client for interacting with the FirstTimerAssignment builders.
+	FirstTimerAssignment *FirstTimerAssignmentClient
 	// FollowUp is the client for interacting with the FollowUp builders.
 	FollowUp *FollowUpClient
 	// GuardianRelationship is the client for interacting with the GuardianRelationship builders.
@@ -36,8 +46,12 @@ type Tx struct {
 	LocalChurch *LocalChurchClient
 	// Member is the client for interacting with the Member builders.
 	Member *MemberClient
+	// MemberLandmark is the client for interacting with the MemberLandmark builders.
+	MemberLandmark *MemberLandmarkClient
 	// MemberTeam is the client for interacting with the MemberTeam builders.
 	MemberTeam *MemberTeamClient
+	// MemberTransfer is the client for interacting with the MemberTransfer builders.
+	MemberTransfer *MemberTransferClient
 	// MembershipStageHistory is the client for interacting with the MembershipStageHistory builders.
 	MembershipStageHistory *MembershipStageHistoryClient
 	// OtpInvites is the client for interacting with the OtpInvites builders.
@@ -46,8 +60,12 @@ type Tx struct {
 	OutreachReport *OutreachReportClient
 	// OutreachTargets is the client for interacting with the OutreachTargets builders.
 	OutreachTargets *OutreachTargetsClient
+	// ProfileChangeRequest is the client for interacting with the ProfileChangeRequest builders.
+	ProfileChangeRequest *ProfileChangeRequestClient
 	// Sector is the client for interacting with the Sector builders.
 	Sector *SectorClient
+	// SituationReport is the client for interacting with the SituationReport builders.
+	SituationReport *SituationReportClient
 	// Soul is the client for interacting with the Soul builders.
 	Soul *SoulClient
 	// SoulJournal is the client for interacting with the SoulJournal builders.
@@ -68,6 +86,8 @@ type Tx struct {
 	UserTeam *UserTeamClient
 	// Visitor is the client for interacting with the Visitor builders.
 	Visitor *VisitorClient
+	// VolunteerApplication is the client for interacting with the VolunteerApplication builders.
+	VolunteerApplication *VolunteerApplicationClient
 
 	// lazily loaded.
 	client     *Client
@@ -199,24 +219,33 @@ func (tx *Tx) Client() *Client {
 }
 
 func (tx *Tx) init() {
+	tx.AcademyCohort = NewAcademyCohortClient(tx.config)
 	tx.AttendanceRecord = NewAttendanceRecordClient(tx.config)
 	tx.AuditLog = NewAuditLogClient(tx.config)
+	tx.CallLog = NewCallLogClient(tx.config)
 	tx.ChurchEvent = NewChurchEventClient(tx.config)
 	tx.ChurchSetting = NewChurchSettingClient(tx.config)
 	tx.ChurchTeams = NewChurchTeamsClient(tx.config)
+	tx.CohortEnrollment = NewCohortEnrollmentClient(tx.config)
+	tx.ContinuousAssessment = NewContinuousAssessmentClient(tx.config)
 	tx.Districts = NewDistrictsClient(tx.config)
 	tx.FeatureFlag = NewFeatureFlagClient(tx.config)
+	tx.FirstTimerAssignment = NewFirstTimerAssignmentClient(tx.config)
 	tx.FollowUp = NewFollowUpClient(tx.config)
 	tx.GuardianRelationship = NewGuardianRelationshipClient(tx.config)
 	tx.KidsMinistryProfile = NewKidsMinistryProfileClient(tx.config)
 	tx.LocalChurch = NewLocalChurchClient(tx.config)
 	tx.Member = NewMemberClient(tx.config)
+	tx.MemberLandmark = NewMemberLandmarkClient(tx.config)
 	tx.MemberTeam = NewMemberTeamClient(tx.config)
+	tx.MemberTransfer = NewMemberTransferClient(tx.config)
 	tx.MembershipStageHistory = NewMembershipStageHistoryClient(tx.config)
 	tx.OtpInvites = NewOtpInvitesClient(tx.config)
 	tx.OutreachReport = NewOutreachReportClient(tx.config)
 	tx.OutreachTargets = NewOutreachTargetsClient(tx.config)
+	tx.ProfileChangeRequest = NewProfileChangeRequestClient(tx.config)
 	tx.Sector = NewSectorClient(tx.config)
+	tx.SituationReport = NewSituationReportClient(tx.config)
 	tx.Soul = NewSoulClient(tx.config)
 	tx.SoulJournal = NewSoulJournalClient(tx.config)
 	tx.Team = NewTeamClient(tx.config)
@@ -227,6 +256,7 @@ func (tx *Tx) init() {
 	tx.UserSector = NewUserSectorClient(tx.config)
 	tx.UserTeam = NewUserTeamClient(tx.config)
 	tx.Visitor = NewVisitorClient(tx.config)
+	tx.VolunteerApplication = NewVolunteerApplicationClient(tx.config)
 }
 
 // txDriver wraps the given dialect.Tx with a nop dialect.Driver implementation.
@@ -236,7 +266,7 @@ func (tx *Tx) init() {
 // of them in order to commit or rollback the transaction.
 //
 // If a closed transaction is embedded in one of the generated entities, and the entity
-// applies a query, for example: AttendanceRecord.QueryXXX(), the query will be executed
+// applies a query, for example: AcademyCohort.QueryXXX(), the query will be executed
 // through the driver which created this transaction.
 //
 // Note that txDriver is not goroutine safe.

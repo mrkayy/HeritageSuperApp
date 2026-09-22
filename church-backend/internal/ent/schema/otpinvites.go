@@ -36,6 +36,9 @@ func (OtpInvites) Fields() []ent.Field {
 		field.UUID("church_id", uuid.UUID{}).
 			Optional().
 			Nillable(),
+		field.UUID("team_id", uuid.UUID{}).
+			Optional().
+			Nillable(),
 		field.Enum("role").
 			Values(
 				"super_admin",
@@ -55,7 +58,9 @@ func (OtpInvites) Fields() []ent.Field {
 		field.Bool("used").
 			Default(false),
 		field.Time("expires_at"),
-		field.UUID("created_by_user_id", uuid.UUID{}),
+		field.UUID("created_by_user_id", uuid.UUID{}).
+			Optional().
+			Nillable(),
 		field.Time("created_at").
 			Default(time.Now),
 	}
@@ -72,6 +77,10 @@ func (OtpInvites) Edges() []ent.Edge {
 			Ref("otp_invites").
 			Unique().
 			Field("church_id"),
+		edge.From("team", Team.Type).
+			Ref("otp_invites").
+			Unique().
+			Field("team_id"),
 		edge.From("used_by_user", User.Type).
 			Ref("used_invites").
 			Unique().

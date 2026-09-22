@@ -14,6 +14,7 @@ import (
 	"github.com/hofchurchng/church-backend/internal/ent/localchurch"
 	"github.com/hofchurchng/church-backend/internal/ent/otpinvites"
 	"github.com/hofchurchng/church-backend/internal/ent/sector"
+	"github.com/hofchurchng/church-backend/internal/ent/team"
 	"github.com/hofchurchng/church-backend/internal/ent/user"
 )
 
@@ -92,6 +93,20 @@ func (_c *OtpInvitesCreate) SetNillableChurchID(v *uuid.UUID) *OtpInvitesCreate 
 	return _c
 }
 
+// SetTeamID sets the "team_id" field.
+func (_c *OtpInvitesCreate) SetTeamID(v uuid.UUID) *OtpInvitesCreate {
+	_c.mutation.SetTeamID(v)
+	return _c
+}
+
+// SetNillableTeamID sets the "team_id" field if the given value is not nil.
+func (_c *OtpInvitesCreate) SetNillableTeamID(v *uuid.UUID) *OtpInvitesCreate {
+	if v != nil {
+		_c.SetTeamID(*v)
+	}
+	return _c
+}
+
 // SetRole sets the "role" field.
 func (_c *OtpInvitesCreate) SetRole(v otpinvites.Role) *OtpInvitesCreate {
 	_c.mutation.SetRole(v)
@@ -138,6 +153,14 @@ func (_c *OtpInvitesCreate) SetCreatedByUserID(v uuid.UUID) *OtpInvitesCreate {
 	return _c
 }
 
+// SetNillableCreatedByUserID sets the "created_by_user_id" field if the given value is not nil.
+func (_c *OtpInvitesCreate) SetNillableCreatedByUserID(v *uuid.UUID) *OtpInvitesCreate {
+	if v != nil {
+		_c.SetCreatedByUserID(*v)
+	}
+	return _c
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (_c *OtpInvitesCreate) SetCreatedAt(v time.Time) *OtpInvitesCreate {
 	_c.mutation.SetCreatedAt(v)
@@ -174,6 +197,11 @@ func (_c *OtpInvitesCreate) SetSector(v *Sector) *OtpInvitesCreate {
 // SetChurch sets the "church" edge to the LocalChurch entity.
 func (_c *OtpInvitesCreate) SetChurch(v *LocalChurch) *OtpInvitesCreate {
 	return _c.SetChurchID(v.ID)
+}
+
+// SetTeam sets the "team" edge to the Team entity.
+func (_c *OtpInvitesCreate) SetTeam(v *Team) *OtpInvitesCreate {
+	return _c.SetTeamID(v.ID)
 }
 
 // SetUsedByUser sets the "used_by_user" edge to the User entity.
@@ -260,9 +288,6 @@ func (_c *OtpInvitesCreate) check() error {
 	if _, ok := _c.mutation.ExpiresAt(); !ok {
 		return &ValidationError{Name: "expires_at", err: errors.New(`ent: missing required field "OtpInvites.expires_at"`)}
 	}
-	if _, ok := _c.mutation.CreatedByUserID(); !ok {
-		return &ValidationError{Name: "created_by_user_id", err: errors.New(`ent: missing required field "OtpInvites.created_by_user_id"`)}
-	}
 	if _, ok := _c.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "OtpInvites.created_at"`)}
 	}
@@ -331,7 +356,7 @@ func (_c *OtpInvitesCreate) createSpec() (*OtpInvites, *sqlgraph.CreateSpec) {
 	}
 	if value, ok := _c.mutation.CreatedByUserID(); ok {
 		_spec.SetField(otpinvites.FieldCreatedByUserID, field.TypeUUID, value)
-		_node.CreatedByUserID = value
+		_node.CreatedByUserID = &value
 	}
 	if value, ok := _c.mutation.CreatedAt(); ok {
 		_spec.SetField(otpinvites.FieldCreatedAt, field.TypeTime, value)
@@ -369,6 +394,23 @@ func (_c *OtpInvitesCreate) createSpec() (*OtpInvites, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.ChurchID = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.TeamIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   otpinvites.TeamTable,
+			Columns: []string{otpinvites.TeamColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(team.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.TeamID = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := _c.mutation.UsedByUserIDs(); len(nodes) > 0 {
