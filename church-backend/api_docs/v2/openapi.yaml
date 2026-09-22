@@ -1,0 +1,228 @@
+openapi: 3.1.0
+info:
+  title: Heritage SuperApp V2 Foundation API
+  version: 2.0.0
+  description: Foundation interfaces for Heritage SuperApp V2 (Milestone 1).
+servers:
+  - url: http://localhost:8081
+    description: Local V2 Development Server
+paths:
+  /api/v2/churches/{branch_id}/visitor-captures:
+    post:
+      summary: Capture a visitor and create welcome work
+      security: [{CookieAuth: []}]
+      parameters:
+        - {name: branch_id, in: path, required: true, schema: {type: string, format: uuid}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/VisitorCaptureRequest'}
+      responses:
+        '201': {description: Person, visit and welcome work created atomically}
+        '422': {description: Capture rejected}
+
+  /api/v2/auth/claims/complete:
+    post:
+      summary: Complete a single-use account claim
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ClaimCompletionRequest'}
+      responses:
+        '200': {description: Account activated atomically with the claim}
+        '401': {description: Invalid, expired or consumed claim}
+
+  /health/live:
+    get:
+      summary: Process Liveness Check
+      description: Returns process status and timestamp.
+      responses:
+        '200':
+          description: Process is running
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: alive
+                  time:
+                    type: string
+                    format: date-time
+
+  /health/ready:
+    get:
+      summary: Process Readiness Check
+      description: Verifies database connectivity and migration state.
+      responses:
+        '200':
+          description: Database connected and all migrations applied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ready
+                  database:
+                    type: string
+                    example: connected
+                  migration_version:
+                    type: integer
+                    example: 1
+        '503':
+          description: Service Unavailable (database down or pending migrations)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+
+  /api/v2/me/context:
+    get:
+      summary: Authenticated Context & Workspaces
+      description: Returns current person identity, active account status, baseline grants, and permitted assignment scopes.
+      security:
+        - CookieAuth: []
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Current user context
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthContextResponse'
+        '401':
+          description: Unauthenticated or expired session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+
+components:
+  securitySchemes:
+    CookieAuth:
+      type: apiKey
+      in: cookie
+      name: hof_v2_session
+    BearerAuth:
+      type: http
+      scheme: bearer
+
+  schemas:
+    APIError:
+      type: object
+      properties:
+        code:
+          type: string
+          example: UNAUTHORIZED
+        message:
+          type: string
+          example: Authentication session required
+        request_id:
+          type: string
+          example: 9a341e8a-d99f-43fc-8789-f53835e58123
+        field_errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+
+    AssignmentContext:
+      type: object
+      properties:
+        assignment_id:
+          type: string
+          format: uuid
+        branch_id:
+          type: string
+          format: uuid
+          nullable: true
+        role_name:
+          type: string
+          example: Choir Team Lead
+        team_id:
+          type: string
+          format: uuid
+          nullable: true
+        sector_id:
+          type: string
+          format: uuid
+          nullable: true
+        scope_level:
+          type: string
+          enum: [SELF, ASSIGNED, TEAM, SECTOR, CHURCH, ORGANIZATION, PLATFORM]
+          example: TEAM
+        scope_resource_id:
+          type: string
+          format: uuid
+          nullable: true
+        valid_from:
+          type: string
+          format: date-time
+        valid_until:
+          type: string
+          format: date-time
+          nullable: true
+
+    AuthContextResponse:
+      type: object
+      properties:
+        person_id:
+          type: string
+          format: uuid
+        account_id:
+          type: string
+          format: uuid
+        organization_id:
+          type: string
+          format: uuid
+        identity_status:
+          type: string
+          example: verified
+        first_name:
+          type: string
+          example: Ada
+        last_name:
+          type: string
+          example: Okafor
+        baseline_grants:
+          type: array
+          items:
+            type: string
+          example: ["member.baseline.view"]
+        active_assignments:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssignmentContext'
+
+    VisitorCaptureRequest:
+      type: object
+      required: [service_occurrence_id, first_name, source]
+      properties:
+        service_occurrence_id: {type: string, format: uuid}
+        first_name: {type: string}
+        last_name: {type: string}
+        contact_kind: {type: string, enum: [email, phone]}
+        contact_value: {type: string}
+        missing_contact_reason: {type: string}
+        source: {type: string, enum: [info_center, self_service_qr, import]}
+        inviter_person_id: {type: string, format: uuid, nullable: true}
+        restricted_prayer_note: {type: object, additionalProperties: true, nullable: true}
+
+    ClaimCompletionRequest:
+      type: object
+      required: [organization_id, token, auth_method_kind, identifier, credential_hash]
+      properties:
+        organization_id: {type: string, format: uuid}
+        token: {type: string, writeOnly: true}
+        auth_method_kind: {type: string, enum: [email, phone, provider]}
+        identifier: {type: string}
+        credential_hash: {type: string, writeOnly: true}

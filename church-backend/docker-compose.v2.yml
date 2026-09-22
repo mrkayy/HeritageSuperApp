@@ -1,0 +1,21 @@
+services:
+  postgres-v2:
+    image: postgres:16-alpine
+    container_name: hof_postgres_v2
+    environment:
+      POSTGRES_USER: hof_v2_user
+      POSTGRES_PASSWORD: hof_v2_pass
+      POSTGRES_DB: hof_v2_dev
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - pgdata_v2:/var/lib/postgresql/data
+      - ./scripts/init-v2-dbs.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hof_v2_user -d hof_v2_dev"]
+      interval: 3s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  pgdata_v2:

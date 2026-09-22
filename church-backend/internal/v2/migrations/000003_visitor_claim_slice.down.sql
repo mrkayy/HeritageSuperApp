@@ -1,0 +1,10 @@
+DROP TRIGGER IF EXISTS visitor_capture_welcome ON visitor_captures;
+DROP FUNCTION IF EXISTS v2_capture_welcome_work();
+DROP TRIGGER IF EXISTS follow_up_work_version ON follow_up_work_items;
+DROP TRIGGER IF EXISTS service_occurrence_version ON service_occurrences;
+DROP FUNCTION IF EXISTS v2_visitor_version();
+DROP TABLE IF EXISTS claim_invitations;
+DROP TABLE IF EXISTS profile_verifications;
+DROP TABLE IF EXISTS follow_up_work_items;
+DROP TABLE IF EXISTS visitor_captures;
+DROP TABLE IF EXISTS service_occurrences;
