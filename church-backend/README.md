@@ -1,52 +1,101 @@
-# HOF Church Ng — Backend
+# Heritage SuperApp — Backend (V2)
 
-A modular-monolith Go backend: one server, one database, but every
-ministry/ops feature lives in its own isolated module.
+High-performance, modular monolith Go backend for Heritage SuperApp built on PostgreSQL 16, Ent ORM, and Gin.
 
-## Structure
+---
+
+## Architectural Principles
+
+1. **Explicit Identity & Tenancy Hierarchy**:
+   - `Person` (human identity) is canonical organization-wide.
+   - `Account` (auth credentials/sessions) is linked to `Person`.
+   - `ChurchAffiliation` (branch relationship) and `Assignment` (operational roles) are decoupled.
+2. **Multi-Dimensional Authorization**:
+   - Capability checks evaluate `(Capability, ScopeLevel, SensitivityClass)` in active assignment context.
+3. **Transactional Outbox & Idempotency**:
+   - Durable integration events committed atomically via `UnitOfWork` with worker leasing (`FOR UPDATE SKIP LOCKED`).
+4. **Deterministic Migration & Role Separation**:
+   - Versioned migrations with SHA-256 integrity checksums and Postgres advisory locks.
+   - Schema mutations and migrations are executed solely by DB owner (`hof_v2_user`).
+   - The runtime API server executes under restricted least-privilege credentials (`hof_v2_runtime`).
+
+---
+
+## Directory Layout
+
 ```
-cmd/server/main.go        <- the ONLY file that imports every module (wiring)
-internal/
-  contracts/               <- interfaces + shared types modules use to talk to each other
-  platform/                <- shared infra: db, config, auth middleware, migration runner
-  modules/
-    auth/                  <- issues SSO tokens (login)
-    membership/             <- example ministry module
-    <your-module>/          <- add freely, see below
+cmd/
+  server/                 # Canonical HTTP server process (:8081)
+  migrate/                # Forward/backward migration CLI
+  seed/                   # Synthetic fixture seeder
+internal/v2/
+  api/                    # HTTP handlers, middleware, request/response models
+  authorization/          # Multi-dimensional authorization engine
+  ent/                    # Ent ORM schemas and generated models
+  fixtures/               # Deterministic synthetic test fixtures
+  idempotency/            # Request idempotency and conflict store
+  identity/               # Session management and token hashing
+  migration/              # Migration runner with checksum verification
+  migrations/             # Versioned SQL migrations (000001_foundation, etc.)
+  outbox/                 # Outbox leasing, worker dispatch, and consumer receipts
+  platform/               # Platform utilities (config, logging, clock, db)
+  testutil/               # Integration testing utilities
+  uow/                    # Unit of Work transactional boundaries
+  visitor/                # Visitor capture, work item creation, account claims
+scripts/
+  check-v2-boundaries.py  # Import boundary & fixture leakage verification
+  init-v2-dbs.sql         # DB roles and development database initialization
+  smoke-v2.sh             # Read-only boot, migration, seeding, and health smoke test
+  test-v2.sh              # Disposable PostgreSQL container acceptance test harness
 ```
 
-## The single sign-on model
-- `internal/modules/auth` is the **only** place that issues a token (`/api/auth/login`).
-- `internal/platform/middleware.RequireAuth` is the **only** place that verifies one.
-  It needs just the shared JWT secret — not the auth module — so every other
-  module can protect its routes without depending on auth internals.
-- Any module reads "who's logged in" via `contracts.UserFromContext(ctx)`.
-- Result: one login screen, one token, uniformly trusted across every
-  ministry/ops feature, with zero module-to-module coupling.
+---
 
-## Adding a new ministry/ops module
+## Local Development & Execution
+
+### 1. Start PostgreSQL 16 Database
+```bash
+make up
+# or: docker compose up -d
 ```
-make new-module NAME=events
+
+### 2. Run Database Migrations
+```bash
+make migrate
+# or: go run ./cmd/migrate up
 ```
-Then in `cmd/server/main.go`:
-1. Build it: `svc := events.NewService(events.NewRepository(pool))`
-2. Register its migrations in the `migrate.Run([]migrate.ModuleMigrations{...})` list
-3. Mount its routes, behind `requireAuth` if it needs login
 
-If it needs data from another module (e.g. Events needing Membership),
-define the read-only shape it needs in `internal/contracts/`, have the
-owning module's service satisfy it, and pass that interface in — never
-import the other module's package.
-
-## Enforcement
-`.golangci.yml` blocks any `internal/modules/x` from importing
-`internal/modules/y` directly, so this stays true even as more
-volunteers/devs join and own different modules. Run `make lint` in CI.
-
-## Run locally
+### 3. Seed Development Fixtures *(Optional)*
+```bash
+make seed
+# or: go run ./cmd/seed
 ```
-createdb hof_church
-export DATABASE_URL=postgres://postgres:postgres@localhost:5432/hof_church?sslmode=disable
+
+### 4. Start the API Server
+```bash
 make run
+# or: go run ./cmd/server
 ```
-Migrations run automatically on startup, per module.
+
+---
+
+## Running Tests & Quality Verification
+
+```bash
+# Run unit tests
+make test-unit
+
+# Run full integration & acceptance test harness in disposable container
+make test-integration
+
+# Verify import boundaries & full build checks
+make check
+```
+
+---
+
+## Health Check Endpoints
+
+- `GET /health/live` — Process liveness probe.
+- `GET /health/ready` — Database connectivity and migration integrity readiness probe.
+- `GET /api/v2/me/context` — Authenticated member/worker identity and capability context.

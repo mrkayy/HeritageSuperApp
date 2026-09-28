@@ -35,172 +35,52 @@ HeritageSuperApp/
 ```
 church-backend/
 ├── .air.toml                            # Air hot-reload config
-├── .env                                 # Local environment variables
-├── .golangci.yml                        # Lint rules — enforces module isolation (depguard)
+├── .env                                 # Local environment variables (V2 configuration)
+├── .env.example                         # Example environment variables
+├── .golangci.yml                        # Lint rules
+├── docker-compose.yml                   # PostgreSQL 16 isolated container (port 5433)
 ├── go.mod
 ├── go.sum
-├── app.log
-├── bin/
-│   └── server                           # Compiled binary
+├── Makefile                             # Targets: make up, migrate, seed, run, dev, test, check
+├── README.md                            # V2 backend setup and execution guide
 │
 ├── api_docs/
-│   ├── README.md
-│   ├── api-doc.md                       # Full API reference
-│   ├── auth.http                        # Auth endpoint test calls
-│   └── email.http                       # Email endpoint test calls
-│
-├── app/
-│   └── app.go                           # SOLE wiring point — builds all modules, registers all routes
+│   └── v2/
+│       └── openapi.yaml                 # V2 OpenAPI specification
 │
 ├── cmd/
-│   └── server/
-│       └── main.go                      # Entry point: load config, connect DB, start :8080
+│   ├── server/                          # Canonical API HTTP server entry point (V2 runtime, port 8081)
+│   │   └── main.go
+│   ├── migrate/                         # Forward/backward migration CLI with checksums
+│   │   └── main.go
+│   └── seed/                            # Synthetic fixture seeder
+│       └── main.go
+│
+├── scripts/
+│   ├── check-v2-boundaries.py           # Import boundary & fixture leakage verification
+│   ├── init-v2-dbs.sql                  # PostgreSQL initialization (roles: hof_v2_user, hof_v2_runtime)
+│   ├── test-v2.sh                       # Disposable container integration test harness
+│   └── smoke-v2.sh                      # Read-only boot, migration, seeding, and health smoke test
 │
 └── internal/
-    │
-    ├── contracts/                        # Shared interfaces for cross-module communication (NO cross-module imports)
-    │   ├── admin.go
-    │   ├── auth.go
-    │   ├── email.go
-    │   ├── followups.go
-    │   ├── infocenter.go
-    │   ├── membership.go
-    │   ├── profile.go
-    │   ├── roles.go
-    │   ├── souls.go
-    │   ├── teams.go
-    │   └── transport.go
-    │
-    ├── ent/
-    │   └── schema/                       # 38 Ent ORM entity definitions (auto-migrated on startup)
-    │       ├── academycohort.go
-    │       ├── attendancerecord.go
-    │       ├── auditlog.go
-    │       ├── calllog.go
-    │       ├── churchevent.go
-    │       ├── churchsetting.go
-    │       ├── churchteams.go
-    │       ├── cohortenrollment.go
-    │       ├── continuousassessment.go
-    │       ├── districts.go
-    │       ├── featureflag.go
-    │       ├── firsttimerassignment.go
-    │       ├── followup.go
-    │       ├── guardianrelationship.go
-    │       ├── kidsministryprofile.go
-    │       ├── localchurch.go
-    │       ├── member.go
-    │       ├── memberlandmark.go
-    │       ├── membershipstagehistory.go
-    │       ├── memberteam.go
-    │       ├── membertransfer.go
-    │       ├── otpinvites.go
-    │       ├── outreachreport.go
-    │       ├── outreachtargets.go
-    │       ├── profilechangerequest.go
-    │       ├── sector.go
-    │       ├── situationreport.go
-    │       ├── soul.go
-    │       ├── souljournal.go
-    │       ├── team.go
-    │       ├── teamtodo.go
-    │       ├── teamvolunteers.go
-    │       ├── transportrequest.go
-    │       ├── user.go
-    │       ├── usersector.go
-    │       ├── userteam.go
-    │       ├── visitor.go
-    │       ├── volunteerapplication.go
-    │
-    ├── modules/                          # Feature modules — each isolated, no cross-imports
-    │   │
-    │   ├── auth/
-    │   │   ├── handler.go               # JWT auth, Google OAuth, magic link, OTP claim routes
-    │   │   ├── service.go
-    │   │   ├── repository.go
-    │   │   └── token.go
-    │   │
-    │   ├── admin/
-    │   │   ├── handler.go               # Super-admin + general-overseer back-office
-    │   │   ├── service.go
-    │   │   └── repository.go
-    │   │
-    │   ├── dashboard/
-    │   │   └── handler.go               # Aggregate stats for main dashboard
-    │   │
-    │   ├── featureflags/
-    │   │   ├── handler.go               # Feature flag CRUD
-    │   │   ├── service.go
-    │   │   └── repository.go
-    │   │
-    │   ├── followup/
-    │   │   ├── handler.go               # Follow-up call logs + assignment tracking
-    │   │   ├── service.go
-    │   │   └── repository.go
-    │   │
-    │   ├── infocenter/
-    │   │   ├── handler.go               # Member directory, visitor intake, attendance, foundation class
-    │   │   ├── service.go
-    │   │   └── repository.go
-    │   │
-    │   ├── membership/
-    │   │   ├── handler.go               # Member CRM, bulk import, maker-checker, journey tracking
-    │   │   ├── service.go
-    │   │   ├── repository.go
-    │   │   ├── csv_importer.go          # Bulk CSV member import
-    │   │   └── csv_importer_test.go
-    │   │
-    │   ├── profile/
-    │   │   ├── handler.go               # User profile management
-    │   │   ├── service.go
-    │   │   └── repository.go
-    │   │
-    │   ├── souls/
-    │   │   ├── handler.go               # Soul (new-convert) registration + journal
-    │   │   ├── service.go
-    │   │   ├── repository.go
-    │   │   └── service_test.go
-    │   │
-    │   ├── teams/
-    │   │   ├── handler.go               # Teams, Sectors, Local Churches CRUD
-    │   │   ├── service.go
-    │   │   └── repository.go
-    │   │
-    │   └── transport/
-    │       ├── handler.go               # Transport/pickup request management
-    │       ├── service.go
-    │       └── repository.go
-    │
-    └── platform/                         # Shared infrastructure (imported by modules + app.go)
-        ├── config/
-        │   └── config.go                # Loads all env vars
-        │
-        ├── db/
-        │   └── db.go                    # PostgreSQL connection, auto-migration, seed data
-        │
-        ├── email/
-        │   ├── mailer.go                # SMTPMailer + LogMailer implementations
-        │   ├── models.go                # Email payload types
-        │   ├── renderer.go              # Go html/template renderer
-        │   ├── renderer_test.go
-        │   └── templates/
-        │       ├── base.html            # Base email layout
-        │       ├── magic_link.html      # Magic login link email
-        │       ├── otp_verification.html
-        │       ├── new_member_welcome.html
-        │       ├── welcome_visitor.html
-        │       ├── birthday.html
-        │       ├── anniversary.html
-        │       ├── team_assignment.html
-        │       ├── pastoral_care.html
-        │       ├── event_reminder.html
-        │       └── donation_receipt.html
-        │
-        └── middleware/
-            ├── auth.go                  # RequireAuth (JWT verification), UserFromContext
-            ├── feature_flag.go          # RequireFeature — DB-backed flag gate
-            ├── logger.go                # Request/response logger
-            └── teams.go                 # RequireTeamAccess, RequireAnyRole
+    └── v2/                              # V2 Modular Domain Architecture
+        ├── api/                         # HTTP routing, middleware, request/response models
+        │   ├── middleware.go
+        │   ├── router.go
+        │   └── api_test.go
+        ├── authorization/               # Capability, ScopeLevel, SensitivityClass multi-dimensional checks
+        ├── ent/                         # Ent ORM entity definitions and client
+        │   └── schema/                  # Domain schemas (Person, Account, Affiliation, Grant, etc.)
+        ├── fixtures/                    # Deterministic synthetic test fixtures
+        ├── idempotency/                 # Request idempotency and conflict store
+        ├── identity/                    # Session management, token hashing, auth contexts
+        ├── migration/                   # Migration runner with SHA-256 integrity and advisory locking
+        ├── migrations/                  # Versioned SQL migrations (000001 to 000003)
+        ├── outbox/                      # Transactional outbox pattern & worker leasing
+        ├── platform/                    # Shared clock, config, database, logging, UID utilities
+        ├── testutil/                    # Test container and database helpers
+        ├── uow/                         # Unit of Work transactional boundaries
+        └── visitor/                     # Visitor intake, follow-up work item creation, account claim service
 ```
 
 ---
