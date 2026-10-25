@@ -116,7 +116,7 @@ export class StewardsService {
             lastName: input.last_name.trim(),
             email: loginEmail,
             phone: input.phone?.trim() || null,
-            membershipStatus: 'WORKER',
+            membershipStatus: 'WORK_FORCE',
             isVerified: true,
             verifiedAt: new Date(),
             verifiedById: actor.personId,

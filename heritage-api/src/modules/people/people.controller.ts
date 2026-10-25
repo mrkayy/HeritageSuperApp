@@ -5,7 +5,7 @@ import { ZodBody } from '../../platform/http/errors.js';
 import { CurrentAuth, RequireCapability, type AuthContext } from '../identity/auth.guard.js';
 import { PeopleService } from './people.service.js';
 
-const MembershipStatusEnum = z.enum(['VISITOR', 'FIRST_TIMER', 'FOUNDATION', 'MEMBER', 'WORKER', 'INACTIVE']);
+const MembershipStatusEnum = z.enum(['VISITOR', 'FIRST_TIMER', 'FOUNDATION', 'MEMBER', 'WORK_FORCE', 'INACTIVE']);
 const FoundationStatusEnum = z.enum(['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED']);
 
 const VisitorCaptureBody = z.object({
