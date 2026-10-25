@@ -1,3 +1,4 @@
+import { NestFactory } from '@nestjs/core';
 import { createConfiguredApp } from './bootstrap.js';
 import { AppConfig } from './platform/config/config.module.js';
 

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { ArrowLeft, KeyRound } from 'lucide-react'
 import { z } from 'zod'
 import { Alert, AuthCard, Button } from '#/components/ui'
-import { api, ApiError } from '#/lib/api'
+import { api, ApiError, type Me } from '#/lib/api'
 import { meQuery } from '#/lib/auth'
 
 /**
@@ -33,7 +33,8 @@ function MagicLinkPage() {
     setError(null)
     try {
       await api('/auth/magic-link/exchange', { method: 'POST', body: { token } })
-      await queryClient.invalidateQueries({ queryKey: meQuery.queryKey })
+      const me = await api<Me>('/auth/me')
+      queryClient.setQueryData(meQuery.queryKey, me)
       await navigate({ to: '/dashboard', replace: true })
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Something went wrong.')

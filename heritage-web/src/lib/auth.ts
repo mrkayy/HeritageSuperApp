@@ -1,7 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeader } from '@tanstack/react-start/server'
 import { queryOptions, useQuery } from '@tanstack/react-query'
-import type { Me } from './api'
+import { api, ApiError, type Me } from './api'
 
 /**
  * Resolves the signed-in user. Runs on the server (SSR and client navigations)
@@ -21,7 +21,17 @@ export const getMe = createServerFn({ method: 'GET' }).handler(async (): Promise
 
 export const meQuery = queryOptions({
   queryKey: ['me'],
-  queryFn: () => getMe(),
+  queryFn: async (): Promise<Me | null> => {
+    if (typeof window !== 'undefined') {
+      try {
+        return await api<Me>('/auth/me')
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 401) return null
+        throw err
+      }
+    }
+    return getMe()
+  },
   staleTime: 60_000,
 })
 
