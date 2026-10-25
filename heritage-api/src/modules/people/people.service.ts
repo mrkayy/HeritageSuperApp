@@ -719,15 +719,61 @@ export class PeopleService {
     return formatImportJobResponse(job);
   }
 
-  async getImportJob(jobId: string) {
+  /** Only the uploader or church-wide reporting roles (Admin/Pastor) may see an import job's rows. */
+  private canAccessImportJob(actor: AuthContext, createdById: string): boolean {
+    return (
+      createdById === actor.personId ||
+      actor.grants.some((g) => g.capability === 'reports.read' && g.scope === 'CHURCH')
+    );
+  }
+
+  async listImportJobs(actor: AuthContext) {
+    const jobs = await this.prisma.importJob.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 30,
+      include: { rows: { select: { state: true } } },
+    });
+    return jobs
+      .filter((j) => this.canAccessImportJob(actor, j.createdById))
+      .map((j) => ({
+        id: j.id,
+        file_name: j.fileName,
+        status: j.status,
+        created_at: j.createdAt.toISOString(),
+        committed_at: j.committedAt?.toISOString() ?? null,
+        summary: buildImportSummary(j.rows),
+      }));
+  }
+
+  async getImportJob(jobId: string, actor?: AuthContext) {
     const job = await this.prisma.importJob.findUnique({
       where: { id: jobId },
       include: { rows: { orderBy: { rowIndex: 'asc' } } },
     });
-    if (!job) {
+    if (!job || (actor && !this.canAccessImportJob(actor, job.createdById))) {
       throw new ApiError(HttpStatus.NOT_FOUND, 'IMPORT_JOB_NOT_FOUND', 'Import job not found.');
     }
     return formatImportJobResponse(job);
+  }
+
+  /**
+   * HOF-012-S04: downloadable error report. Contains only rows the actor may access and
+   * every cell is formula-safe (=, +, -, @ prefixed with an apostrophe) and CSV-quoted.
+   */
+  async buildImportErrorReport(actor: AuthContext, jobId: string): Promise<string> {
+    const job = await this.getImportJob(jobId, actor);
+    const q = (v: string | number | null | undefined) =>
+      `"${sanitizeCsvFormulaCell(v == null ? '' : String(v)).replace(/"/g, '""')}"`;
+    const lines = ['row,first_name,last_name,phone,email,state,errors,warnings'];
+    for (const r of job.rows) {
+      if (r.state !== 'INVALID' && r.state !== 'REVIEW_REQUIRED') continue;
+      lines.push(
+        [r.row_index, r.first_name, r.last_name, r.phone, r.email, r.state, r.errors.join('; '), r.warnings.join('; ')]
+          .map(q)
+          .join(','),
+      );
+    }
+    return lines.join('\n');
   }
 
   /**
@@ -739,7 +785,7 @@ export class PeopleService {
       where: { id: jobId },
       include: { rows: { orderBy: { rowIndex: 'asc' } } },
     });
-    if (!job) {
+    if (!job || !this.canAccessImportJob(actor, job.createdById)) {
       throw new ApiError(HttpStatus.NOT_FOUND, 'IMPORT_JOB_NOT_FOUND', 'Import job not found.');
     }
     if (job.status === ImportJobStatus.COMMITTED) {
@@ -880,7 +926,7 @@ export class PeopleService {
         where: { id: jobId },
         include: { rows: { orderBy: { rowIndex: 'asc' } } },
       });
-      if (!job) {
+      if (!job || !this.canAccessImportJob(actor, job.createdById)) {
         throw new ApiError(HttpStatus.NOT_FOUND, 'IMPORT_JOB_NOT_FOUND', 'Import job not found.');
       }
 

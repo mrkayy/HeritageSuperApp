@@ -436,3 +436,12 @@ export interface LifeLandmarkItem {
   }
 }
 
+
+export interface ImportJobSummaryItem {
+  id: string
+  file_name: string | null
+  status: 'PREVIEW' | 'COMMITTED'
+  created_at: string
+  committed_at: string | null
+  summary: ImportJobDetail['summary']
+}

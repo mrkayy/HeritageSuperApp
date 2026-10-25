@@ -912,4 +912,28 @@ describe('Heritage Single-Church MVP E2E', () => {
     const emailsAfter = sentEmails.filter((m) => m.to === 'leapday.celebrant@example.com').length;
     expect(emailsAfter - emailsBefore).toBe(1);
   });
+
+  it('HOF-012-S04: CSV error report is formula-safe and import jobs are scoped to the uploader/church leadership', async () => {
+    const csv = 'first_name,last_name,phone,email\n=HYPERLINK("x"),Evil,0803,bad-email\nGood,Person,+2348031112233,good.csv.person@example.com';
+    const preview = await request(app.getHttpServer())
+      .post('/api/people/import-jobs')
+      .set('Origin', ORIGIN)
+      .set('Cookie', adminCookie)
+      .send({ file_name: 'report.csv', csv_text: csv });
+    expect(preview.status).toBe(201);
+    const jobId = preview.body.id as string;
+
+    const report = await request(app.getHttpServer())
+      .get(`/api/people/import-jobs/${jobId}/error-report`)
+      .set('Cookie', adminCookie);
+    expect(report.status).toBe(200);
+    expect(report.body.csv).toContain("\"'=HYPERLINK");
+    expect(report.body.csv).not.toContain('Good');
+
+    const list = await request(app.getHttpServer()).get('/api/people/import-jobs').set('Cookie', adminCookie);
+    expect(list.status).toBe(200);
+    expect(list.body.some((j: { id: string }) => j.id === jobId)).toBe(true);
+
+    await prisma.importJob.delete({ where: { id: jobId } });
+  });
 });

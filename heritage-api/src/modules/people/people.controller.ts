@@ -156,7 +156,7 @@ export class PeopleController {
   // ── Bulk CSV Directory Import (HOF-012-S02 / S03 / S04) ───────────────────
 
   @Post('import-jobs')
-  @RequireCapability('people.write')
+  @RequireCapability('people.import')
   createImportPreview(
     @CurrentAuth() auth: AuthContext,
     @Body(new ZodBody(CreateImportJobBody)) body: z.infer<typeof CreateImportJobBody>,
@@ -164,14 +164,27 @@ export class PeopleController {
     return this.people.createImportPreview(auth, body);
   }
 
+  @Get('import-jobs')
+  @RequireCapability('people.import')
+  listImportJobs(@CurrentAuth() auth: AuthContext) {
+    return this.people.listImportJobs(auth);
+  }
+
   @Get('import-jobs/:jobId')
-  @RequireCapability('people.write')
-  getImportJob(@Param('jobId', ParseUUIDPipe) jobId: string) {
-    return this.people.getImportJob(jobId);
+  @RequireCapability('people.import')
+  getImportJob(@CurrentAuth() auth: AuthContext, @Param('jobId', ParseUUIDPipe) jobId: string) {
+    return this.people.getImportJob(jobId, auth);
+  }
+
+  /** HOF-012-S04: formula-safe CSV of failed and review-required rows (authorized job only). */
+  @Get('import-jobs/:jobId/error-report')
+  @RequireCapability('people.import')
+  async importErrorReport(@CurrentAuth() auth: AuthContext, @Param('jobId', ParseUUIDPipe) jobId: string) {
+    return { file_name: `import-${jobId}-errors.csv`, csv: await this.people.buildImportErrorReport(auth, jobId) };
   }
 
   @Patch('import-jobs/:jobId/rows/:rowId')
-  @RequireCapability('people.write')
+  @RequireCapability('people.import')
   updateImportRow(
     @CurrentAuth() auth: AuthContext,
     @Param('jobId', ParseUUIDPipe) jobId: string,
@@ -182,7 +195,7 @@ export class PeopleController {
   }
 
   @Post('import-jobs/:jobId/commit')
-  @RequireCapability('people.write')
+  @RequireCapability('people.import')
   @HttpCode(200)
   commitImportJob(
     @CurrentAuth() auth: AuthContext,

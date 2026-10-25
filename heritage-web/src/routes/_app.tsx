@@ -5,6 +5,7 @@ import {
   Building2,
   Cake,
   ClipboardCheck,
+  FileSpreadsheet,
   HeartHandshake,
   Home,
   LogOut,
@@ -84,6 +85,12 @@ function AppShell() {
           label: 'Follow-Up Queue',
           icon: PhoneCall,
           show: hasCapability(me, 'followups.read'),
+        },
+        {
+          to: '/import' as const,
+          label: 'Bulk CSV Import',
+          icon: FileSpreadsheet,
+          show: hasCapability(me, 'people.import'),
         },
         {
           to: '/celebrations' as const,

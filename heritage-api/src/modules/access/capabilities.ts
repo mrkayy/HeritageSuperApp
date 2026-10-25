@@ -20,6 +20,7 @@ export const CAPABILITIES = [
   'teams.manage',
   'people.read',
   'people.write',
+  'people.import',
   'visitors.capture',
   'attendance.record',
   'followups.read',
@@ -105,6 +106,7 @@ export function expandGrants(assignments: AssignmentContext[]): Grant[] {
       push('teams.read', 'CHURCH');
       push('teams.manage', 'CHURCH');
       push('people.read', 'CHURCH');
+      push('people.import', 'CHURCH');
       push('people.write', 'CHURCH');
       push('visitors.capture', 'CHURCH');
       push('attendance.record', 'CHURCH');
@@ -122,6 +124,7 @@ export function expandGrants(assignments: AssignmentContext[]): Grant[] {
       push('stewards.read', 'CHURCH');
       push('teams.read', 'CHURCH');
       push('people.read', 'CHURCH');
+      push('people.import', 'CHURCH');
       push('people.write', 'CHURCH');
       push('visitors.capture', 'CHURCH');
       push('attendance.record', 'CHURCH');
@@ -140,6 +143,7 @@ export function expandGrants(assignments: AssignmentContext[]): Grant[] {
       push('stewards.manage', 'TEAM');
       push('teams.read', 'CHURCH');
       push('people.read', 'CHURCH');
+      push('people.import', 'CHURCH');
       push('people.write', 'CHURCH');
       push('visitors.capture', 'CHURCH');
       push('reports.read', 'TEAM');
@@ -166,6 +170,7 @@ export function expandGrants(assignments: AssignmentContext[]): Grant[] {
       push('stewards.invite', 'TEAM');
       push('teams.read', 'CHURCH');
       push('people.read', 'CHURCH');
+      push('people.import', 'CHURCH');
       push('visitors.capture', 'CHURCH');
       push('reports.read', 'TEAM');
       push('celebrations.read', 'CHURCH');
