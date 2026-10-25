@@ -1,12 +1,23 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { useState, type FormEvent } from 'react'
-import { Alert, Button } from '#/components/ui'
+import {
+  AlertTriangle,
+  Calendar,
+  CheckCircle2,
+  Clock,
+  Mail,
+  MessageSquare,
+  Phone,
+  PhoneCall,
+  UserCheck,
+} from 'lucide-react'
+import { Alert, Badge, Button, PageBanner } from '#/components/ui'
 import { api, ApiError, type CallOutcome, type FollowUpTaskItem } from '#/lib/api'
 import { hasCapability, meQuery } from '#/lib/auth'
 
 /**
- * Follow-Up Queue & Call Logging (HOF-016).
+ * Follow-Up Queue & Call Logging (HOF-016) — A function of the Membership Team.
  * - Callers see their assigned tasks ("My Calls")
  * - Team Leads / Pastors / Admins can filter All, Unassigned, My Calls, and Pastoral Visit flags
  * - Honest outcome logging: UNREACHABLE / VOICEMAIL / WRONG_NUMBER keep the task open
@@ -107,101 +118,141 @@ function FollowUpPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-[var(--ink)]">Follow-Up &amp; Outreach Queue</h1>
-          <p className="mt-1 text-sm text-[var(--ink-soft)]">
-            Assign first-time visitors to stewards, log call outcomes honestly, and flag pastoral care needs.
-          </p>
-        </div>
+      <PageBanner
+        badge="Membership Team · Follow-Up"
+        badgeIcon={<PhoneCall className="h-3.5 w-3.5" />}
+        secondaryBadge={
+          <Badge variant="outline" className="font-normal">
+            {(tasks.data ?? []).length} tasks in view
+          </Badge>
+        }
+        title="Follow-Up & Outreach Queue"
+        subtitle="Assign first-time visitors to Membership stewards, log call outcomes honestly, and flag pastoral care needs."
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            {canAssign && (
+              <div className="flex rounded-xl border border-border/70 bg-white/80 p-1 text-xs font-semibold shadow-2xs">
+                {(
+                  [
+                    ['all', 'All Queue'],
+                    ['unassigned', 'Unassigned'],
+                    ['mine', 'My Calls'],
+                    ['pastoral', 'Pastoral Alerts'],
+                  ] as const
+                ).map(([key, label]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setScope(key)}
+                    className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 transition-all ${
+                      scope === key
+                        ? 'bg-primary text-primary-foreground shadow-2xs'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {key === 'pastoral' && <AlertTriangle className="h-3.5 w-3.5" />}
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
 
-        {/* Scope & Status toggles */}
-        <div className="flex flex-wrap items-center gap-2">
-          {canAssign && (
-            <div className="flex rounded-lg border border-[var(--line)] bg-white p-0.5 text-xs font-semibold">
-              {(
-                [
-                  ['all', 'All Queue'],
-                  ['unassigned', 'Unassigned'],
-                  ['mine', 'My Calls'],
-                  ['pastoral', '🚨 Pastoral Alerts'],
-                ] as const
-              ).map(([key, label]) => (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => setScope(key)}
-                  className={`rounded-md px-2.5 py-1.5 transition ${
-                    scope === key ? 'bg-[var(--brand)] text-white' : 'text-[var(--ink-soft)] hover:text-[var(--ink)]'
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          )}
-
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as 'OPEN_AND_IN_PROGRESS' | 'COMPLETED')}
-            className="h-9 rounded-lg border border-[var(--line)] bg-white px-3 text-xs font-semibold text-[var(--ink)]"
-          >
-            <option value="OPEN_AND_IN_PROGRESS">Active Queue (Open / In Progress)</option>
-            <option value="COMPLETED">Completed Calls</option>
-          </select>
-        </div>
-      </div>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as 'OPEN_AND_IN_PROGRESS' | 'COMPLETED')}
+              className="h-10 rounded-xl border border-input bg-white/85 px-3 text-xs font-semibold text-foreground shadow-2xs outline-none focus:border-primary"
+            >
+              <option value="OPEN_AND_IN_PROGRESS">Active Queue (Open / In Progress)</option>
+              <option value="COMPLETED">Completed Calls</option>
+            </select>
+          </div>
+        }
+      />
 
       {banner && <Alert tone={banner.tone}>{banner.text}</Alert>}
 
       {tasks.isPending ? (
-        <p className="text-sm text-[var(--ink-soft)]">Loading follow-up queue…</p>
+        <div className="glass-card rounded-2xl border border-border/60 p-10 text-center text-sm text-muted-foreground">
+          Loading follow-up queue…
+        </div>
       ) : (tasks.data?.length ?? 0) === 0 ? (
-        <div className="rounded-xl border border-[var(--line)] bg-white p-10 text-center text-sm text-[var(--ink-soft)]">
-          No follow-up tasks in this view.
+        <div className="glass-card rounded-2xl border border-border/60 p-12 text-center">
+          <CheckCircle2 className="mx-auto h-9 w-9 text-emerald-600/70" />
+          <p className="mt-2.5 text-sm font-semibold text-foreground">No follow-up tasks in this view</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            All assigned visitors in this filter have been attended to.
+          </p>
         </div>
       ) : (
         <div className="space-y-4">
           {(tasks.data ?? []).map((t) => {
             const isLogging = activeTaskId === t.id
             return (
-              <div key={t.id} className="rounded-xl border border-[var(--line)] bg-white p-5 shadow-2xs">
+              <div
+                key={t.id}
+                className="glass-card rounded-2xl border border-border/60 p-5 transition-all hover:border-primary/30 sm:p-6"
+              >
                 <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div className="space-y-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h2 className="text-base font-semibold text-[var(--ink)]">
-                        {t.person.first_name} {t.person.last_name}
-                      </h2>
-                      <span className="rounded-full bg-[var(--muted)] px-2.5 py-0.5 text-xs font-semibold text-[var(--ink)]">
-                        {t.status}
-                      </span>
-                      {t.needs_pastoral_visit && (
-                        <span className="rounded-full border border-red-200 bg-red-50 px-2.5 py-0.5 text-xs font-semibold text-red-800">
-                          Needs Pastoral Visit
-                        </span>
-                      )}
-                      {t.last_outcome && (
-                        <span className="rounded-full border border-sky-200 bg-sky-50 px-2.5 py-0.5 text-xs font-medium text-sky-900">
-                          Last: {t.last_outcome}
-                        </span>
-                      )}
+                  <div className="flex items-start gap-3.5">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-sm font-bold text-primary">
+                      {t.person.first_name[0]}
+                      {t.person.last_name[0]}
                     </div>
+                    <div className="space-y-1.5">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h2 className="text-base font-bold text-foreground">
+                          {t.person.first_name} {t.person.last_name}
+                        </h2>
+                        <Badge
+                          variant={
+                            t.status === 'COMPLETED'
+                              ? 'success'
+                              : t.status === 'IN_PROGRESS'
+                                ? 'default'
+                                : 'warning'
+                          }
+                        >
+                          {t.status}
+                        </Badge>
+                        {t.needs_pastoral_visit && (
+                          <Badge variant="danger">
+                            <AlertTriangle className="h-3 w-3" />
+                            Needs Pastoral Visit
+                          </Badge>
+                        )}
+                        {t.last_outcome && (
+                          <Badge variant="secondary">Last: {t.last_outcome}</Badge>
+                        )}
+                      </div>
 
-                    <div className="flex flex-wrap gap-4 text-xs text-[var(--ink-soft)]">
-                      {t.person.phone && (
-                        <a href={`tel:${t.person.phone}`} className="font-semibold text-[var(--brand)] hover:underline">
-                          📞 {t.person.phone}
-                        </a>
-                      )}
-                      {t.person.email && <span>✉️ {t.person.email}</span>}
-                      {t.person.missing_contact_reason && (
-                        <span className="italic text-amber-800">No phone/email: {t.person.missing_contact_reason}</span>
-                      )}
-                      {t.service_occurrence && (
-                        <span>
-                          Visited: {t.service_occurrence.title} ({t.service_occurrence.service_date.slice(0, 10)})
-                        </span>
-                      )}
+                      <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+                        {t.person.phone && (
+                          <a
+                            href={`tel:${t.person.phone}`}
+                            className="inline-flex items-center gap-1.5 font-semibold text-primary hover:underline"
+                          >
+                            <Phone className="h-3.5 w-3.5" />
+                            {t.person.phone}
+                          </a>
+                        )}
+                        {t.person.email && (
+                          <span className="inline-flex items-center gap-1.5">
+                            <Mail className="h-3.5 w-3.5" />
+                            {t.person.email}
+                          </span>
+                        )}
+                        {t.person.missing_contact_reason && (
+                          <span className="italic text-amber-800">
+                            No phone/email: {t.person.missing_contact_reason}
+                          </span>
+                        )}
+                        {t.service_occurrence && (
+                          <span className="inline-flex items-center gap-1.5">
+                            <Calendar className="h-3.5 w-3.5 text-primary/70" />
+                            Visited: {t.service_occurrence.title} ({t.service_occurrence.service_date.slice(0, 10)})
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -216,7 +267,7 @@ function FollowUpPage() {
                             assignMutation.mutate({ taskId: t.id, assigneePersonId: e.target.value })
                           }
                         }}
-                        className="h-9 rounded-lg border border-[var(--line)] bg-[var(--muted)]/60 px-2.5 text-xs font-medium text-[var(--ink)]"
+                        className="h-9 rounded-xl border border-input bg-white/90 px-3 text-xs font-semibold text-foreground shadow-2xs outline-none focus:border-primary"
                       >
                         <option value="">Unassigned — Pick steward…</option>
                         {(callers.data ?? []).map((c) => (
@@ -226,35 +277,49 @@ function FollowUpPage() {
                         ))}
                       </select>
                     ) : (
-                      <span className="text-xs text-[var(--ink-soft)]">
-                        Assigned to: <strong>{t.assignee_name ?? 'Unassigned'}</strong>
+                      <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <UserCheck className="h-3.5 w-3.5 text-primary" />
+                        Assigned to: <strong className="text-foreground">{t.assignee_name ?? 'Unassigned'}</strong>
                       </span>
                     )}
 
                     {canRecord && t.status !== 'COMPLETED' && (
-                      <button
+                      <Button
                         type="button"
+                        size="sm"
+                        variant={isLogging ? 'ghost' : 'primary'}
                         onClick={() => setActiveTaskId(isLogging ? null : t.id)}
-                        className="rounded-lg bg-[var(--brand)] px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-[var(--brand-strong)]"
                       >
+                        <PhoneCall className="h-3.5 w-3.5" />
                         {isLogging ? 'Cancel' : 'Log Call Outcome'}
-                      </button>
+                      </Button>
                     )}
                   </div>
                 </div>
 
                 {/* Recent Call History */}
                 {t.call_logs.length > 0 && (
-                  <div className="mt-4 border-t border-[var(--line)] pt-3">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--ink-soft)]">
+                  <div className="mt-4 border-t border-border/50 pt-3.5">
+                    <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                      <Clock className="h-3 w-3 text-primary" />
                       Call History ({t.call_logs.length})
                     </p>
-                    <ul className="mt-1.5 space-y-1 text-xs text-[var(--ink-soft)]">
+                    <ul className="mt-2 space-y-1.5 text-xs text-muted-foreground">
                       {t.call_logs.map((log) => (
-                        <li key={log.id} className="flex flex-wrap items-center gap-2">
-                          <span className="font-semibold text-[var(--ink)]">{log.outcome}</span>
-                          <span>· {new Date(log.created_at).toLocaleString()}</span>
-                          {log.note && <span className="text-[var(--ink)]">— &ldquo;{log.note}&rdquo;</span>}
+                        <li
+                          key={log.id}
+                          className="flex flex-wrap items-center gap-2 rounded-lg bg-secondary/40 px-3 py-1.5"
+                        >
+                          <Badge variant="outline" className="text-[11px]">
+                            {log.outcome}
+                          </Badge>
+                          <span>{new Date(log.created_at).toLocaleString()}</span>
+                          {log.note && (
+                            <span className="inline-flex items-center gap-1 font-medium text-foreground">
+                              <MessageSquare className="h-3 w-3 text-primary" />
+                              &ldquo;{log.note}&rdquo;
+                            </span>
+                          )}
                         </li>
                       ))}
                     </ul>
@@ -265,16 +330,16 @@ function FollowUpPage() {
                 {isLogging && (
                   <form
                     onSubmit={(e) => onLogOutcome(t.id, e)}
-                    className="mt-4 space-y-3 rounded-xl border border-[var(--line)] bg-[var(--muted)]/50 p-4"
+                    className="mt-4 space-y-4 rounded-xl border border-primary/25 bg-secondary/45 p-4"
                   >
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <div className="flex flex-col gap-1">
-                        <label className="text-xs font-semibold text-[var(--ink)]">Call Outcome</label>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-semibold text-foreground">Call Outcome</label>
                         <select
                           name="outcome"
                           required
                           defaultValue="REACHED"
-                          className="h-10 rounded-lg border border-[var(--line)] bg-white px-3 text-sm text-[var(--ink)]"
+                          className="h-10 rounded-xl border border-input bg-white px-3 text-sm text-foreground shadow-2xs outline-none focus:border-primary"
                         >
                           {(Object.entries(OUTCOME_LABELS) as [CallOutcome, string][]).map(([val, label]) => (
                             <option key={val} value={val}>
@@ -285,34 +350,38 @@ function FollowUpPage() {
                       </div>
 
                       <div className="flex flex-col justify-end gap-2 pb-1 text-xs">
-                        <label className="flex items-center gap-2 font-medium text-[var(--ink)]">
-                          <input type="checkbox" name="needs_pastoral_visit" className="h-4 w-4 rounded" />
+                        <label className="flex items-center gap-2 font-medium text-foreground">
+                          <input
+                            type="checkbox"
+                            name="needs_pastoral_visit"
+                            className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
+                          />
                           Flag for pastoral visit / attention
                         </label>
-                        <label className="flex items-center gap-2 font-medium text-[var(--ink)]">
+                        <label className="flex items-center gap-2 font-medium text-foreground">
                           <input
                             type="checkbox"
                             name="mark_completed"
                             defaultChecked
-                            className="h-4 w-4 rounded"
+                            className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
                           />
                           Mark follow-up complete (only applies if reached)
                         </label>
                       </div>
                     </div>
 
-                    <div className="flex flex-col gap-1">
-                      <label className="text-xs font-semibold text-[var(--ink)]">Call Note (optional)</label>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-semibold text-foreground">Call Note (optional)</label>
                       <textarea
                         name="note"
                         rows={2}
                         placeholder="Summary of conversation or best time to call back…"
-                        className="rounded-lg border border-[var(--line)] bg-white p-2.5 text-sm text-[var(--ink)]"
+                        className="rounded-xl border border-input bg-white p-3 text-sm text-foreground shadow-2xs outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                       />
                     </div>
 
                     <div className="flex justify-end">
-                      <Button type="submit" loading={outcomeMutation.isPending}>
+                      <Button type="submit" size="sm" loading={outcomeMutation.isPending}>
                         Save Call Outcome
                       </Button>
                     </div>

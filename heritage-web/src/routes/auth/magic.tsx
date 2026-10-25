@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
+import { ArrowLeft, KeyRound } from 'lucide-react'
 import { z } from 'zod'
 import { Alert, AuthCard, Button } from '#/components/ui'
 import { api, ApiError } from '#/lib/api'
@@ -19,7 +20,6 @@ function MagicLinkPage() {
   const { token: tokenFromUrl } = Route.useSearch()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  // Hold the token in memory, then strip it from the address bar/history.
   const [token] = useState(tokenFromUrl)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -43,26 +43,33 @@ function MagicLinkPage() {
 
   if (!token) {
     return (
-      <AuthCard title="Link missing">
+      <AuthCard title="Sign-In Link Missing" badge="One-Time Email Verification">
         <Alert>This sign-in link is incomplete. Request a new one from the sign-in page.</Alert>
-        <Link to="/login" className="mt-4 inline-block text-sm font-medium">
-          Back to sign in
+        <Link to="/login" className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline">
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Back to Steward Sign In
         </Link>
       </AuthCard>
     )
   }
 
   return (
-    <AuthCard title="Confirm sign in" subtitle="Press the button to finish signing in on this device.">
+    <AuthCard
+      title="Confirm Sign In"
+      subtitle="Press the button below to complete your sign-in session on this device."
+      badge="One-Time Email Verification"
+    >
       <div className="flex flex-col gap-4">
         {error && <Alert>{error}</Alert>}
         {error ? (
-          <Link to="/login" className="text-center text-sm font-medium">
-            Request a new link
+          <Link to="/login" className="inline-flex items-center justify-center gap-1.5 text-xs font-semibold text-primary hover:underline">
+            <ArrowLeft className="h-3.5 w-3.5" />
+            Request a new sign-in link
           </Link>
         ) : (
-          <Button onClick={signIn} loading={pending}>
-            Sign in to Heritage
+          <Button onClick={signIn} loading={pending} className="w-full">
+            <KeyRound className="h-4 w-4" />
+            Sign in to Heritage MMC
           </Button>
         )}
       </div>

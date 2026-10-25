@@ -67,8 +67,14 @@ export interface Me {
   person_id: string
   first_name: string
   last_name: string
+  photo_url: string | null
+  is_verified: boolean
+  membership_status: MembershipStatus
+  foundation_class_status: FoundationClassStatus
   email: string | null
+  has_pin: boolean
   assignments: { id: string; role: Role; role_label: string; team: Team | null }[]
+  baseline_capabilities: string[]
   capabilities: string[]
 }
 
@@ -77,7 +83,12 @@ export interface ClaimPreview {
   first_name: string
   last_name: string
   email: string | null
+  masked_phone: string | null
+  photo_url: string | null
+  is_verified: boolean
+  membership_status: MembershipStatus
   appointments: { role: Role; role_label: string; team_name: string | null }[]
+  baseline_capabilities: string[]
   expires_at: string
 }
 
@@ -99,6 +110,10 @@ export interface DirectoryPerson {
   email: string | null
   phone: string | null
   address: string | null
+  photo_url: string | null
+  is_verified: boolean
+  verified_at: string | null
+  account_status: 'PENDING' | 'ACTIVE' | 'SUSPENDED' | null
   missing_contact_reason: string | null
   membership_status: MembershipStatus
   foundation_class_status: FoundationClassStatus
@@ -204,4 +219,53 @@ export interface DashboardSummary {
     headcount: number
     check_in_count: number
   } | null
+}
+
+export type ImportRowState = 'READY' | 'INVALID' | 'REVIEW_REQUIRED' | 'APPLIED' | 'SKIPPED'
+
+export interface ImportJobRowItem {
+  id: string
+  row_index: number
+  first_name: string
+  last_name: string
+  phone: string | null
+  normalized_phone: string | null
+  email: string | null
+  normalized_email: string | null
+  address: string | null
+  membership_status: MembershipStatus
+  birth_month: number | null
+  birth_day: number | null
+  anniversary_month: number | null
+  anniversary_day: number | null
+  state: ImportRowState
+  errors: string[]
+  warnings: string[]
+  matched_person_id: string | null
+  applied_person_id: string | null
+  applied_at: string | null
+  formula_safe_first_name: string
+  formula_safe_last_name: string
+}
+
+export interface ImportJobDetail {
+  id: string
+  file_name: string | null
+  status: 'PREVIEW' | 'COMMITTED'
+  committed_at: string | null
+  created_at: string
+  summary: {
+    total_rows: number
+    ready_count: number
+    applied_count: number
+    failed_count: number
+    review_required_count: number
+  }
+  rows: ImportJobRowItem[]
+  buckets: {
+    applied: ImportJobRowItem[]
+    failed: ImportJobRowItem[]
+    review_required: ImportJobRowItem[]
+    ready: ImportJobRowItem[]
+  }
 }
