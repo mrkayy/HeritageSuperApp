@@ -76,6 +76,8 @@ async function main() {
           email,
           membershipStatus: 'WORKER',
           foundationClassStatus: 'COMPLETED',
+          isVerified: true,
+          verifiedAt: new Date(),
         },
       });
       await tx.account.update({
@@ -113,6 +115,8 @@ async function main() {
         email,
         membershipStatus: 'WORKER',
         foundationClassStatus: 'COMPLETED',
+        isVerified: true,
+        verifiedAt: new Date(),
       },
     });
     await tx.account.create({

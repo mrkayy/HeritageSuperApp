@@ -3,7 +3,9 @@ import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import {
   Building2,
+  Cake,
   ClipboardCheck,
+  HeartHandshake,
   Home,
   LogOut,
   Menu,
@@ -64,7 +66,7 @@ function AppShell() {
           to: '/attendance' as const,
           label: 'Service Attendance',
           icon: ClipboardCheck,
-          show: hasCapability(me, 'people.read'),
+          show: hasCapability(me, 'attendance.record'),
         },
       ].filter((i) => i.show),
     },
@@ -82,6 +84,18 @@ function AppShell() {
           label: 'Follow-Up Queue',
           icon: PhoneCall,
           show: hasCapability(me, 'followups.read'),
+        },
+        {
+          to: '/celebrations' as const,
+          label: 'Celebrations & Landmarks',
+          icon: Cake,
+          show: hasCapability(me, 'celebrations.read') || hasCapability(me, 'people.read'),
+        },
+        {
+          to: '/prayer-notes' as const,
+          label: 'Pastoral Prayer Notes',
+          icon: HeartHandshake,
+          show: hasCapability(me, 'prayer_notes.manage'),
         },
       ].filter((i) => i.show),
     },

@@ -9,7 +9,7 @@ const InviteBody = z.object({
   last_name: z.string().trim().min(1, 'Required').max(80),
   email: z.string().trim().email('Enter a valid email address'),
   phone: z.string().trim().max(32).optional(),
-  role: z.enum(['ADMIN', 'PASTOR', 'TEAM_LEAD', 'STEWARD']),
+  role: z.enum(['ADMIN', 'PASTOR', 'TEAM_LEAD', 'ASSISTANT_TEAM_LEAD', 'STEWARD']),
   team_id: z.string().uuid().nullish(),
 });
 

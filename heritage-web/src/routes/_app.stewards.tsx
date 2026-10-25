@@ -16,7 +16,7 @@ export const Route = createFileRoute('/_app/stewards')({
   component: StewardsPage,
 })
 
-const TEAM_ROLES: Set<Role> = new Set(['TEAM_LEAD', 'STEWARD'])
+const TEAM_ROLES: Set<Role> = new Set(['TEAM_LEAD', 'ASSISTANT_TEAM_LEAD', 'STEWARD'])
 
 function StewardsPage() {
   const { data: me } = useSuspenseQuery(meQuery)
@@ -167,6 +167,7 @@ function StewardsPage() {
                 className="h-11 rounded-xl border border-input bg-white/85 px-3.5 text-sm text-foreground shadow-2xs outline-none focus:border-primary"
               >
                 <option value="STEWARD">Steward (Team worker)</option>
+                <option value="ASSISTANT_TEAM_LEAD">Assistant Team Lead</option>
                 {isAdmin && <option value="TEAM_LEAD">Team Lead</option>}
                 {isAdmin && <option value="PASTOR">Pastor</option>}
                 {isAdmin && <option value="ADMIN">Church Admin</option>}

@@ -44,10 +44,11 @@ export async function api<T>(path: string, init: { method?: string; body?: unkno
 
 // ── Contracts ────────────────────────────────────────────────────────────
 
-export type Role = 'ADMIN' | 'PASTOR' | 'TEAM_LEAD' | 'STEWARD'
+export type Role = 'ADMIN' | 'PASTOR' | 'TEAM_LEAD' | 'ASSISTANT_TEAM_LEAD' | 'STEWARD'
 export type MembershipStatus = 'VISITOR' | 'FIRST_TIMER' | 'FOUNDATION' | 'MEMBER' | 'WORKER' | 'INACTIVE'
 export type FoundationClassStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED'
 export type ServiceKind = 'SUNDAY_FIRST' | 'SUNDAY_SECOND' | 'SUNDAY_COMBINED' | 'MIDWEEK' | 'SPECIAL'
+export type FollowUpTaskKind = 'WELCOME' | 'FOUNDATION_HANDOFF'
 export type FollowUpTaskStatus = 'OPEN' | 'IN_PROGRESS' | 'COMPLETED'
 export type CallOutcome =
   | 'REACHED'
@@ -73,6 +74,13 @@ export interface Me {
   foundation_class_status: FoundationClassStatus
   email: string | null
   has_pin: boolean
+  has_password: boolean
+  auth_methods: {
+    id: string
+    provider: string
+    provider_email: string | null
+    created_at: string
+  }[]
   assignments: { id: string; role: Role; role_label: string; team: Team | null }[]
   baseline_capabilities: string[]
   capabilities: string[]
@@ -117,6 +125,8 @@ export interface DirectoryPerson {
   missing_contact_reason: string | null
   membership_status: MembershipStatus
   foundation_class_status: FoundationClassStatus
+  foundation_eligible_at?: string | null
+  foundation_rule_version?: string | null
   birth_month: number | null
   birth_day: number | null
   anniversary_month: number | null
@@ -171,6 +181,8 @@ export interface ServiceOccurrenceRoster {
 
 export interface FollowUpTaskItem {
   id: string
+  kind?: FollowUpTaskKind
+  recommendation_note?: string | null
   status: FollowUpTaskStatus
   last_outcome: CallOutcome | null
   needs_pastoral_visit: boolean
@@ -179,6 +191,9 @@ export interface FollowUpTaskItem {
   completed_at: string | null
   assignee_person_id: string | null
   assignee_name: string | null
+  assigned_by_id: string | null
+  assigned_by_name: string | null
+  assigned_at: string | null
   person: {
     id: string
     first_name: string
@@ -203,6 +218,29 @@ export interface FollowUpTaskItem {
     next_action_at: string | null
     created_at: string
   }[]
+}
+
+export interface PrayerNoteItem {
+  id: string
+  content: string
+  created_at: string
+  updated_at: string
+  created_by_name: string
+  sent_to_pastor_at: string | null
+  sent_to_pastor_by_name: string | null
+  person: {
+    id: string
+    first_name: string
+    last_name: string
+    phone: string | null
+    email: string | null
+    membership_status: MembershipStatus
+  }
+  service_occurrence: {
+    id: string
+    title: string
+    service_date: string
+  } | null
 }
 
 export interface DashboardSummary {
@@ -269,3 +307,132 @@ export interface ImportJobDetail {
     ready: ImportJobRowItem[]
   }
 }
+
+export interface FoundationEligibilityItem {
+  person_id: string
+  first_name: string
+  last_name: string
+  phone: string | null
+  email: string | null
+  membership_status: MembershipStatus
+  foundation_class_status: FoundationClassStatus
+  qualifying_visits_count: number
+  required_visits_threshold: number
+  is_eligible: boolean
+  foundation_eligible_at: string | null
+  foundation_rule_version: string | null
+  handoff_status: 'NOT_RECOMMENDED' | 'HANDED_OFF_TO_MEMBERSHIP'
+  recommendation: {
+    id: string
+    rule_version: string
+    qualifying_visits_count: number
+    is_exemption: boolean
+    exemption_reason: string | null
+    note: string
+    recommended_by_id: string
+    recommended_by_name: string
+    followup_task_id: string
+    followup_task_status: FollowUpTaskStatus
+    created_at: string
+  } | null
+}
+
+// ── Celebrations, Proactive 3-Day Alerts & Life Landmarks (HOF-022) ──────
+
+export type CelebrationKind = 'BIRTHDAY' | 'ANNIVERSARY'
+export type LeapDayPolicy = 'FEB_28' | 'MAR_01'
+export type CelebrationContactChannel = 'CALL' | 'EMAIL_GREETING' | 'WHATSAPP_SMS' | 'IN_PERSON'
+export type LandmarkCategory =
+  | 'GRADUATION'
+  | 'WEDDING'
+  | 'BABY_DEDICATION'
+  | 'CAREER_MILESTONE'
+  | 'OTHER'
+export type LandmarkPublicationPreference = 'PRIVATE' | 'ALLOW_BULLETIN'
+export type LandmarkApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
+
+export interface CelebrationContactItem {
+  id: string
+  channel: CelebrationContactChannel
+  outcome: string
+  note: string | null
+  delivery_status: string | null
+  created_at: string
+}
+
+export interface CelebrationReminderItem {
+  id: string
+  person_id: string
+  kind: CelebrationKind
+  celebration_year: number
+  source_month: number
+  source_day: number
+  observed_month: number
+  observed_day: number
+  observed_date: string
+  days_until: number
+  timezone: string
+  leap_day_policy: LeapDayPolicy
+  evaluation_count: number
+  birth_year: null
+  person: {
+    id: string
+    first_name: string
+    last_name: string
+    email: string | null
+    phone: string | null
+    photo_url: string | null
+    membership_status: MembershipStatus
+  }
+  contacts: CelebrationContactItem[]
+}
+
+export interface MonthlyCelebrationItem {
+  person_id: string
+  first_name: string
+  last_name: string
+  email: string | null
+  phone: string | null
+  photo_url: string | null
+  membership_status: MembershipStatus
+  kind: CelebrationKind
+  month: number
+  day: number
+  celebration_year: number
+  contacts_count: number
+  last_contact_at: string | null
+}
+
+export interface CelebrationsOverview {
+  local_date: string
+  timezone: string
+  leap_day_policy: LeapDayPolicy
+  window_days: number
+  selected_month: number
+  reminders: CelebrationReminderItem[]
+  monthly_celebrations: MonthlyCelebrationItem[]
+}
+
+export interface LifeLandmarkItem {
+  id: string
+  person_id: string
+  category: LandmarkCategory
+  title: string
+  description: string | null
+  occurred_on: string | null
+  publication_preference: LandmarkPublicationPreference
+  approval_status: LandmarkApprovalStatus
+  in_public_bulletin: boolean
+  recorded_by_id: string
+  reviewed_by_id: string | null
+  reviewed_at: string | null
+  review_note: string | null
+  created_at: string
+  person: {
+    id: string
+    first_name: string
+    last_name: string
+    membership_status: MembershipStatus
+  }
+}
+

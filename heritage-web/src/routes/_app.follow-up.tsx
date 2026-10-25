@@ -6,6 +6,7 @@ import {
   Calendar,
   CheckCircle2,
   Clock,
+  GraduationCap,
   Mail,
   MessageSquare,
   Phone,
@@ -203,6 +204,12 @@ function FollowUpPage() {
                         <h2 className="text-base font-bold text-foreground">
                           {t.person.first_name} {t.person.last_name}
                         </h2>
+                        {t.kind === 'FOUNDATION_HANDOFF' && (
+                          <Badge variant="default">
+                            <GraduationCap className="h-3 w-3" />
+                            Foundation Class Handoff
+                          </Badge>
+                        )}
                         <Badge
                           variant={
                             t.status === 'COMPLETED'
@@ -253,6 +260,12 @@ function FollowUpPage() {
                           </span>
                         )}
                       </div>
+                      {t.recommendation_note && (
+                        <p className="rounded-lg border border-primary/20 bg-primary/5 px-3 py-1.5 text-xs text-foreground">
+                          <strong className="font-semibold text-primary">IC Handoff Note:</strong>{' '}
+                          &ldquo;{t.recommendation_note}&rdquo;
+                        </p>
+                      )}
                     </div>
                   </div>
 
@@ -280,6 +293,13 @@ function FollowUpPage() {
                       <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
                         <UserCheck className="h-3.5 w-3.5 text-primary" />
                         Assigned to: <strong className="text-foreground">{t.assignee_name ?? 'Unassigned'}</strong>
+                      </span>
+                    )}
+
+                    {t.assigned_by_name && (
+                      <span className="text-[11px] text-muted-foreground/80 italic">
+                        By: {t.assigned_by_name}
+                        {t.assigned_at ? ` (${t.assigned_at.slice(0, 10)})` : ''}
                       </span>
                     )}
 

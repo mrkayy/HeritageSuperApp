@@ -117,6 +117,9 @@ export class StewardsService {
             email: loginEmail,
             phone: input.phone?.trim() || null,
             membershipStatus: 'WORKER',
+            isVerified: true,
+            verifiedAt: new Date(),
+            verifiedById: actor.personId,
           },
         });
         await tx.account.create({ data: { personId: person.id, loginEmail, status: 'PENDING' } });
@@ -188,7 +191,7 @@ export class StewardsService {
     const appointment = person.assignments[0];
     const mail = stewardInvitationEmail({
       firstName: person.firstName,
-      roleLabel: appointment ? ROLE_LABELS[appointment.role] : 'Steward',
+      roleLabel: appointment ? ROLE_LABELS[appointment.role] : null,
       teamName: appointment?.team?.name ?? null,
       url,
       expiresInHours: ttlHours,
@@ -213,9 +216,9 @@ export class StewardsService {
     }
     const churchWide = actor.grants.some((g) => g.capability === 'stewards.invite' && g.scope === 'CHURCH');
     if (churchWide) return;
-    // Team leads may only appoint plain stewards into their own team.
-    if (role !== 'STEWARD' || !can(actor.grants, 'stewards.invite', { teamId })) {
-      throw forbidden('Team leads can only invite stewards to their own team.');
+    // Team leads may appoint stewards and assistant team leads into their own team.
+    if ((role !== 'STEWARD' && role !== 'ASSISTANT_TEAM_LEAD') || !can(actor.grants, 'stewards.invite', { teamId })) {
+      throw forbidden('Team leads can only invite stewards or assistant team leads to their own team.');
     }
   }
 
@@ -231,9 +234,9 @@ export class StewardsService {
 
     const inScope = person.assignments.some((a) => a.teamId && can(actor.grants, capability, { teamId: a.teamId }));
     // Team leads cannot manage church-wide roles or other leads.
-    const onlyStewards = person.assignments.every((a) => a.role === 'STEWARD');
+    const manageableByLead = person.assignments.every((a) => a.role === 'STEWARD' || a.role === 'ASSISTANT_TEAM_LEAD');
     if (!inScope) throw notFound();
-    if (!onlyStewards) throw forbidden();
+    if (!manageableByLead) throw forbidden();
     return person.account;
   }
 }

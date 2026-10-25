@@ -64,10 +64,21 @@ export class AuthGuard implements CanActivate {
 
     const assignments = await this.prisma.assignment.findMany({
       where: { personId: session.personId, endedAt: null },
-      select: { id: true, role: true, teamId: true },
+      select: {
+        id: true,
+        role: true,
+        teamId: true,
+        team: { select: { key: true } },
+      },
     });
-    const grants = expandGrants(assignments);
-    req.auth = { ...session, assignments, grants };
+    const assignmentContexts = assignments.map((a) => ({
+      id: a.id,
+      role: a.role,
+      teamId: a.teamId,
+      teamKey: a.team?.key ?? null,
+    }));
+    const grants = expandGrants(assignmentContexts);
+    req.auth = { ...session, assignments: assignmentContexts, grants };
 
     const required = this.reflector.getAllAndOverride<Capability | undefined>(CAPABILITY_KEY, targets);
     if (required && !can(grants, required)) {

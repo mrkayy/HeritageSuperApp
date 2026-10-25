@@ -38,9 +38,15 @@ model Person {
   email                 String?               // contact email; NOT a unique identity key
   phone                 String?
   address               String?
+  photoUrl              String?               // HOF-002-S01: member photo captured during onboarding or profile
+  isVerified            Boolean               @default(false) // HOF-002-S01: verified Person eligible for account claim
+  verifiedAt            DateTime?
+  verifiedById          String?               @db.Uuid
   missingContactReason  String?               // HOF-013-S03: recorded when no phone/email available
   membershipStatus      MembershipStatus      @default(VISITOR)
   foundationClassStatus FoundationClassStatus @default(NOT_STARTED)
+  foundationEligibleAt  DateTime?             // HOF-015-S01: recorded when qualifying visit threshold is met
+  foundationRuleVersion String?               // HOF-015-S01: e.g. "v1:2_visits"
   birthMonth            Int?                  // 1–12 (partial birthday without fabricating year)
   birthDay              Int?                  // 1–31
   anniversaryMonth      Int?                  // 1–12
@@ -59,6 +65,10 @@ model Person {
   attendanceRecords  AttendanceRecord[]
   followUpTasks      FollowUpTask[]
   prayerNotes        PrayerNote[]
+  celebrationReminders     CelebrationReminder[]
+  celebrationContacts      CelebrationContact[]
+  lifeLandmarks            LifeLandmark[]
+  foundationRecommendation FoundationRecommendation?
 
   @@index([lastName, firstName])
   @@index([email])
@@ -68,15 +78,80 @@ model Person {
   @@index([anniversaryMonth, anniversaryDay])
 }
 
+/// HOF-012-S02..S04: Bulk CSV Directory Import Jobs & Row-Idempotent Preview/Commit
+enum ImportJobStatus {
+  PREVIEW
+  COMMITTED
+}
+
+enum ImportRowState {
+  READY
+  INVALID
+  REVIEW_REQUIRED
+  APPLIED
+  SKIPPED
+}
+
+model ImportJob {
+  id                  String          @id @default(uuid()) @db.Uuid
+  fileName            String?
+  status              ImportJobStatus @default(PREVIEW)
+  createdById         String          @db.Uuid
+  committedById       String?         @db.Uuid
+  committedAt         DateTime?
+  commitIdempotencyKey String?
+  summary             Json?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  rows ImportJobRow[]
+
+  @@index([createdById, createdAt(sort: Desc)])
+}
+
+model ImportJobRow {
+  id                String         @id @default(uuid()) @db.Uuid
+  jobId             String         @db.Uuid
+  rowIndex          Int
+  firstName         String
+  lastName          String
+  phone             String?
+  normalizedPhone   String?
+  email             String?
+  normalizedEmail   String?
+  address           String?
+  membershipStatus  MembershipStatus @default(MEMBER)
+  birthMonth        Int?
+  birthDay          Int?
+  anniversaryMonth  Int?
+  anniversaryDay    Int?
+  state             ImportRowState @default(READY)
+  errors            Json?          // string[] validation messages
+  warnings          Json?          // string[] duplicate / review warnings
+  matchedPersonId   String?        @db.Uuid
+  appliedPersonId   String?        @db.Uuid
+  appliedAt         DateTime?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  job ImportJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([jobId, rowIndex])
+  @@index([jobId, state])
+}
+
 /// HOF-013-S04: Prayer notes are stored separately from the directory record so
 /// ordinary directory responses never leak pastoral/confidential requests.
 model PrayerNote {
-  id                  String   @id @default(uuid()) @db.Uuid
-  personId            String   @db.Uuid
-  serviceOccurrenceId String?  @db.Uuid
+  id                  String    @id @default(uuid()) @db.Uuid
+  personId            String    @db.Uuid
+  serviceOccurrenceId String?   @db.Uuid
   content             String
-  createdById         String   @db.Uuid
-  createdAt           DateTime @default(now())
+  createdById         String    @db.Uuid
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @default(now()) @updatedAt
+  sentToPastorAt      DateTime?
+  sentToPastorById    String?   @db.Uuid
 
   person            Person             @relation(fields: [personId], references: [id], onDelete: Cascade)
   serviceOccurrence ServiceOccurrence? @relation(fields: [serviceOccurrenceId], references: [id], onDelete: SetNull)
@@ -130,7 +205,12 @@ model AttendanceRecord {
   @@index([personId, createdAt(sort: Desc)])
 }
 
-// ─── Follow-Up Queue & Call Logging (HOF-016) ──────────────────────────────
+// ─── Follow-Up Queue & Call Logging (HOF-016 / HOF-015) ────────────────────
+
+enum FollowUpTaskKind {
+  WELCOME
+  FOUNDATION_HANDOFF
+}
 
 enum FollowUpTaskStatus {
   OPEN
@@ -151,6 +231,8 @@ model FollowUpTask {
   id                  String             @id @default(uuid()) @db.Uuid
   personId            String             @db.Uuid
   serviceOccurrenceId String?            @db.Uuid
+  kind                FollowUpTaskKind   @default(WELCOME)
+  recommendationNote  String?            // HOF-015-S02: IC handoff note for FOUNDATION_HANDOFF tasks
   assigneePersonId    String?            @db.Uuid // Steward Person ID
   assignedById        String?            @db.Uuid
   assignedAt          DateTime?
@@ -163,12 +245,32 @@ model FollowUpTask {
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
 
-  person            Person             @relation(fields: [personId], references: [id], onDelete: Cascade)
-  serviceOccurrence ServiceOccurrence? @relation(fields: [serviceOccurrenceId], references: [id], onDelete: SetNull)
-  callLogs          CallLog[]
+  person                   Person                    @relation(fields: [personId], references: [id], onDelete: Cascade)
+  serviceOccurrence        ServiceOccurrence?        @relation(fields: [serviceOccurrenceId], references: [id], onDelete: SetNull)
+  callLogs                 CallLog[]
+  foundationRecommendation FoundationRecommendation?
 
   @@index([status, assigneePersonId])
-  @@index([personId])
+  @@index([personId, kind])
+}
+
+/// HOF-015-S02: Idempotent Information Center recommendation & handoff to Membership.
+/// Unique by personId so replaying the event/request delivers at most one Foundation handoff task.
+model FoundationRecommendation {
+  id                    String   @id @default(uuid()) @db.Uuid
+  personId              String   @unique @db.Uuid
+  ruleVersion           String   @default("v1:2_visits")
+  qualifyingVisitsCount Int
+  isExemption           Boolean  @default(false)
+  exemptionReason       String?
+  note                  String
+  recommendedById       String   @db.Uuid
+  followUpTaskId        String   @unique @db.Uuid
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  person       Person       @relation(fields: [personId], references: [id], onDelete: Cascade)
+  followUpTask FollowUpTask @relation(fields: [followUpTaskId], references: [id], onDelete: Cascade)
 }
 
 model CallLog {
@@ -200,13 +302,31 @@ model Account {
   personId     String        @unique @db.Uuid
   loginEmail   String        @unique // normalized lowercase login identifier
   passwordHash String?
+  pinHash      String?       // HOF-002-S01 / HOF-004: Argon2-hashed 4–6 digit quick-unlock PIN
   status       AccountStatus @default(PENDING)
   lastLoginAt  DateTime?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
-  person   Person    @relation(fields: [personId], references: [id], onDelete: Cascade)
-  sessions Session[]
+  person      Person       @relation(fields: [personId], references: [id], onDelete: Cascade)
+  sessions    Session[]
+  authMethods AuthMethod[]
+}
+
+/// Linked external authentication method (e.g. Google OAuth) attached to an Account (HOF-003).
+/// Unlinking requires reauthentication and preserves at least one usable login method (HOF-003-S04).
+model AuthMethod {
+  id            String   @id @default(uuid()) @db.Uuid
+  accountId     String   @db.Uuid
+  provider      String   // e.g. "google"
+  providerSub   String   // OAuth issuer+subject identifier
+  providerEmail String?
+  createdAt     DateTime @default(now())
+
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerSub])
+  @@index([accountId])
 }
 
 /// Server-side session. Only the SHA-256 hash of the cookie value is stored.
@@ -253,10 +373,11 @@ model AuthToken {
 
 /// Role templates. Capabilities are resolved in code (access/capabilities.ts).
 enum Role {
-  ADMIN       // church admin: configuration, invites, appointments
-  PASTOR      // oversight & reporting
-  TEAM_LEAD   // leads a team: allocation, approvals within the team
-  STEWARD     // team worker
+  ADMIN               // church admin: configuration, invites, appointments
+  PASTOR              // oversight & reporting
+  TEAM_LEAD           // leads a team: allocation, approvals within the team
+  ASSISTANT_TEAM_LEAD // assistant lead: follow-up allocation and steward delegation within the team
+  STEWARD             // team worker
 }
 
 model Team {
@@ -299,3 +420,115 @@ model AuditEvent {
 
   @@index([action, createdAt])
 }
+
+// ─── Celebrations, Reminders & Life Landmarks (HOF-022) ────────────────────
+
+enum CelebrationKind {
+  BIRTHDAY
+  ANNIVERSARY
+}
+
+enum LeapDayPolicy {
+  FEB_28
+  MAR_01
+}
+
+enum CelebrationContactChannel {
+  CALL
+  EMAIL_GREETING
+  WHATSAPP_SMS
+  IN_PERSON
+}
+
+enum LandmarkCategory {
+  GRADUATION
+  WEDDING
+  BABY_DEDICATION
+  CAREER_MILESTONE
+  OTHER
+}
+
+enum LandmarkPublicationPreference {
+  PRIVATE
+  ALLOW_BULLETIN
+}
+
+enum LandmarkApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+/// HOF-022-S01 / S02: Idempotent proactive 3-day celebration reminder per
+/// (personId, kind, celebrationYear). Crosses Dec->Jan year boundaries cleanly
+/// without inventing a birth/marriage year, and honors explicit leap-day policy.
+model CelebrationReminder {
+  id              String          @id @default(uuid()) @db.Uuid
+  personId        String          @db.Uuid
+  kind            CelebrationKind
+  celebrationYear Int             // Target calendar year of the observed celebration (e.g. 2027 for Jan 2 evaluated on Dec 30, 2026)
+  sourceMonth     Int             // 1–12 stored on Person (e.g. 2 for Feb 29)
+  sourceDay       Int             // 1–31 stored on Person (e.g. 29 for Feb 29)
+  observedMonth   Int             // 1–12 after applying LeapDayPolicy in non-leap years
+  observedDay     Int             // 1–31 after applying LeapDayPolicy in non-leap years
+  observedDate    String          // "YYYY-MM-DD" in church timezone
+  daysUntil       Int             // 0..3 when last evaluated
+  timezone        String          @default("Africa/Lagos")
+  leapDayPolicy   LeapDayPolicy   @default(FEB_28)
+  lastEvaluatedOn String          // "YYYY-MM-DD" local date of scheduler run
+  evaluationCount Int             @default(1)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  person Person @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  @@unique([personId, kind, celebrationYear])
+  @@index([observedDate])
+}
+
+/// HOF-022-S04: Celebration greeting or call outcome linked to a specific
+/// celebration occurrence, with idempotencyKey so repeated clicks never duplicate
+/// deliveries or records.
+model CelebrationContact {
+  id              String                    @id @default(uuid()) @db.Uuid
+  personId        String                    @db.Uuid
+  kind            CelebrationKind
+  celebrationYear Int
+  channel         CelebrationContactChannel
+  outcome         String                    @default("SENT") // "SENT" | "REACHED" | "LEFT_MESSAGE" | "FAILED"
+  note            String?
+  actorPersonId   String                    @db.Uuid
+  idempotencyKey  String                    @unique
+  deliveryStatus  String?                   // "SENT" | "LOGGED" | "FAILED"
+  createdAt       DateTime                  @default(now())
+
+  person Person @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  @@index([personId, kind, celebrationYear])
+}
+
+/// HOF-022-S03: Life Landmarks & Academic Graduation Tracker.
+/// Recording in profile is separate from public bulletin publication, which
+/// requires both `publicationPreference = ALLOW_BULLETIN` and `approvalStatus = APPROVED`.
+model LifeLandmark {
+  id                    String                        @id @default(uuid()) @db.Uuid
+  personId              String                        @db.Uuid
+  category              LandmarkCategory              @default(GRADUATION)
+  title                 String
+  description           String?
+  occurredOn            String?                       // "YYYY-MM-DD" or partial "YYYY-MM"
+  publicationPreference LandmarkPublicationPreference @default(PRIVATE)
+  approvalStatus        LandmarkApprovalStatus        @default(PENDING)
+  recordedById          String                        @db.Uuid
+  reviewedById          String?                       @db.Uuid
+  reviewedAt            DateTime?
+  reviewNote            String?
+  createdAt             DateTime                      @default(now())
+  updatedAt             DateTime                      @updatedAt
+
+  person Person @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  @@index([personId, createdAt(sort: Desc)])
+  @@index([publicationPreference, approvalStatus])
+}
+

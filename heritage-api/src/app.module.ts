@@ -2,9 +2,11 @@ import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AttendanceModule } from './modules/attendance/attendance.module.js';
+import { CelebrationsModule } from './modules/celebrations/celebrations.module.js';
 import { FollowUpModule } from './modules/followup/followup.module.js';
 import { IdentityModule } from './modules/identity/identity.module.js';
 import { PeopleModule } from './modules/people/people.module.js';
+import { PrayerNotesModule } from './modules/prayer-notes/prayer-notes.module.js';
 import { StewardsModule } from './modules/stewards/stewards.module.js';
 import { TeamsModule } from './modules/teams/teams.module.js';
 import { AuditModule } from './platform/audit/audit.module.js';
@@ -33,6 +35,8 @@ import { OriginCheckMiddleware, RequestIdMiddleware } from './platform/http/midd
     PeopleModule,
     FollowUpModule,
     AttendanceModule,
+    PrayerNotesModule,
+    CelebrationsModule,
   ],
   controllers: [HealthController],
   providers: [

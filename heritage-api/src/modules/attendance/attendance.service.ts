@@ -13,6 +13,86 @@ export interface CreateOccurrenceInput {
   notes?: string;
 }
 
+export const FOUNDATION_ELIGIBILITY_RULE_VERSION = 'v1:2_visits';
+export const FOUNDATION_QUALIFYING_VISIT_THRESHOLD = 2;
+
+/**
+ * HOF-015-S01 / S03: Synchronizes a Person's Foundation eligibility based on live
+ * distinct qualifying service attendance count.
+ * - Threshold (>= 2 visits) records `foundationEligibleAt` and `foundationRuleVersion`
+ *   ONLY — it never creates an Account, never enrolls the person in Foundation Class,
+ *   and never marks Foundation Class completed (`HOF-015-S01`).
+ * - If attendance is later corrected/removed so qualifying visits drop below 2,
+ *   clears stale eligibility (`HOF-015-S03`).
+ */
+export async function syncFoundationEligibility(
+  tx: Prisma.TransactionClient,
+  personId: string,
+): Promise<{
+  qualifyingVisitsCount: number;
+  isEligible: boolean;
+  foundationEligibleAt: Date | null;
+  foundationRuleVersion: string | null;
+}> {
+  const [person, qualifyingVisitsCount] = await Promise.all([
+    tx.person.findUnique({
+      where: { id: personId },
+      select: {
+        id: true,
+        foundationEligibleAt: true,
+        foundationRuleVersion: true,
+      },
+    }),
+    tx.attendanceRecord.count({ where: { personId } }),
+  ]);
+
+  if (!person) {
+    return {
+      qualifyingVisitsCount: 0,
+      isEligible: false,
+      foundationEligibleAt: null,
+      foundationRuleVersion: null,
+    };
+  }
+
+  if (qualifyingVisitsCount >= FOUNDATION_QUALIFYING_VISIT_THRESHOLD) {
+    const eligibleAt = person.foundationEligibleAt ?? new Date();
+    const ruleVersion = person.foundationRuleVersion ?? FOUNDATION_ELIGIBILITY_RULE_VERSION;
+    if (!person.foundationEligibleAt || person.foundationRuleVersion !== ruleVersion) {
+      await tx.person.update({
+        where: { id: personId },
+        data: {
+          foundationEligibleAt: eligibleAt,
+          foundationRuleVersion: ruleVersion,
+        },
+      });
+    }
+    return {
+      qualifyingVisitsCount,
+      isEligible: true,
+      foundationEligibleAt: eligibleAt,
+      foundationRuleVersion: ruleVersion,
+    };
+  }
+
+  if (person.foundationEligibleAt || person.foundationRuleVersion) {
+    await tx.person.update({
+      where: { id: personId },
+      data: {
+        foundationEligibleAt: null,
+        foundationRuleVersion: null,
+      },
+    });
+  }
+
+  return {
+    qualifyingVisitsCount,
+    isEligible: false,
+    foundationEligibleAt: null,
+    foundationRuleVersion: null,
+  };
+}
+
 @Injectable()
 export class AttendanceService {
   constructor(
@@ -187,33 +267,52 @@ export class AttendanceService {
     });
 
     if (existing) {
+      const eligibility = await this.prisma.$transaction((tx) => syncFoundationEligibility(tx, personId));
       return {
         attendance_id: existing.id,
         person_id: personId,
         already_present: true,
+        qualifying_visits_count: eligibility.qualifyingVisitsCount,
+        foundation_eligible: eligibility.isEligible,
+        foundation_rule_version: eligibility.foundationRuleVersion,
       };
     }
 
     try {
-      const record = await this.prisma.attendanceRecord.create({
-        data: {
-          serviceOccurrenceId: occurrenceId,
-          personId,
-          source: 'check_in',
-          isFirstVisit: false,
-          recordedById: actor.personId,
-        },
-      });
-      await this.audit.record({
-        action: 'attendance.checked_in',
-        actorId: actor.personId,
-        subjectId: personId,
-        metadata: { serviceOccurrenceId: occurrenceId },
+      const { record, eligibility } = await this.prisma.$transaction(async (tx) => {
+        const rec = await tx.attendanceRecord.create({
+          data: {
+            serviceOccurrenceId: occurrenceId,
+            personId,
+            source: 'check_in',
+            isFirstVisit: false,
+            recordedById: actor.personId,
+          },
+        });
+        const elig = await syncFoundationEligibility(tx, personId);
+        await this.audit.record(
+          {
+            action: 'attendance.checked_in',
+            actorId: actor.personId,
+            subjectId: personId,
+            metadata: {
+              serviceOccurrenceId: occurrenceId,
+              qualifyingVisitsCount: elig.qualifyingVisitsCount,
+              foundationEligible: elig.isEligible,
+              foundationRuleVersion: elig.foundationRuleVersion,
+            },
+          },
+          tx,
+        );
+        return { record: rec, eligibility: elig };
       });
       return {
         attendance_id: record.id,
         person_id: personId,
         already_present: false,
+        qualifying_visits_count: eligibility.qualifyingVisitsCount,
+        foundation_eligible: eligibility.isEligible,
+        foundation_rule_version: eligibility.foundationRuleVersion,
       };
     } catch (err) {
       // Handle concurrent race on unique constraint (HOF-014-S01)
@@ -226,10 +325,14 @@ export class AttendanceService {
             },
           },
         });
+        const eligibility = await this.prisma.$transaction((tx) => syncFoundationEligibility(tx, personId));
         return {
           attendance_id: raced.id,
           person_id: personId,
           already_present: true,
+          qualifying_visits_count: eligibility.qualifyingVisitsCount,
+          foundation_eligible: eligibility.isEligible,
+          foundation_rule_version: eligibility.foundationRuleVersion,
         };
       }
       throw err;
@@ -237,19 +340,36 @@ export class AttendanceService {
   }
 
   /**
-   * Audited attendance removal when someone was checked in by mistake (HOF-014-S03).
+   * Audited attendance removal when someone was checked in by mistake (HOF-014-S03 / HOF-015-S03).
+   * Re-evaluates Foundation eligibility so stale eligibility is cleared if visits drop below threshold.
    */
   async removeCheckIn(actor: AuthContext, occurrenceId: string, personId: string, reason?: string) {
-    await this.prisma.attendanceRecord.deleteMany({
-      where: { serviceOccurrenceId: occurrenceId, personId },
+    const eligibility = await this.prisma.$transaction(async (tx) => {
+      await tx.attendanceRecord.deleteMany({
+        where: { serviceOccurrenceId: occurrenceId, personId },
+      });
+      const elig = await syncFoundationEligibility(tx, personId);
+      await this.audit.record(
+        {
+          action: 'attendance.removed',
+          actorId: actor.personId,
+          subjectId: personId,
+          metadata: {
+            serviceOccurrenceId: occurrenceId,
+            reason: reason ?? 'corrected',
+            qualifyingVisitsCount: elig.qualifyingVisitsCount,
+            foundationEligible: elig.isEligible,
+          },
+        },
+        tx,
+      );
+      return elig;
     });
-    await this.audit.record({
-      action: 'attendance.removed',
-      actorId: actor.personId,
-      subjectId: personId,
-      metadata: { serviceOccurrenceId: occurrenceId, reason: reason ?? 'corrected' },
-    });
-    return { ok: true };
+    return {
+      ok: true,
+      qualifying_visits_count: eligibility.qualifyingVisitsCount,
+      foundation_eligible: eligibility.isEligible,
+    };
   }
 
   /**

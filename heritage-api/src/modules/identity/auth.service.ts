@@ -8,12 +8,20 @@ import { PrismaService } from '../../platform/database/prisma.module.js';
 import { EmailService } from '../../platform/email/email.module.js';
 import { magicLoginEmail } from '../../platform/email/templates.js';
 import { ApiError } from '../../platform/http/errors.js';
-import { CAPABILITIES, can, ROLE_LABELS, type Grant } from '../access/capabilities.js';
+import { BASELINE_SELF_CAPABILITIES, CAPABILITIES, can, ROLE_LABELS, type Grant } from '../access/capabilities.js';
 import { SessionService } from './session.service.js';
 
 interface RequestMeta {
   ip?: string;
   userAgent?: string;
+}
+
+export interface ClaimCompleteInput {
+  token: string;
+  password: string;
+  identity_confirmed?: boolean;
+  photo_url?: string | null;
+  pin?: string | null;
 }
 
 const MINUTE = 60 * 1000;
@@ -81,7 +89,11 @@ export class AuthService {
       include: { person: { select: { firstName: true } } },
     });
     if (!account || account.status !== 'ACTIVE') {
-      await this.audit.record({ action: 'auth.magic_link.ignored', metadata: { email: maskEmail(loginEmail) }, ip: meta.ip });
+      await this.audit.record({
+        action: 'auth.magic_link.ignored',
+        metadata: { email: maskEmail(loginEmail) },
+        ip: meta.ip,
+      });
       return;
     }
 
@@ -106,7 +118,7 @@ export class AuthService {
     });
   }
 
-  // ── Steward invitation claim (HOF-002-S01/S03/S04) ────────────────────────
+  // ── Controlled Account Claim & Onboarding Wizard (HOF-002-S01/S03/S04) ────
 
   /** GET-safe preview: never consumes the token, so mail scanners are harmless. */
   async inspectToken(rawToken: string) {
@@ -117,6 +129,10 @@ export class AuthService {
           select: {
             firstName: true,
             lastName: true,
+            phone: true,
+            photoUrl: true,
+            isVerified: true,
+            membershipStatus: true,
             account: { select: { loginEmail: true } },
             assignments: { where: { endedAt: null }, select: { role: true, team: { select: { name: true } } } },
           },
@@ -129,26 +145,63 @@ export class AuthService {
       first_name: token.person.firstName,
       last_name: token.person.lastName,
       email: token.person.account ? maskEmail(token.person.account.loginEmail) : null,
+      masked_phone: token.person.phone ? maskPhone(token.person.phone) : null,
+      photo_url: token.person.photoUrl,
+      is_verified: token.person.isVerified,
+      membership_status: token.person.membershipStatus,
       appointments: token.person.assignments.map((a) => ({
         role: a.role,
         role_label: ROLE_LABELS[a.role],
         team_name: a.team?.name ?? null,
       })),
+      baseline_capabilities: BASELINE_SELF_CAPABILITIES,
       expires_at: token.expiresAt.toISOString(),
     };
   }
 
-  /** Consume token + set password + activate account + open session — one transaction. */
-  async completeClaim(rawToken: string, password: string, meta: RequestMeta) {
-    const passwordHash = await argon2.hash(password);
+  /**
+   * HOF-002-S01:
+   * - Requires explicit identity confirmation
+   * - Consumes claim token, links verified Person, sets password, optionally saves
+   *   member photoUrl and hashed quick-unlock PIN, and activates Account atomically
+   * - Grants baseline SELF capabilities without inferring any ministry appointment
+   */
+  async completeClaim(input: ClaimCompleteInput, meta: RequestMeta) {
+    if (input.identity_confirmed === false) {
+      throw new ApiError(
+        HttpStatus.UNPROCESSABLE_ENTITY,
+        'IDENTITY_NOT_CONFIRMED',
+        'Please confirm that these profile details belong to you before activating the account.',
+        { identity_confirmed: 'Confirm your identity to continue' },
+      );
+    }
+
+    const passwordHash = await argon2.hash(input.password);
+    const pinHash = input.pin ? await argon2.hash(input.pin) : null;
+
     return this.prisma.$transaction(async (tx) => {
-      const token = await this.consumeToken(tx, rawToken, AuthTokenPurpose.CLAIM);
+      const token = await this.consumeToken(tx, input.token, AuthTokenPurpose.CLAIM);
       const account = await tx.account.findUnique({ where: { personId: token.personId } });
       if (!account || account.status === 'SUSPENDED') throw TOKEN_UNUSABLE();
 
+      if (input.photo_url !== undefined) {
+        await tx.person.update({
+          where: { id: token.personId },
+          data: {
+            photoUrl: input.photo_url?.trim() || null,
+            version: { increment: 1 },
+          },
+        });
+      }
+
       await tx.account.update({
         where: { id: account.id },
-        data: { passwordHash, status: 'ACTIVE', lastLoginAt: new Date() },
+        data: {
+          passwordHash,
+          ...(pinHash ? { pinHash } : {}),
+          status: 'ACTIVE',
+          lastLoginAt: new Date(),
+        },
       });
       // Any other outstanding claim links for this person are now dead.
       await tx.authToken.updateMany({
@@ -156,7 +209,18 @@ export class AuthService {
         data: { revokedAt: new Date() },
       });
       const session = await this.sessions.create(account.id, meta, tx);
-      await this.audit.record({ action: 'auth.claim.completed', actorId: token.personId, ip: meta.ip }, tx);
+      await this.audit.record(
+        {
+          action: 'auth.claim.completed',
+          actorId: token.personId,
+          ip: meta.ip,
+          metadata: {
+            hasPhoto: Boolean(input.photo_url?.trim()),
+            hasPin: Boolean(pinHash),
+          },
+        },
+        tx,
+      );
       return session;
     });
   }
@@ -170,7 +234,18 @@ export class AuthService {
         id: true,
         firstName: true,
         lastName: true,
-        account: { select: { loginEmail: true } },
+        photoUrl: true,
+        isVerified: true,
+        membershipStatus: true,
+        foundationClassStatus: true,
+        account: {
+          select: {
+            loginEmail: true,
+            pinHash: true,
+            passwordHash: true,
+            authMethods: { select: { id: true, provider: true, providerEmail: true, createdAt: true } },
+          },
+        },
         assignments: {
           where: { endedAt: null },
           select: { id: true, role: true, team: { select: { id: true, key: true, name: true } } },
@@ -181,19 +256,164 @@ export class AuthService {
       person_id: person.id,
       first_name: person.firstName,
       last_name: person.lastName,
+      photo_url: person.photoUrl,
+      is_verified: person.isVerified,
+      membership_status: person.membershipStatus,
+      foundation_class_status: person.foundationClassStatus,
       email: person.account?.loginEmail ?? null,
+      has_pin: Boolean(person.account?.pinHash),
+      has_password: Boolean(person.account?.passwordHash),
+      auth_methods:
+        person.account?.authMethods.map((m) => ({
+          id: m.id,
+          provider: m.provider,
+          provider_email: m.providerEmail,
+          created_at: m.createdAt.toISOString(),
+        })) ?? [],
       assignments: person.assignments.map((a) => ({
         id: a.id,
         role: a.role,
         role_label: ROLE_LABELS[a.role],
         team: a.team,
       })),
+      baseline_capabilities: BASELINE_SELF_CAPABILITIES,
       // Flattened for UI gating; the API re-checks every request.
       capabilities: CAPABILITIES.filter((c) => can(grants, c)),
     };
   }
 
-  // ── Token helpers (shared with stewards module) ───────────────────────────
+  // ── Authentication-Method Linking & Unlinking (HOF-003-S04) ───────────────
+
+  /**
+   * Link an external provider (e.g. Google) to the authenticated account.
+   */
+  async linkAuthMethod(
+    accountId: string,
+    personId: string,
+    input: { provider: string; provider_sub: string; provider_email?: string | null },
+  ) {
+    const provider = input.provider.trim().toLowerCase();
+    const providerSub = input.provider_sub.trim();
+    const providerEmail = input.provider_email?.trim() ? normalizeEmail(input.provider_email) : null;
+
+    const existing = await this.prisma.authMethod.findUnique({
+      where: { provider_providerSub: { provider, providerSub } },
+    });
+    if (existing && existing.accountId !== accountId) {
+      throw new ApiError(
+        HttpStatus.CONFLICT,
+        'AUTH_METHOD_ALREADY_LINKED',
+        'This external authentication account is already linked to another member.',
+      );
+    }
+
+    const method =
+      existing ??
+      (await this.prisma.authMethod.create({
+        data: {
+          accountId,
+          provider,
+          providerSub,
+          providerEmail,
+        },
+      }));
+
+    await this.audit.record({
+      action: 'auth.method.linked',
+      actorId: personId,
+      subjectId: method.id,
+      metadata: { provider, providerEmail },
+    });
+
+    return {
+      id: method.id,
+      provider: method.provider,
+      provider_email: method.providerEmail,
+      created_at: method.createdAt.toISOString(),
+    };
+  }
+
+  /**
+   * HOF-003-S04: Unlinking preserves a usable account.
+   * - Requires reauthentication (current password or PIN verification, or a fresh session < 5 minutes old).
+   * - Removes the linked method ONLY if another usable independent login method (passwordHash or another AuthMethod)
+   *   remains on the account.
+   * - Refuses removing the final authentication method with recovery guidance.
+   */
+  async unlinkAuthMethod(
+    accountId: string,
+    personId: string,
+    sessionId: string,
+    methodId: string,
+    reauth: { password?: string; pin?: string },
+  ) {
+    const account = await this.prisma.account.findUnique({
+      where: { id: accountId },
+      include: { authMethods: true },
+    });
+    if (!account) {
+      throw new ApiError(HttpStatus.NOT_FOUND, 'ACCOUNT_NOT_FOUND', 'Account not found.');
+    }
+
+    const target = account.authMethods.find((m) => m.id === methodId || m.provider === methodId.toLowerCase());
+    if (!target) {
+      throw new ApiError(HttpStatus.NOT_FOUND, 'AUTH_METHOD_NOT_FOUND', 'Linked authentication method not found.');
+    }
+
+    // Verify reauthentication
+    let reauthed = false;
+    if (reauth.password && account.passwordHash) {
+      reauthed = await argon2.verify(account.passwordHash, reauth.password).catch(() => false);
+    } else if (reauth.pin && account.pinHash) {
+      reauthed = await argon2.verify(account.pinHash, reauth.pin).catch(() => false);
+    } else {
+      // Allow if no password/PIN is set yet AND the current session was authenticated within the last 5 minutes
+      const session = await this.prisma.session.findUnique({ where: { id: sessionId } });
+      if (
+        !account.passwordHash &&
+        !account.pinHash &&
+        session &&
+        Date.now() - session.createdAt.getTime() <= 5 * MINUTE
+      ) {
+        reauthed = true;
+      }
+    }
+
+    if (!reauthed) {
+      throw new ApiError(
+        HttpStatus.UNAUTHORIZED,
+        'REAUTHENTICATION_REQUIRED',
+        'Please confirm your current password or PIN before unlinking an authentication method.',
+      );
+    }
+
+    // Check that another usable independent authentication method remains (HOF-003-S04)
+    const remainingProviders = account.authMethods.filter((m) => m.id !== target.id);
+    const hasUsablePassword = Boolean(account.passwordHash);
+    if (!hasUsablePassword && remainingProviders.length === 0) {
+      throw new ApiError(
+        HttpStatus.UNPROCESSABLE_ENTITY,
+        'LAST_AUTH_METHOD_CANNOT_BE_REMOVED',
+        'Cannot remove your only sign-in method. Set a password first or contact the Membership / Information Center team for account recovery assistance.',
+      );
+    }
+
+    await this.prisma.authMethod.delete({ where: { id: target.id } });
+    await this.audit.record({
+      action: 'auth.method.unlinked',
+      actorId: personId,
+      subjectId: target.id,
+      metadata: { provider: target.provider },
+    });
+
+    return {
+      ok: true,
+      removed_id: target.id,
+      provider: target.provider,
+    };
+  }
+
+  // ── Token helpers (shared with stewards & people modules) ─────────────────
 
   async issueToken(personId: string, purpose: AuthTokenPurpose, ttlMs: number, createdById?: string) {
     const raw = generateToken();
@@ -231,4 +451,10 @@ export class AuthService {
 
 function isUsable(t: { consumedAt: Date | null; revokedAt: Date | null; expiresAt: Date }) {
   return !t.consumedAt && !t.revokedAt && t.expiresAt.getTime() > Date.now();
+}
+
+function maskPhone(phone: string): string {
+  const clean = phone.trim();
+  if (clean.length <= 4) return '****';
+  return `${'*'.repeat(Math.max(2, clean.length - 4))}${clean.slice(-4)}`;
 }

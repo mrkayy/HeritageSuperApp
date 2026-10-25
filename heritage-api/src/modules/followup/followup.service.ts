@@ -79,18 +79,22 @@ export class FollowUpService {
       },
     });
 
-    // Resolve assignee names in one batch query
+    // Resolve assignee and assignedBy names in batch queries
     const assigneeIds = [...new Set(tasks.map((t) => t.assigneePersonId).filter((id): id is string => Boolean(id)))];
-    const assignees = assigneeIds.length
+    const assignedByIds = [...new Set(tasks.map((t) => t.assignedById).filter((id): id is string => Boolean(id)))];
+    const allPersonIds = [...new Set([...assigneeIds, ...assignedByIds])];
+    const people = allPersonIds.length
       ? await this.prisma.person.findMany({
-          where: { id: { in: assigneeIds } },
+          where: { id: { in: allPersonIds } },
           select: { id: true, firstName: true, lastName: true },
         })
       : [];
-    const assigneeMap = new Map(assignees.map((a) => [a.id, `${a.firstName} ${a.lastName}`]));
+    const personNameMap = new Map(people.map((p) => [p.id, `${p.firstName} ${p.lastName}`]));
 
     return tasks.map((t) => ({
       id: t.id,
+      kind: t.kind,
+      recommendation_note: t.recommendationNote ?? null,
       status: t.status,
       last_outcome: t.lastOutcome,
       needs_pastoral_visit: t.needsPastoralVisit,
@@ -98,7 +102,10 @@ export class FollowUpService {
       next_action_at: t.nextActionAt?.toISOString() ?? null,
       completed_at: t.completedAt?.toISOString() ?? null,
       assignee_person_id: t.assigneePersonId,
-      assignee_name: t.assigneePersonId ? (assigneeMap.get(t.assigneePersonId) ?? 'Steward') : null,
+      assignee_name: t.assigneePersonId ? (personNameMap.get(t.assigneePersonId) ?? 'Steward') : null,
+      assigned_by_id: t.assignedById,
+      assigned_by_name: t.assignedById ? (personNameMap.get(t.assignedById) ?? 'Lead') : null,
+      assigned_at: t.assignedAt?.toISOString() ?? null,
       person: {
         id: t.person.id,
         first_name: t.person.firstName,
@@ -186,10 +193,21 @@ export class FollowUpService {
       action: 'followups.assigned',
       actorId: actor.personId,
       subjectId: taskId,
-      metadata: { assigneePersonId, personId: task.personId },
+      metadata: {
+        previousAssigneeId: task.assigneePersonId,
+        newAssigneeId: assigneePersonId,
+        personId: task.personId,
+        assignedById: actor.personId,
+        assignedAt: new Date().toISOString(),
+      },
     });
 
-    return { id: updated.id, assignee_person_id: updated.assigneePersonId };
+    return {
+      id: updated.id,
+      assignee_person_id: updated.assigneePersonId,
+      assigned_by_id: updated.assignedById,
+      assigned_at: updated.assignedAt?.toISOString() ?? null,
+    };
   }
 
   /**

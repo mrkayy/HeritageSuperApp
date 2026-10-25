@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
 import { z } from 'zod';
 import type { FoundationClassStatus, MembershipStatus } from '../../generated/prisma/client.js';
 import { ZodBody } from '../../platform/http/errors.js';
@@ -29,6 +29,7 @@ const CreatePersonBody = z.object({
   phone: z.string().trim().max(32).nullish(),
   email: z.union([z.literal(''), z.string().trim().email('Enter a valid email')]).nullish(),
   address: z.string().trim().max(240).nullish(),
+  photo_url: z.string().max(400_000).nullish(),
   membership_status: MembershipStatusEnum.optional(),
   foundation_class_status: FoundationStatusEnum.optional(),
   birth_month: z.coerce.number().int().min(1).max(12).nullish(),
@@ -38,6 +39,41 @@ const CreatePersonBody = z.object({
 });
 
 const UpdatePersonBody = CreatePersonBody.partial();
+
+const ClaimInvitationBody = z.object({
+  email: z.string().trim().email('Enter a valid email').optional(),
+  role: z.enum(['ADMIN', 'PASTOR', 'TEAM_LEAD', 'ASSISTANT_TEAM_LEAD', 'STEWARD']).nullish(),
+  team_id: z.string().uuid().nullish(),
+});
+
+const CreateImportJobBody = z.object({
+  file_name: z.string().trim().max(120).optional(),
+  csv_text: z.string().min(1, 'CSV content is required').max(1_000_000, 'CSV is too large'),
+});
+
+const UpdateImportRowBody = z.object({
+  first_name: z.string().trim().max(80).optional(),
+  last_name: z.string().trim().max(80).optional(),
+  phone: z.string().trim().max(32).nullish(),
+  email: z.string().trim().max(160).nullish(),
+  address: z.string().trim().max(240).nullish(),
+  membership_status: MembershipStatusEnum.optional(),
+  birth_month: z.coerce.number().int().min(1).max(12).nullish(),
+  birth_day: z.coerce.number().int().min(1).max(31).nullish(),
+  anniversary_month: z.coerce.number().int().min(1).max(12).nullish(),
+  anniversary_day: z.coerce.number().int().min(1).max(31).nullish(),
+  approve_review: z.boolean().optional(),
+});
+
+const CommitImportJobBody = z.object({
+  idempotency_key: z.string().trim().max(128).optional(),
+});
+
+const RecommendFoundationBody = z.object({
+  note: z.string().trim().min(1, 'Recommendation note is required').max(1000),
+  exempt_override: z.boolean().optional(),
+  exemption_reason: z.string().trim().max(500).optional(),
+});
 
 @Controller('people')
 export class PeopleController {
@@ -98,5 +134,80 @@ export class PeopleController {
     @Body(new ZodBody(UpdatePersonBody)) body: z.infer<typeof UpdatePersonBody>,
   ) {
     return this.people.updatePerson(auth, personId, body);
+  }
+
+  @Post(':personId/verifications')
+  @RequireCapability('people.write')
+  @HttpCode(200)
+  verify(@CurrentAuth() auth: AuthContext, @Param('personId', ParseUUIDPipe) personId: string) {
+    return this.people.verifyPerson(auth, personId);
+  }
+
+  @Post(':personId/claim-invitations')
+  @RequireCapability('people.write')
+  issueClaimInvitation(
+    @CurrentAuth() auth: AuthContext,
+    @Param('personId', ParseUUIDPipe) personId: string,
+    @Body(new ZodBody(ClaimInvitationBody)) body: z.infer<typeof ClaimInvitationBody>,
+  ) {
+    return this.people.issueClaimInvitation(auth, personId, body);
+  }
+
+  // ── Bulk CSV Directory Import (HOF-012-S02 / S03 / S04) ───────────────────
+
+  @Post('import-jobs')
+  @RequireCapability('people.write')
+  createImportPreview(
+    @CurrentAuth() auth: AuthContext,
+    @Body(new ZodBody(CreateImportJobBody)) body: z.infer<typeof CreateImportJobBody>,
+  ) {
+    return this.people.createImportPreview(auth, body);
+  }
+
+  @Get('import-jobs/:jobId')
+  @RequireCapability('people.write')
+  getImportJob(@Param('jobId', ParseUUIDPipe) jobId: string) {
+    return this.people.getImportJob(jobId);
+  }
+
+  @Patch('import-jobs/:jobId/rows/:rowId')
+  @RequireCapability('people.write')
+  updateImportRow(
+    @CurrentAuth() auth: AuthContext,
+    @Param('jobId', ParseUUIDPipe) jobId: string,
+    @Param('rowId', ParseUUIDPipe) rowId: string,
+    @Body(new ZodBody(UpdateImportRowBody)) body: z.infer<typeof UpdateImportRowBody>,
+  ) {
+    return this.people.updateImportRow(auth, jobId, rowId, body);
+  }
+
+  @Post('import-jobs/:jobId/commit')
+  @RequireCapability('people.write')
+  @HttpCode(200)
+  commitImportJob(
+    @CurrentAuth() auth: AuthContext,
+    @Param('jobId', ParseUUIDPipe) jobId: string,
+    @Body(new ZodBody(CommitImportJobBody)) body: z.infer<typeof CommitImportJobBody>,
+  ) {
+    return this.people.commitImportJob(auth, jobId, body);
+  }
+
+  // ── Foundation Eligibility, Recommendation & Handoff (HOF-015) ────────────
+
+  @Get('foundation-eligibility')
+  @RequireCapability('visitors.capture')
+  listFoundationEligibility() {
+    return this.people.listFoundationEligibility();
+  }
+
+  @Post(':personId/foundation-recommendations')
+  @RequireCapability('visitors.capture')
+  @HttpCode(200)
+  recommendForFoundation(
+    @CurrentAuth() auth: AuthContext,
+    @Param('personId', ParseUUIDPipe) personId: string,
+    @Body(new ZodBody(RecommendFoundationBody)) body: z.infer<typeof RecommendFoundationBody>,
+  ) {
+    return this.people.recommendForFoundation(auth, personId, body);
   }
 }

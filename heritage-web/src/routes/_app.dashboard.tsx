@@ -6,6 +6,7 @@ import {
   ClipboardCheck,
   Eye,
   Heart,
+  HeartHandshake,
   PhoneCall,
   RefreshCw,
   ShieldCheck,
@@ -57,6 +58,15 @@ function DashboardPage() {
       iconBox: 'bg-emerald-500/10 text-emerald-600 group-hover:bg-emerald-500/20',
       borderHover: 'hover:border-emerald-500/40',
       show: hasCapability(me, 'followups.read'),
+    },
+    {
+      title: 'Pastoral Prayer Notes',
+      subtitle: 'Format confidential prayer requests & email Resident Pastor',
+      to: '/prayer-notes' as const,
+      icon: HeartHandshake,
+      iconBox: 'bg-purple-500/10 text-purple-600 group-hover:bg-purple-500/20',
+      borderHover: 'hover:border-purple-500/40',
+      show: hasCapability(me, 'prayer_notes.manage'),
     },
   ].filter((a) => a.show)
 
@@ -250,10 +260,10 @@ function DashboardPage() {
           </div>
 
           <Link
-            to="/directory"
+            to="/celebrations"
             className="mt-5 inline-flex items-center justify-between rounded-xl border border-primary/25 bg-primary/5 px-3.5 py-2.5 text-xs font-semibold text-primary transition hover:bg-primary/10"
           >
-            <span>View Birthday &amp; Anniversary List</span>
+            <span>Open Celebrations &amp; Landmarks</span>
             <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </section>

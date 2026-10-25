@@ -13,10 +13,12 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppAttendanceRouteImport } from './routes/_app.attendance'
+import { Route as AppCelebrationsRouteImport } from './routes/_app.celebrations'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppDirectoryRouteImport } from './routes/_app.directory'
 import { Route as AppFollowUpRouteImport } from './routes/_app.follow-up'
 import { Route as AppIntakeRouteImport } from './routes/_app.intake'
+import { Route as AppPrayerNotesRouteImport } from './routes/_app.prayer-notes'
 import { Route as AppStewardsRouteImport } from './routes/_app.stewards'
 import { Route as AuthClaimRouteImport } from './routes/auth/claim'
 import { Route as AuthMagicRouteImport } from './routes/auth/magic'
@@ -40,6 +42,11 @@ const AppAttendanceRoute = AppAttendanceRouteImport.update({
   path: '/attendance',
   getParentRoute: () => AppRoute,
 } as any)
+const AppCelebrationsRoute = AppCelebrationsRouteImport.update({
+  id: '/celebrations',
+  path: '/celebrations',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppDashboardRoute = AppDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -58,6 +65,11 @@ const AppFollowUpRoute = AppFollowUpRouteImport.update({
 const AppIntakeRoute = AppIntakeRouteImport.update({
   id: '/intake',
   path: '/intake',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPrayerNotesRoute = AppPrayerNotesRouteImport.update({
+  id: '/prayer-notes',
+  path: '/prayer-notes',
   getParentRoute: () => AppRoute,
 } as any)
 const AppStewardsRoute = AppStewardsRouteImport.update({
@@ -80,10 +92,12 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/attendance': typeof AppAttendanceRoute
+  '/celebrations': typeof AppCelebrationsRoute
   '/dashboard': typeof AppDashboardRoute
   '/directory': typeof AppDirectoryRoute
   '/follow-up': typeof AppFollowUpRoute
   '/intake': typeof AppIntakeRoute
+  '/prayer-notes': typeof AppPrayerNotesRoute
   '/stewards': typeof AppStewardsRoute
   '/auth/claim': typeof AuthClaimRoute
   '/auth/magic': typeof AuthMagicRoute
@@ -92,10 +106,12 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/attendance': typeof AppAttendanceRoute
+  '/celebrations': typeof AppCelebrationsRoute
   '/dashboard': typeof AppDashboardRoute
   '/directory': typeof AppDirectoryRoute
   '/follow-up': typeof AppFollowUpRoute
   '/intake': typeof AppIntakeRoute
+  '/prayer-notes': typeof AppPrayerNotesRoute
   '/stewards': typeof AppStewardsRoute
   '/auth/claim': typeof AuthClaimRoute
   '/auth/magic': typeof AuthMagicRoute
@@ -106,10 +122,12 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
   '/_app/attendance': typeof AppAttendanceRoute
+  '/_app/celebrations': typeof AppCelebrationsRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/directory': typeof AppDirectoryRoute
   '/_app/follow-up': typeof AppFollowUpRoute
   '/_app/intake': typeof AppIntakeRoute
+  '/_app/prayer-notes': typeof AppPrayerNotesRoute
   '/_app/stewards': typeof AppStewardsRoute
   '/auth/claim': typeof AuthClaimRoute
   '/auth/magic': typeof AuthMagicRoute
@@ -120,10 +138,12 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/attendance'
+    | '/celebrations'
     | '/dashboard'
     | '/directory'
     | '/follow-up'
     | '/intake'
+    | '/prayer-notes'
     | '/stewards'
     | '/auth/claim'
     | '/auth/magic'
@@ -132,10 +152,12 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/attendance'
+    | '/celebrations'
     | '/dashboard'
     | '/directory'
     | '/follow-up'
     | '/intake'
+    | '/prayer-notes'
     | '/stewards'
     | '/auth/claim'
     | '/auth/magic'
@@ -145,10 +167,12 @@ export interface FileRouteTypes {
     | '/_app'
     | '/login'
     | '/_app/attendance'
+    | '/_app/celebrations'
     | '/_app/dashboard'
     | '/_app/directory'
     | '/_app/follow-up'
     | '/_app/intake'
+    | '/_app/prayer-notes'
     | '/_app/stewards'
     | '/auth/claim'
     | '/auth/magic'
@@ -192,6 +216,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAttendanceRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/celebrations': {
+      id: '/_app/celebrations'
+      path: '/celebrations'
+      fullPath: '/celebrations'
+      preLoaderRoute: typeof AppCelebrationsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/dashboard': {
       id: '/_app/dashboard'
       path: '/dashboard'
@@ -220,6 +251,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIntakeRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/prayer-notes': {
+      id: '/_app/prayer-notes'
+      path: '/prayer-notes'
+      fullPath: '/prayer-notes'
+      preLoaderRoute: typeof AppPrayerNotesRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/stewards': {
       id: '/_app/stewards'
       path: '/stewards'
@@ -246,19 +284,23 @@ declare module '@tanstack/react-router' {
 
 interface AppRouteChildren {
   AppAttendanceRoute: typeof AppAttendanceRoute
+  AppCelebrationsRoute: typeof AppCelebrationsRoute
   AppDashboardRoute: typeof AppDashboardRoute
   AppDirectoryRoute: typeof AppDirectoryRoute
   AppFollowUpRoute: typeof AppFollowUpRoute
   AppIntakeRoute: typeof AppIntakeRoute
+  AppPrayerNotesRoute: typeof AppPrayerNotesRoute
   AppStewardsRoute: typeof AppStewardsRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppAttendanceRoute: AppAttendanceRoute,
+  AppCelebrationsRoute: AppCelebrationsRoute,
   AppDashboardRoute: AppDashboardRoute,
   AppDirectoryRoute: AppDirectoryRoute,
   AppFollowUpRoute: AppFollowUpRoute,
   AppIntakeRoute: AppIntakeRoute,
+  AppPrayerNotesRoute: AppPrayerNotesRoute,
   AppStewardsRoute: AppStewardsRoute,
 }
 

@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeader } from '@tanstack/react-start/server'
-import { queryOptions } from '@tanstack/react-query'
+import { queryOptions, useQuery } from '@tanstack/react-query'
 import type { Me } from './api'
 
 /**
@@ -25,6 +25,33 @@ export const meQuery = queryOptions({
   staleTime: 60_000,
 })
 
-export function hasCapability(me: Me | null | undefined, capability: string) {
-  return !!me?.capabilities.includes(capability)
+export interface CapabilityOptions {
+  teamKey?: string
+}
+
+export function hasCapability(
+  me: Me | null | undefined,
+  capability: string,
+  options?: CapabilityOptions,
+): boolean {
+  if (!me) return false
+  if (!me.capabilities.includes(capability)) return false
+
+  if (options?.teamKey) {
+    const isChurchWide = me.assignments.some((a) => a.role === 'ADMIN' || a.role === 'PASTOR')
+    if (isChurchWide) return true
+    return me.assignments.some((a) => a.team?.key === options.teamKey)
+  }
+
+  return true
+}
+
+export function useCan(
+  capability: string | string[],
+  options?: CapabilityOptions,
+): boolean {
+  const { data: me } = useQuery(meQuery)
+  if (!me) return false
+  const caps = Array.isArray(capability) ? capability : [capability]
+  return caps.every((c) => hasCapability(me, c, options))
 }

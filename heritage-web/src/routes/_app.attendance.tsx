@@ -2,9 +2,11 @@ import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { useState, type FormEvent } from 'react'
 import {
+  ArrowRight,
   Calendar,
   CheckCircle2,
   ClipboardCheck,
+  GraduationCap,
   Plus,
   Search,
   Sparkles,
@@ -17,6 +19,7 @@ import {
   api,
   ApiError,
   type DirectoryPerson,
+  type FoundationEligibilityItem,
   type ServiceKind,
   type ServiceOccurrenceRoster,
   type ServiceOccurrenceSummary,
@@ -33,7 +36,7 @@ import { hasCapability, meQuery } from '#/lib/auth'
 export const Route = createFileRoute('/_app/attendance')({
   beforeLoad: async ({ context }) => {
     const me = await context.queryClient.ensureQueryData(meQuery)
-    if (!hasCapability(me, 'people.read')) {
+    if (!hasCapability(me, 'attendance.record')) {
       throw redirect({ to: '/dashboard' })
     }
   },
@@ -53,7 +56,15 @@ function AttendancePage() {
   const [selectedOccurrenceId, setSelectedOccurrenceId] = useState<string>('')
   const [showNewServiceForm, setShowNewServiceForm] = useState(false)
   const [checkInSearch, setCheckInSearch] = useState('')
+  const [recommendingPersonId, setRecommendingPersonId] = useState<string | null>(null)
   const [banner, setBanner] = useState<{ tone: 'success' | 'info' | 'error'; text: string } | null>(null)
+  const canRecommendFoundation = hasCapability(me, 'visitors.capture')
+
+  const foundationEligibility = useQuery({
+    queryKey: ['foundation-eligibility'],
+    enabled: canRecommendFoundation,
+    queryFn: () => api<FoundationEligibilityItem[]>('/people/foundation-eligibility'),
+  })
 
   const activeOccurrenceId = selectedOccurrenceId || occurrences.data?.[0]?.id || ''
 
@@ -122,6 +133,7 @@ function AttendancePage() {
         queryClient.invalidateQueries({ queryKey: ['occurrence-roster', activeOccurrenceId] }),
         queryClient.invalidateQueries({ queryKey: ['directory'] }),
         queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] }),
+        queryClient.invalidateQueries({ queryKey: ['foundation-eligibility'] }),
       ])
     },
   })
@@ -136,7 +148,44 @@ function AttendancePage() {
         queryClient.invalidateQueries({ queryKey: ['occurrences'] }),
         queryClient.invalidateQueries({ queryKey: ['occurrence-roster', activeOccurrenceId] }),
         queryClient.invalidateQueries({ queryKey: ['directory'] }),
+        queryClient.invalidateQueries({ queryKey: ['foundation-eligibility'] }),
       ])
+    },
+  })
+
+  const recommendFoundationMutation = useMutation({
+    mutationFn: ({
+      personId,
+      note,
+      exempt_override,
+      exemption_reason,
+    }: {
+      personId: string
+      note: string
+      exempt_override?: boolean
+      exemption_reason?: string
+    }) =>
+      api(`/people/${personId}/foundation-recommendations`, {
+        method: 'POST',
+        body: { note, exempt_override, exemption_reason },
+      }),
+    onSuccess: async () => {
+      setRecommendingPersonId(null)
+      setBanner({
+        tone: 'success',
+        text: 'Foundation recommendation submitted and handed off to the Membership Team queue.',
+      })
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['foundation-eligibility'] }),
+        queryClient.invalidateQueries({ queryKey: ['followups'] }),
+      ])
+    },
+    onError: async (err) => {
+      setBanner({
+        tone: 'error',
+        text: err instanceof ApiError ? err.message : 'Could not submit Foundation recommendation.',
+      })
+      await queryClient.invalidateQueries({ queryKey: ['foundation-eligibility'] })
     },
   })
 
@@ -423,6 +472,152 @@ function AttendancePage() {
                   </div>
                 )}
               </div>
+            </div>
+          )}
+
+          {/* Foundation Eligibility & IC-to-Membership Handoff (HOF-015) */}
+          {canRecommendFoundation && (
+            <div className="glass-card rounded-2xl border border-border/60 p-5 sm:p-6">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/50 pb-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <GraduationCap className="h-5 w-5 text-primary" />
+                    <h2 className="text-base font-bold text-foreground">
+                      Foundation Class Eligibility & Membership Handoff
+                    </h2>
+                    <Badge variant="outline">Rule v1: 2 Visits</Badge>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Visitors reaching 2 qualifying service visits become eligible for Foundation Class recommendation.
+                    Submitting a recommendation delivers a single handoff task to the Membership Team.
+                  </p>
+                </div>
+              </div>
+
+              {(foundationEligibility.data?.length ?? 0) === 0 ? (
+                <div className="mt-4 rounded-xl border border-dashed border-border p-6 text-center text-xs text-muted-foreground">
+                  No visitors or Foundation candidates recorded yet.
+                </div>
+              ) : (
+                <div className="mt-4 space-y-3">
+                  {(foundationEligibility.data ?? []).map((item) => {
+                    const isRecommending = recommendingPersonId === item.person_id
+                    return (
+                      <div
+                        key={item.person_id}
+                        className="rounded-xl border border-border/60 bg-white/80 p-4 transition-all hover:border-primary/30"
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div className="space-y-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="font-bold text-foreground">
+                                {item.first_name} {item.last_name}
+                              </span>
+                              <Badge variant="outline">{item.membership_status}</Badge>
+                              <Badge variant={item.is_eligible ? 'success' : 'secondary'}>
+                                {item.qualifying_visits_count} / {item.required_visits_threshold} Visits
+                              </Badge>
+                              {item.is_eligible && (
+                                <Badge variant="default">
+                                  Eligible ({item.foundation_rule_version ?? 'v1:2_visits'})
+                                </Badge>
+                              )}
+                              {item.handoff_status === 'HANDED_OFF_TO_MEMBERSHIP' && (
+                                <Badge variant="success">
+                                  <CheckCircle2 className="h-3 w-3" />
+                                  Handed Off to Membership ({item.recommendation?.followup_task_status ?? 'OPEN'})
+                                </Badge>
+                              )}
+                            </div>
+                            {item.recommendation && (
+                              <p className="text-xs text-muted-foreground">
+                                Recommended by <strong>{item.recommendation.recommended_by_name}</strong>:{' '}
+                                &ldquo;{item.recommendation.note}&rdquo;
+                                {item.recommendation.is_exemption && item.recommendation.exemption_reason
+                                  ? ` (Exemption: ${item.recommendation.exemption_reason})`
+                                  : ''}
+                              </p>
+                            )}
+                          </div>
+
+                          {item.handoff_status === 'NOT_RECOMMENDED' && (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant={isRecommending ? 'ghost' : item.is_eligible ? 'primary' : 'outline'}
+                              onClick={() =>
+                                setRecommendingPersonId(isRecommending ? null : item.person_id)
+                              }
+                            >
+                              {isRecommending ? (
+                                'Cancel'
+                              ) : (
+                                <>
+                                  Recommend to Membership <ArrowRight className="h-3.5 w-3.5" />
+                                </>
+                              )}
+                            </Button>
+                          )}
+                        </div>
+
+                        {isRecommending && (
+                          <form
+                            onSubmit={(e) => {
+                              e.preventDefault()
+                              const form = new FormData(e.currentTarget)
+                              recommendFoundationMutation.mutate({
+                                personId: item.person_id,
+                                note: String(form.get('note') || ''),
+                                exempt_override: form.get('exempt_override') === 'on',
+                                exemption_reason: String(form.get('exemption_reason') || '') || undefined,
+                              })
+                            }}
+                            className="mt-3 space-y-3 rounded-xl border border-primary/25 bg-secondary/40 p-3.5"
+                          >
+                            <Field
+                              label="IC Recommendation Note for Membership Team"
+                              name="note"
+                              placeholder="E.g. Attended two consecutive Sundays, eager to join the next Foundation Class cohort."
+                              required
+                            />
+                            {!item.is_eligible && (
+                              <div className="space-y-2 rounded-lg border border-amber-300/80 bg-amber-50/80 p-3 text-xs text-amber-950">
+                                <p className="font-semibold">
+                                  This visitor currently has {item.qualifying_visits_count} of{' '}
+                                  {item.required_visits_threshold} required qualifying visits. Submitting without an
+                                  authorized exemption will be refused after live attendance re-evaluation.
+                                </p>
+                                <label className="flex items-center gap-2 font-medium">
+                                  <input
+                                    type="checkbox"
+                                    name="exempt_override"
+                                    className="h-4 w-4 rounded border-input text-primary"
+                                  />
+                                  Authorize Lead/Pastor exemption override
+                                </label>
+                                <Field
+                                  label="Exemption Reason (if overriding)"
+                                  name="exemption_reason"
+                                  placeholder="Reason for early Foundation Class handoff…"
+                                />
+                              </div>
+                            )}
+                            <div className="flex justify-end">
+                              <Button
+                                type="submit"
+                                size="sm"
+                                loading={recommendFoundationMutation.isPending}
+                              >
+                                Confirm Recommendation & Handoff
+                              </Button>
+                            </div>
+                          </form>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           )}
         </section>
