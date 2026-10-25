@@ -21,12 +21,23 @@ enum MembershipStatus {
   FOUNDATION
   MEMBER
   WORKER
+  WORK_FORCE
   INACTIVE
 }
 
 enum FoundationClassStatus {
   NOT_STARTED
   IN_PROGRESS
+  COMPLETED
+}
+
+enum SundaySchoolStatus {
+  NOT_STARTED
+  MODULE_1_IN_PROGRESS
+  MODULE_1_COMPLETED
+  MODULE_2_IN_PROGRESS
+  MODULE_2_COMPLETED
+  MODULE_3_IN_PROGRESS
   COMPLETED
 }
 
@@ -45,6 +56,7 @@ model Person {
   missingContactReason  String?               // HOF-013-S03: recorded when no phone/email available
   membershipStatus      MembershipStatus      @default(VISITOR)
   foundationClassStatus FoundationClassStatus @default(NOT_STARTED)
+  sundaySchoolStatus    SundaySchoolStatus    @default(NOT_STARTED)
   foundationEligibleAt  DateTime?             // HOF-015-S01: recorded when qualifying visit threshold is met
   foundationRuleVersion String?               // HOF-015-S01: e.g. "v1:2_visits"
   birthMonth            Int?                  // 1–12 (partial birthday without fabricating year)
@@ -71,6 +83,9 @@ model Person {
   foundationRecommendation FoundationRecommendation?
   academyEnrollments       AcademyEnrollment[]
   journeyTransitions       JourneyTransition[]
+  proposals                ProfileChangeProposal[] @relation("PersonProposals")
+  authoredProposals        ProfileChangeProposal[] @relation("ProposalMaker")
+  reviewedProposals        ProfileChangeProposal[] @relation("ProposalChecker")
 
   @@index([lastName, firstName])
   @@index([email])
@@ -78,6 +93,36 @@ model Person {
   @@index([membershipStatus])
   @@index([birthMonth, birthDay])
   @@index([anniversaryMonth, anniversaryDay])
+}
+
+/// HOF-017-S02..S04: Profile Enrichment & Maker-Checker Dual-Control Change Proposals
+enum ProposalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model ProfileChangeProposal {
+  id              String         @id @default(uuid()) @db.Uuid
+  personId        String         @db.Uuid
+  baseVersion     Int
+  makerId         String         @db.Uuid
+  changes         Json
+  reason          String?
+  status          ProposalStatus @default(PENDING)
+  checkerId       String?        @db.Uuid
+  rejectionReason String?
+  createdAt       DateTime       @default(now())
+  reviewedAt      DateTime?
+
+  person  Person  @relation("PersonProposals", fields: [personId], references: [id], onDelete: Cascade)
+  maker   Person  @relation("ProposalMaker", fields: [makerId], references: [id])
+  checker Person? @relation("ProposalChecker", fields: [checkerId], references: [id])
+
+  @@index([personId])
+  @@index([status])
+  @@index([makerId])
+  @@index([checkerId])
 }
 
 /// HOF-012-S02..S04: Bulk CSV Directory Import Jobs & Row-Idempotent Preview/Commit
@@ -538,6 +583,9 @@ model LifeLandmark {
 
 enum AcademyModuleCode {
   FOUNDATION_101
+  SUNDAY_SCHOOL_101
+  SUNDAY_SCHOOL_102
+  SUNDAY_SCHOOL_103
   MEMBERSHIP_201
 }
 
@@ -647,8 +695,10 @@ model JourneyTransition {
   personId              String                 @db.Uuid
   fromStatus            MembershipStatus?
   toStatus              MembershipStatus
-  fromFoundationStatus  FoundationClassStatus?
-  toFoundationStatus    FoundationClassStatus
+  fromFoundationStatus   FoundationClassStatus?
+  toFoundationStatus     FoundationClassStatus?
+  fromSundaySchoolStatus SundaySchoolStatus?
+  toSundaySchoolStatus   SundaySchoolStatus?
   ruleVersion           String                 @default("v1:6_sessions_50_pass")
   isOverride            Boolean                @default(false)
   reason                String

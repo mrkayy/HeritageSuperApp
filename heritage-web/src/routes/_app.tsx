@@ -95,9 +95,15 @@ function AppShell() {
         },
         {
           to: '/academy' as const,
-          label: 'Foundation & Academy',
+          label: 'Sunday School & Academy',
           icon: GraduationCap,
           show: hasCapability(me, 'academy.read'),
+        },
+        {
+          to: '/proposals' as const,
+          label: 'Profile Approvals',
+          icon: ShieldCheck,
+          show: hasCapability(me, 'people.read'),
         },
         {
           to: '/celebrations' as const,

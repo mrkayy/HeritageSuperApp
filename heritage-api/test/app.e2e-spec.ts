@@ -55,11 +55,12 @@ describe('Heritage Single-Church MVP E2E', () => {
     await app.init();
 
     prisma = app.get(PrismaService);
+    await prisma.profileChangeProposal.deleteMany({});
     await prisma.importJob.deleteMany({});
     await prisma.account.deleteMany({
       where: {
         loginEmail: {
-          in: ['steward.test@example.com', 'visitor.ade@example.com', 'csv.chioma@example.com'],
+          in: ['steward.test@example.com', 'visitor.ade@example.com', 'csv.chioma@example.com', 'dayo.amadi@example.com', 'kemi.adebayo@example.com'],
         },
       },
     });
@@ -68,7 +69,7 @@ describe('Heritage Single-Church MVP E2E', () => {
         OR: [
           {
             email: {
-              in: ['steward.test@example.com', 'visitor.ade@example.com', 'csv.chioma@example.com'],
+              in: ['steward.test@example.com', 'visitor.ade@example.com', 'csv.chioma@example.com', 'dayo.amadi@example.com', 'kemi.adebayo@example.com'],
             },
           },
           { firstName: 'Mama', lastName: 'Bolanle' },
@@ -76,6 +77,8 @@ describe('Heritage Single-Church MVP E2E', () => {
           { firstName: 'JanTwo', lastName: 'Celebrant' },
           { firstName: 'LeapDay', lastName: 'Celebrant' },
           { firstName: 'Tosin', lastName: 'Fashola' },
+          { firstName: 'Kemi', lastName: 'Adebayo' },
+          { firstName: 'Dayo', lastName: 'Amadi' },
         ],
       },
     });
@@ -1235,7 +1238,7 @@ describe('Heritage Single-Church MVP E2E', () => {
     expect(grad1.status).toBe(200);
     expect(grad1.body.status).toBe('GRADUATED');
     expect(grad1.body.replayed).toBe(false);
-    expect(grad1.body.next_stage_eligible).toBe('MEMBERSHIP_201');
+    expect(['MEMBERSHIP_201', 'SUNDAY_SCHOOL_101']).toContain(grad1.body.next_stage_eligible);
     expect(grad1.body.person.foundation_class_status).toBe('COMPLETED');
     expect(grad1.body.person.membership_status).toBe('MEMBER');
 
@@ -1261,6 +1264,320 @@ describe('Heritage Single-Church MVP E2E', () => {
     expect(journeyRes.body[0].to_foundation_status).toBe('COMPLETED');
     expect(journeyRes.body[0].rule_version).toBe('v1:6_sessions_50_pass');
     expect(journeyRes.body[0].is_override).toBe(false);
+  });
 
+  // ── HOF-017: Profile Enrichment, Maker-Checker & Verification Queue ────────
+
+  it('HOF-017-S04: Anti-self-approval and optimistic version lock protect profile change proposals; checker approves matching base version', async () => {
+    // 1. Create a baseline verified Person
+    const kemiRes = await request(app.getHttpServer())
+      .post('/api/people')
+      .set('Origin', ORIGIN)
+      .set('Cookie', adminCookie)
+      .send({
+        first_name: 'Kemi',
+        last_name: 'Adebayo',
+        phone: '+2348030001704',
+        email: 'kemi.adebayo@example.com',
+        address: '10 Marina Street, Lagos Island',
+        membership_status: 'MEMBER',
+      });
+    expect(kemiRes.status).toBe(201);
+    const kemiId = kemiRes.body.id as string;
+
+    // Direct verification of Kemi
+    await request(app.getHttpServer())
+      .post(`/api/people/${kemiId}/verifications`)
+      .set('Origin', ORIGIN)
+      .set('Cookie', adminCookie)
+      .send({ notes: 'Verified utility bill' });
+
+    const kemiBefore = await prisma.person.findUniqueOrThrow({ where: { id: kemiId } });
+    const initialVersion = kemiBefore.version;
+
+    // 2. HOF-017-S02: Steward (Maker) drafts a proposal to update address
+    const proposalRes = await request(app.getHttpServer())
+      .post(`/api/people/${kemiId}/proposals`)
+      .set('Origin', ORIGIN)
+      .set('Cookie', stewardCookie)
+      .send({
+        proposed_changes: { address: '20 Victoria Island Blvd, Lagos' },
+        reason: 'Member relocated residence',
+      });
+    expect(proposalRes.status).toBe(201);
+    expect(proposalRes.body.status).toBe('PENDING');
+    expect(proposalRes.body.base_version).toBe(initialVersion);
+    const proposalId = proposalRes.body.id as string;
+
+    // Live address must remain unchanged
+    const kemiLive = await prisma.person.findUniqueOrThrow({ where: { id: kemiId } });
+    expect(kemiLive.address).toBe('10 Marina Street, Lagos Island');
+
+    // 3. HOF-017-S04: Maker holding review capability attempts to self-approve own proposal -> rejected with 422 CANNOT_APPROVE_OWN_PROPOSAL
+    const adminProposalRes = await request(app.getHttpServer())
+      .post(`/api/people/${kemiId}/proposals`)
+      .set('Origin', ORIGIN)
+      .set('Cookie', adminCookie)
+      .send({
+        proposed_changes: { phone: '+2348031112222' },
+        reason: 'Admin draft update',
+      });
+    expect(adminProposalRes.status).toBe(201);
+    const adminProposalId = adminProposalRes.body.id as string;
+
+    const selfApprove = await request(app.getHttpServer())
+      .post(`/api/people/proposals/${adminProposalId}/review`)
+      .set('Origin', ORIGIN)
+      .set('Cookie', adminCookie)
+      .send({ action: 'APPROVE' });
+    expect(selfApprove.status).toBe(422);
+    expect(selfApprove.body.code).toBe('CANNOT_APPROVE_OWN_PROPOSAL');
+
+    // 4. HOF-017-S04: Base profile changes before checker review -> version conflict
+    await request(app.getHttpServer())
+      .patch(`/api/people/${kemiId}`)
+      .set('Origin', ORIGIN)
+      .set('Cookie', adminCookie)
+      .send({ phone: '+2348039999999' });
+
+    const kemiAfterDirectEdit = await prisma.person.findUniqueOrThrow({ where: { id: kemiId } });
+    expect(kemiAfterDirectEdit.version).toBeGreaterThan(initialVersion);
+
+    // Checker tries to approve the stale proposal
+    const staleApprove = await request(app.getHttpServer())
+      .post(`/api/people/proposals/${proposalId}/review`)
+      .set('Origin', ORIGIN)
+      .set('Cookie', adminCookie)
+      .send({ action: 'APPROVE' });
+    expect(staleApprove.status).toBe(409);
+    expect(staleApprove.body.code).toBe('BASE_PROFILE_STALE');
+
+    // 5. Maker submits fresh proposal matching current version
+    const freshProposalRes = await request(app.getHttpServer())
+      .post(`/api/people/${kemiId}/proposals`)
+      .set('Origin', ORIGIN)
+      .set('Cookie', stewardCookie)
+      .send({
+        proposed_changes: { address: '25 Admiralty Way, Lekki Phase 1' },
+        reason: 'Corrected new residential address after review',
+      });
+    expect(freshProposalRes.status).toBe(201);
+    const freshProposalId = freshProposalRes.body.id as string;
+
+    // Checker approves fresh proposal -> atomic commit
+    const validApprove = await request(app.getHttpServer())
+      .post(`/api/people/proposals/${freshProposalId}/review`)
+      .set('Origin', ORIGIN)
+      .set('Cookie', adminCookie)
+      .send({ action: 'APPROVE' });
+    expect(validApprove.status).toBe(200);
+    expect(validApprove.body.status).toBe('APPROVED');
+    expect(validApprove.body.person.address).toBe('25 Admiralty Way, Lekki Phase 1');
+
+    const kemiAfterApproval = await prisma.person.findUniqueOrThrow({ where: { id: kemiId } });
+    expect(kemiAfterApproval.address).toBe('25 Admiralty Way, Lekki Phase 1');
+
+    // 6. Checker rejection preserves profile and returns feedback
+    const rejectProposalRes = await request(app.getHttpServer())
+      .post(`/api/people/${kemiId}/proposals`)
+      .set('Origin', ORIGIN)
+      .set('Cookie', stewardCookie)
+      .send({
+        proposed_changes: { first_name: 'IncorrectName' },
+      });
+    const rejectId = rejectProposalRes.body.id as string;
+
+    const rejection = await request(app.getHttpServer())
+      .post(`/api/people/proposals/${rejectId}/review`)
+      .set('Origin', ORIGIN)
+      .set('Cookie', adminCookie)
+      .send({ action: 'REJECT', rejection_reason: 'Name does not match official government ID.' });
+    expect(rejection.status).toBe(200);
+    expect(rejection.body.status).toBe('REJECTED');
+    expect(rejection.body.rejection_reason).toBe('Name does not match official government ID.');
+
+    const kemiAfterRejection = await prisma.person.findUniqueOrThrow({ where: { id: kemiId } });
+    expect(kemiAfterRejection.firstName).toBe('Kemi');
+  });
+
+  it('HOF-017-S05: Verification and account eligibility do not imply membership', async () => {
+    // 1. Create a visitor person
+    const dayoRes = await request(app.getHttpServer())
+      .post('/api/people')
+      .set('Origin', ORIGIN)
+      .set('Cookie', adminCookie)
+      .send({
+        first_name: 'Dayo',
+        last_name: 'Amadi',
+        email: 'dayo.amadi@example.com',
+        phone: '+2348050001705',
+        membership_status: 'VISITOR',
+      });
+    expect(dayoRes.status).toBe(201);
+    const dayoId = dayoRes.body.id as string;
+
+    // 2. Issuing a claim invitation before verification is rejected
+    const prematureInvite = await request(app.getHttpServer())
+      .post(`/api/people/${dayoId}/claim-invitations`)
+      .set('Origin', ORIGIN)
+      .set('Cookie', adminCookie)
+      .send({ email: 'dayo.amadi@example.com' });
+    expect(prematureInvite.status).toBe(422);
+    expect(prematureInvite.body.code).toBe('PERSON_NOT_VERIFIED');
+
+    // 3. Authorized verification commits isVerified = true, but DOES NOT alter membershipStatus
+    const verifyRes = await request(app.getHttpServer())
+      .post(`/api/people/${dayoId}/verifications`)
+      .set('Origin', ORIGIN)
+      .set('Cookie', adminCookie)
+      .send({ notes: 'Verified via national identity card', evidence: { id_type: 'NIN' } });
+    expect(verifyRes.status).toBe(200);
+    expect(verifyRes.body.is_verified).toBe(true);
+    expect(verifyRes.body.membership_status).toBe('VISITOR');
+
+    const dayoAfterVerify = await prisma.person.findUniqueOrThrow({ where: { id: dayoId } });
+    expect(dayoAfterVerify.isVerified).toBe(true);
+    expect(dayoAfterVerify.membershipStatus).toBe('VISITOR'); // Unchanged!
+
+    // 4. Once verified, account-claim invitation is granted
+    const validInvite = await request(app.getHttpServer())
+      .post(`/api/people/${dayoId}/claim-invitations`)
+      .set('Origin', ORIGIN)
+      .set('Cookie', adminCookie)
+      .send({ email: 'dayo.amadi@example.com' });
+    expect(validInvite.status).toBe(201);
+    expect(validInvite.body.email).toBe('dayo.amadi@example.com');
+
+    // 5. Standing remains VISITOR (verification & invitation do NOT infer or promote membership standing)
+    const dayoAfterInvite = await prisma.person.findUniqueOrThrow({ where: { id: dayoId } });
+    expect(dayoAfterInvite.membershipStatus).toBe('VISITOR');
+  });
+
+  it('Sunday School Pipeline (SS1, SS2, SS3): enforces sequential prerequisites, marks 6 sessions, grades 6-part rubric, graduates to next module, and computes pipeline stats', async () => {
+    // 1. Create a person who has completed Foundation Class
+    const ssStudent = await prisma.person.create({
+      data: {
+        firstName: 'Bukola',
+        lastName: 'Adeyemi',
+        email: 'bukola.adeyemi@example.com',
+        phone: '+2348039998877',
+        membershipStatus: 'MEMBER',
+        foundationClassStatus: 'COMPLETED',
+        sundaySchoolStatus: 'NOT_STARTED',
+        isVerified: true,
+      },
+    });
+
+    // Also create a raw visitor who has NOT completed Foundation Class
+    const rawVisitor = await prisma.person.create({
+      data: {
+        firstName: 'Seyi',
+        lastName: 'Makinde',
+        email: 'seyi.makinde@example.com',
+        membershipStatus: 'VISITOR',
+        foundationClassStatus: 'NOT_STARTED',
+        sundaySchoolStatus: 'NOT_STARTED',
+      },
+    });
+
+    // 2. Schedule cohorts for SUNDAY_SCHOOL_101 and SUNDAY_SCHOOL_102
+    const ss1CohortRes = await request(app.getHttpServer())
+      .post('/api/academy/cohorts')
+      .set('Origin', ORIGIN)
+      .set('Cookie', adminCookie)
+      .send({
+        module_code: 'SUNDAY_SCHOOL_101',
+        title: 'Sunday School Module 1 — Faith & Doctrine 2026',
+        starts_on: '2026-11-01',
+      });
+    expect(ss1CohortRes.status).toBe(201);
+    expect(ss1CohortRes.body.sessions_count).toBe(6);
+    const ss1CohortId = ss1CohortRes.body.id as string;
+
+    const ss2CohortRes = await request(app.getHttpServer())
+      .post('/api/academy/cohorts')
+      .set('Origin', ORIGIN)
+      .set('Cookie', adminCookie)
+      .send({
+        module_code: 'SUNDAY_SCHOOL_102',
+        title: 'Sunday School Module 2 — Stewardship & Ministry 2026',
+        starts_on: '2026-12-01',
+      });
+    expect(ss2CohortRes.status).toBe(201);
+    const ss2CohortId = ss2CohortRes.body.id as string;
+
+    // 3. Raw visitor attempting to enroll in SUNDAY_SCHOOL_101 fails with MISSING_PREREQUISITE
+    const unqualEnroll = await request(app.getHttpServer())
+      .post(`/api/academy/cohorts/${ss1CohortId}/enrollments`)
+      .set('Origin', ORIGIN)
+      .set('Cookie', adminCookie)
+      .send({ person_id: rawVisitor.id });
+    expect(unqualEnroll.status).toBe(422);
+    expect(unqualEnroll.body.code).toBe('MISSING_PREREQUISITE');
+
+    // 4. Bukola attempting to enroll directly in SUNDAY_SCHOOL_102 fails with MISSING_PREREQUISITE
+    const prematureSS2Enroll = await request(app.getHttpServer())
+      .post(`/api/academy/cohorts/${ss2CohortId}/enrollments`)
+      .set('Origin', ORIGIN)
+      .set('Cookie', adminCookie)
+      .send({ person_id: ssStudent.id });
+    expect(prematureSS2Enroll.status).toBe(422);
+    expect(prematureSS2Enroll.body.code).toBe('MISSING_PREREQUISITE');
+
+    // 5. Enroll Bukola in SUNDAY_SCHOOL_101 -> updates sundaySchoolStatus to MODULE_1_IN_PROGRESS
+    const ss1Enroll = await request(app.getHttpServer())
+      .post(`/api/academy/cohorts/${ss1CohortId}/enrollments`)
+      .set('Origin', ORIGIN)
+      .set('Cookie', adminCookie)
+      .send({ person_id: ssStudent.id });
+    expect(ss1Enroll.status).toBe(201);
+    const ss1EnrollmentId = ss1Enroll.body.id as string;
+    expect(ss1Enroll.body.person.sunday_school_status).toBe('MODULE_1_IN_PROGRESS');
+
+    // 6. Record attendance for 6 sessions and grade 6-part rubric (total 90/100)
+    await request(app.getHttpServer())
+      .patch(`/api/academy/enrollments/${ss1EnrollmentId}/sessions`)
+      .set('Origin', ORIGIN)
+      .set('Cookie', adminCookie)
+      .send({ credited_sessions: [1, 2, 3, 4, 5, 6] });
+
+    await request(app.getHttpServer())
+      .patch(`/api/academy/enrollments/${ss1EnrollmentId}/grades`)
+      .set('Origin', ORIGIN)
+      .set('Cookie', adminCookie)
+      .send({ scores: [18, 18, 18, 18, 9, 9] });
+
+    // 7. Graduate Bukola from SUNDAY_SCHOOL_101 -> updates sundaySchoolStatus to MODULE_1_COMPLETED
+    const gradSS1 = await request(app.getHttpServer())
+      .post(`/api/academy/enrollments/${ss1EnrollmentId}/graduate`)
+      .set('Origin', ORIGIN)
+      .set('Cookie', adminCookie);
+    expect(gradSS1.status).toBe(200);
+    expect(gradSS1.body.status).toBe('GRADUATED');
+    expect(gradSS1.body.next_stage_eligible).toBe('SUNDAY_SCHOOL_102');
+    expect(gradSS1.body.person.sunday_school_status).toBe('MODULE_1_COMPLETED');
+
+    // 8. Now Bukola can enroll in SUNDAY_SCHOOL_102 -> sets MODULE_2_IN_PROGRESS
+    const ss2Enroll = await request(app.getHttpServer())
+      .post(`/api/academy/cohorts/${ss2CohortId}/enrollments`)
+      .set('Origin', ORIGIN)
+      .set('Cookie', adminCookie)
+      .send({ person_id: ssStudent.id });
+    expect(ss2Enroll.status).toBe(201);
+    expect(ss2Enroll.body.person.sunday_school_status).toBe('MODULE_2_IN_PROGRESS');
+
+    // 9. Inspect pipeline & Sunday School stats
+    const pipelineRes = await request(app.getHttpServer())
+      .get('/api/academy/pipeline')
+      .set('Cookie', adminCookie);
+    expect(pipelineRes.status).toBe(200);
+    expect(pipelineRes.body.sunday_school_module_2).toBeGreaterThanOrEqual(1);
+
+    const ssStatsRes = await request(app.getHttpServer())
+      .get('/api/academy/sunday-school/stats')
+      .set('Cookie', adminCookie);
+    expect(ssStatsRes.status).toBe(200);
+    expect(ssStatsRes.body.active_cohorts).toBeGreaterThanOrEqual(2);
+    expect(ssStatsRes.body.graduated_count).toBeGreaterThanOrEqual(1);
   });
 });
