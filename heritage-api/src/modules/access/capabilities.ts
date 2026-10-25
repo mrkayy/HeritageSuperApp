@@ -33,6 +33,10 @@ export const CAPABILITIES = [
   'celebrations.contact',
   'landmarks.write',
   'landmarks.approve',
+  'foundation.recommend', // Information Center exclusive: recommend visitors for Foundation Class handoff (HOF-015)
+  'academy.read',
+  'academy.manage',       // Membership / Academy Coordinator: schedule cohorts, enroll, makeup & graduate (HOF-018..020)
+  'academy.grade',        // Assigned cohort teachers (or coordinators): record 6-part rubric & session attendance
   'governance.audit.read',
 ] as const;
 
@@ -120,6 +124,11 @@ export function expandGrants(assignments: AssignmentContext[]): Grant[] {
       push('celebrations.contact', 'CHURCH');
       push('landmarks.write', 'CHURCH');
       push('landmarks.approve', 'CHURCH');
+      push('foundation.recommend', 'CHURCH');
+      push('academy.read', 'CHURCH');
+      push('academy.manage', 'CHURCH');
+      push('academy.grade', 'CHURCH');
+      push('governance.audit.read', 'CHURCH');
     } else if (a.role === 'PASTOR') {
       push('stewards.read', 'CHURCH');
       push('teams.read', 'CHURCH');
@@ -137,6 +146,11 @@ export function expandGrants(assignments: AssignmentContext[]): Grant[] {
       push('celebrations.contact', 'CHURCH');
       push('landmarks.write', 'CHURCH');
       push('landmarks.approve', 'CHURCH');
+      push('foundation.recommend', 'CHURCH');
+      push('academy.read', 'CHURCH');
+      push('academy.manage', 'CHURCH');
+      push('academy.grade', 'CHURCH');
+      push('governance.audit.read', 'CHURCH');
     } else if (a.role === 'TEAM_LEAD') {
       push('stewards.read', 'TEAM');
       push('stewards.invite', 'TEAM');
@@ -152,18 +166,22 @@ export function expandGrants(assignments: AssignmentContext[]): Grant[] {
       push('landmarks.write', 'CHURCH');
       push('landmarks.approve', 'CHURCH');
 
-      // Information Center exclusive: attendance.record
+      // Information Center exclusive: attendance.record & foundation.recommend
       if (a.teamKey === 'information_center') {
         push('attendance.record', 'CHURCH');
+        push('foundation.recommend', 'CHURCH');
       }
 
-      // Membership Team Lead exclusive: followups and pastoral prayer notes
+      // Membership Team Lead exclusive: followups, pastoral prayer notes, and Foundation Class Academy management
       if (a.teamKey === 'membership') {
         push('followups.read', 'TEAM');
         push('followups.assign', 'TEAM');
         push('followups.record', 'TEAM');
         push('prayer_notes.manage', 'TEAM');
         push('prayer_notes.email_pastor', 'TEAM');
+        push('academy.read', 'CHURCH');
+        push('academy.manage', 'CHURCH');
+        push('academy.grade', 'CHURCH');
       }
     } else if (a.role === 'ASSISTANT_TEAM_LEAD') {
       push('stewards.read', 'TEAM');
@@ -178,16 +196,20 @@ export function expandGrants(assignments: AssignmentContext[]): Grant[] {
       push('landmarks.write', 'CHURCH');
       push('landmarks.approve', 'CHURCH');
 
-      // Information Center exclusive: attendance.record
+      // Information Center exclusive: attendance.record & foundation.recommend
       if (a.teamKey === 'information_center') {
         push('attendance.record', 'CHURCH');
+        push('foundation.recommend', 'CHURCH');
       }
 
-      // Membership Assistant Team Lead: can view, record, and assign follow-ups
+      // Membership Assistant Team Lead: can view, record, and assign follow-ups + manage Academy cohorts
       if (a.teamKey === 'membership') {
         push('followups.read', 'TEAM');
         push('followups.assign', 'TEAM');
         push('followups.record', 'TEAM');
+        push('academy.read', 'CHURCH');
+        push('academy.manage', 'CHURCH');
+        push('academy.grade', 'CHURCH');
       }
     } else if (a.role === 'STEWARD') {
       push('teams.read', 'CHURCH');
@@ -197,15 +219,17 @@ export function expandGrants(assignments: AssignmentContext[]): Grant[] {
       push('celebrations.contact', 'TEAM');
       push('landmarks.write', 'TEAM');
 
-      // Information Center steward: attendance.record
+      // Information Center steward: attendance.record & foundation.recommend
       if (a.teamKey === 'information_center') {
         push('attendance.record', 'CHURCH');
+        push('foundation.recommend', 'CHURCH');
       }
 
-      // Membership steward: follow-ups (view and record call outcomes within team/assigned)
+      // Membership steward: follow-ups and Academy view (grading requires teacher assignment on cohort)
       if (a.teamKey === 'membership') {
         push('followups.read', 'TEAM');
         push('followups.record', 'TEAM');
+        push('academy.read', 'TEAM');
       }
     }
   }

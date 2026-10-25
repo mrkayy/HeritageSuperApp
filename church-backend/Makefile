@@ -1,5 +1,4 @@
-.PHONY: help run dev build lint up down migrate seed test test-unit test-integration check boundaries clean \
-        v2-up v2-down v2-migrate v2-seed v2-run v2-test v2-test-unit v2-test-integration v2-boundaries v2-check v2-build
+.PHONY: help run dev build lint up down migrate seed test test-unit test-integration check boundaries clean
 
 .DEFAULT_GOAL := help
 
@@ -95,19 +94,3 @@ build:
 
 clean:
 	rm -rf bin app.log
-
-# -----------------------------------------------------------------------------
-# Backwards-Compatible Aliases
-# -----------------------------------------------------------------------------
-
-v2-up: up
-v2-down: down
-v2-migrate: migrate
-v2-seed: seed
-v2-run: run
-v2-test: test
-v2-test-unit: test-unit
-v2-test-integration: test-integration
-v2-boundaries: boundaries
-v2-check: check
-v2-build: build

@@ -205,16 +205,16 @@ export class PeopleController {
     return this.people.commitImportJob(auth, jobId, body);
   }
 
-  // ── Foundation Eligibility, Recommendation & Handoff (HOF-015) ────────────
+  // ── Foundation Eligibility, Recommendation & Handoff (HOF-015 — Information Center Exclusive) ──
 
   @Get('foundation-eligibility')
-  @RequireCapability('visitors.capture')
+  @RequireCapability('foundation.recommend')
   listFoundationEligibility() {
     return this.people.listFoundationEligibility();
   }
 
   @Post(':personId/foundation-recommendations')
-  @RequireCapability('visitors.capture')
+  @RequireCapability('foundation.recommend')
   @HttpCode(200)
   recommendForFoundation(
     @CurrentAuth() auth: AuthContext,

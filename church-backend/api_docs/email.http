@@ -1,3 +1,10 @@
+###############################################################################
+# [DEPRECATED] V1 Legacy Email Endpoints (:8080/api)
+# Note: The V1 server is deprecated and decommissioned.
+# In V2, event notifications and emails are dispatched via the Transactional
+# Outbox pattern (internal/v2/outbox).
+###############################################################################
+
 ### Variables
 @baseUrl = http://localhost:8080/api
 @authToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Impvc2VwaG9sdWtheW9kZTA1K2FkbWluQGdtYWlsLmNvbSIsImV4cCI6MTc4ODQzMDQyNSwiaWF0IjoxNzg4MzQ0MDI1LCJyb2xlcyI6WyJzdXBlcl9hZG1pbiJdLCJzdWIiOiI2OTFhNWMwYy03YmM2LTQ2N2ItOTIyZS0zMWU0NDY0MWY2NTAiLCJ0ZWFtSWQiOiIiLCJ0ZWFtTmFtZSI6IiJ9.BWkFRX63CriNIl4B0cXfzFWhZfuoyoDY_unvvhqHRKk

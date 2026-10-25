@@ -69,6 +69,8 @@ model Person {
   celebrationContacts      CelebrationContact[]
   lifeLandmarks            LifeLandmark[]
   foundationRecommendation FoundationRecommendation?
+  academyEnrollments       AcademyEnrollment[]
+  journeyTransitions       JourneyTransition[]
 
   @@index([lastName, firstName])
   @@index([email])
@@ -531,4 +533,132 @@ model LifeLandmark {
   @@index([personId, createdAt(sort: Desc)])
   @@index([publicationPreference, approvalStatus])
 }
+
+// ─── Academy: Foundation & Membership Cohorts, Rubric & Journey (HOF-018..020) ──
+
+enum AcademyModuleCode {
+  FOUNDATION_101
+  MEMBERSHIP_201
+}
+
+enum AcademyCohortStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum AcademyEnrollmentStatus {
+  ENROLLED
+  WITHDRAWN
+  GRADUATED
+  RETAKE_REQUIRED
+}
+
+model AcademyCohort {
+  id          String              @id @default(uuid()) @db.Uuid
+  moduleCode  AcademyModuleCode   @default(FOUNDATION_101)
+  title       String              // e.g. "October 2026 Foundation Class Cohort"
+  ruleVersion String              @default("v1:6_sessions_50_pass")
+  startsOn    String              // "YYYY-MM-DD"
+  status      AcademyCohortStatus @default(SCHEDULED)
+  notes       String?
+  createdById String              @db.Uuid
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  sessions    AcademySession[]
+  teachers    AcademyTeacherAssignment[]
+  enrollments AcademyEnrollment[]
+
+  @@index([moduleCode, createdAt(sort: Desc)])
+}
+
+model AcademySession {
+  id            String   @id @default(uuid()) @db.Uuid
+  cohortId      String   @db.Uuid
+  sessionNumber Int      // 1..6
+  title         String
+  scheduledOn   String?  // "YYYY-MM-DD"
+  createdAt     DateTime @default(now())
+
+  cohort AcademyCohort @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+
+  @@unique([cohortId, sessionNumber])
+}
+
+model AcademyTeacherAssignment {
+  id              String   @id @default(uuid()) @db.Uuid
+  cohortId        String   @db.Uuid
+  teacherPersonId String   @db.Uuid
+  assignedById    String   @db.Uuid
+  createdAt       DateTime @default(now())
+
+  cohort AcademyCohort @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+
+  @@unique([cohortId, teacherPersonId])
+  @@index([teacherPersonId])
+}
+
+model AcademyEnrollment {
+  id                    String                  @id @default(uuid()) @db.Uuid
+  cohortId              String                  @db.Uuid
+  personId              String                  @db.Uuid
+  moduleCode            AcademyModuleCode       @default(FOUNDATION_101)
+  ruleVersion           String                  @default("v1:6_sessions_50_pass")
+  attemptNumber         Int                     @default(1)
+  status                AcademyEnrollmentStatus @default(ENROLLED)
+  creditedSessions      Json                    @default("[]") // number[] of distinct session numbers 1..6
+  creditedSessionCount  Int                     @default(0)
+  // Six-part assessment rubric (out of 100 total: 20 + 20 + 20 + 20 + 10 + 10)
+  scorePart1            Float?                  // 0..20
+  scorePart2            Float?                  // 0..20
+  scorePart3            Float?                  // 0..20
+  scorePart4            Float?                  // 0..20
+  scorePart5            Float?                  // 0..10
+  scorePart6            Float?                  // 0..10
+  totalScore            Float?                  // 0..100 computed server-side
+  gradedById            String?                 @db.Uuid
+  gradedAt              DateTime?
+  makeupApproved        Boolean                 @default(false)
+  makeupReason          String?
+  makeupApprovedById    String?                 @db.Uuid
+  makeupApprovedAt      DateTime?
+  isPrerequisiteOverride Boolean                @default(false)
+  overrideReason        String?
+  graduatedAt           DateTime?
+  graduatedById         String?                 @db.Uuid
+  withdrawnAt           DateTime?
+  withdrawalReason      String?
+  enrolledById          String                  @db.Uuid
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  cohort AcademyCohort @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+  person Person        @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  @@index([cohortId, status])
+  @@index([personId, moduleCode])
+}
+
+/// HOF-018-S02 / S03 / S04: Durable Journey & Standing Transition History.
+/// Records why each transition occurred (actor, ruleVersion, evidence, manual override reason).
+model JourneyTransition {
+  id                    String                 @id @default(uuid()) @db.Uuid
+  personId              String                 @db.Uuid
+  fromStatus            MembershipStatus?
+  toStatus              MembershipStatus
+  fromFoundationStatus  FoundationClassStatus?
+  toFoundationStatus    FoundationClassStatus
+  ruleVersion           String                 @default("v1:6_sessions_50_pass")
+  isOverride            Boolean                @default(false)
+  reason                String
+  evidence              Json?
+  actorPersonId         String                 @db.Uuid
+  createdAt             DateTime               @default(now())
+
+  person Person @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  @@index([personId, createdAt(sort: Desc)])
+}
+
 

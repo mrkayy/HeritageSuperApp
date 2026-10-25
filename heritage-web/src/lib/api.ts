@@ -436,7 +436,6 @@ export interface LifeLandmarkItem {
   }
 }
 
-
 export interface ImportJobSummaryItem {
   id: string
   file_name: string | null
@@ -444,4 +443,88 @@ export interface ImportJobSummaryItem {
   created_at: string
   committed_at: string | null
   summary: ImportJobDetail['summary']
+}
+
+// ── Academy Cohorts, 6-Part Rubric & Journey History (HOF-018..020) ──────
+
+export type AcademyModuleCode = 'FOUNDATION_101' | 'MEMBERSHIP_201'
+export type AcademyCohortStatus = 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED'
+export type AcademyEnrollmentStatus = 'ENROLLED' | 'WITHDRAWN' | 'GRADUATED' | 'RETAKE_REQUIRED'
+export type GraduationEligibilityState =
+  | 'eligible'
+  | 'coordinator_makeup_decision_required'
+  | 'retake_required'
+  | 'score_below_passing'
+  | 'incomplete_assessment'
+
+export interface AcademyEnrollmentItem {
+  id: string
+  cohort_id: string
+  person_id: string
+  module_code: AcademyModuleCode
+  rule_version: string
+  attempt_number: number
+  status: AcademyEnrollmentStatus
+  credited_sessions: number[]
+  credited_session_count: number
+  scores: (number | null)[]
+  total_score: number | null
+  makeup_approved: boolean
+  makeup_reason: string | null
+  graduation_eligibility: GraduationEligibilityState
+  is_prerequisite_override: boolean
+  override_reason: string | null
+  graduated_at: string | null
+  withdrawn_at: string | null
+  withdrawal_reason: string | null
+  created_at: string
+  person: {
+    id: string
+    first_name: string
+    last_name: string
+    email: string | null
+    phone: string | null
+    membership_status: MembershipStatus
+    foundation_class_status: FoundationClassStatus
+    foundation_eligible_at: string | null
+  }
+}
+
+export interface AcademyCohortItem {
+  id: string
+  module_code: AcademyModuleCode
+  title: string
+  rule_version: string
+  starts_on: string
+  status: AcademyCohortStatus
+  notes: string | null
+  can_caller_grade: boolean
+  sessions: {
+    id: string
+    session_number: number
+    title: string
+    scheduled_on: string | null
+  }[]
+  teachers: {
+    id: string
+    person_id: string
+    name: string
+  }[]
+  enrollments: AcademyEnrollmentItem[]
+}
+
+export interface JourneyTransitionItem {
+  id: string
+  person_id: string
+  from_status: MembershipStatus | null
+  to_status: MembershipStatus
+  from_foundation_status: FoundationClassStatus | null
+  to_foundation_status: FoundationClassStatus
+  rule_version: string
+  is_override: boolean
+  reason: string
+  actor_person_id: string | null
+  actor_name: string
+  evidence: Record<string, unknown> | null
+  created_at: string
 }

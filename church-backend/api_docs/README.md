@@ -1,5 +1,11 @@
 # API Documentation & Frontend Integration Guide
 
+> [!WARNING]
+> **V1 API DEPRECATED & DECOMMISSIONED**:
+> The legacy V1 backend (previously running on port `8080`) has been deprecated.
+> All new frontend features and integrations must use the **V2 Foundation API** running on port `8081` (`/api/v2`).
+> The active OpenAPI 3.1 specification is located at [`api_docs/v2/openapi.yaml`](file:///Users/mac/Desktop/HeritageSuperApp/church-backend/api_docs/v2/openapi.yaml).
+
 This directory contains endpoint definitions, architectural guides, and `.http` test files for the Heritage MMC backend.
 
 ## 1. How to Run the REST Requests

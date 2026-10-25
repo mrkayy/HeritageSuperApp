@@ -58,7 +58,7 @@ function AttendancePage() {
   const [checkInSearch, setCheckInSearch] = useState('')
   const [recommendingPersonId, setRecommendingPersonId] = useState<string | null>(null)
   const [banner, setBanner] = useState<{ tone: 'success' | 'info' | 'error'; text: string } | null>(null)
-  const canRecommendFoundation = hasCapability(me, 'visitors.capture')
+  const canRecommendFoundation = hasCapability(me, 'foundation.recommend')
 
   const foundationEligibility = useQuery({
     queryKey: ['foundation-eligibility'],

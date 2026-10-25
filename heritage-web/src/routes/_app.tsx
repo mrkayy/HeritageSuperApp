@@ -6,6 +6,7 @@ import {
   Cake,
   ClipboardCheck,
   FileSpreadsheet,
+  GraduationCap,
   HeartHandshake,
   Home,
   LogOut,
@@ -91,6 +92,12 @@ function AppShell() {
           label: 'Bulk CSV Import',
           icon: FileSpreadsheet,
           show: hasCapability(me, 'people.import'),
+        },
+        {
+          to: '/academy' as const,
+          label: 'Foundation & Academy',
+          icon: GraduationCap,
+          show: hasCapability(me, 'academy.read'),
         },
         {
           to: '/celebrations' as const,
