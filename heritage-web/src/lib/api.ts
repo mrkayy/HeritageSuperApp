@@ -17,6 +17,9 @@ export class ApiError extends Error {
   ) {
     super(body.message)
   }
+  get code() {
+    return this.body.code
+  }
   get fieldErrors() {
     return this.body.field_errors ?? {}
   }
@@ -45,7 +48,7 @@ export async function api<T>(path: string, init: { method?: string; body?: unkno
 // ── Contracts ────────────────────────────────────────────────────────────
 
 export type Role = 'ADMIN' | 'PASTOR' | 'TEAM_LEAD' | 'ASSISTANT_TEAM_LEAD' | 'STEWARD'
-export type MembershipStatus = 'VISITOR' | 'FIRST_TIMER' | 'FOUNDATION' | 'MEMBER' | 'WORKER' | 'INACTIVE'
+export type MembershipStatus = 'VISITOR' | 'FIRST_TIMER' | 'FOUNDATION' | 'MEMBER' | 'WORK_FORCE' | 'INACTIVE'
 export type FoundationClassStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED'
 export type ServiceKind = 'SUNDAY_FIRST' | 'SUNDAY_SECOND' | 'SUNDAY_COMBINED' | 'MIDWEEK' | 'SPECIAL'
 export type FollowUpTaskKind = 'WELCOME' | 'FOUNDATION_HANDOFF'
@@ -125,6 +128,7 @@ export interface DirectoryPerson {
   missing_contact_reason: string | null
   membership_status: MembershipStatus
   foundation_class_status: FoundationClassStatus
+  sunday_school_status?: SundaySchoolStatus
   foundation_eligible_at?: string | null
   foundation_rule_version?: string | null
   birth_month: number | null
@@ -447,7 +451,44 @@ export interface ImportJobSummaryItem {
 
 // ── Academy Cohorts, 6-Part Rubric & Journey History (HOF-018..020) ──────
 
-export type AcademyModuleCode = 'FOUNDATION_101' | 'MEMBERSHIP_201'
+export type SundaySchoolStatus =
+  | 'NOT_STARTED'
+  | 'MODULE_1_IN_PROGRESS'
+  | 'MODULE_1_COMPLETED'
+  | 'MODULE_2_IN_PROGRESS'
+  | 'MODULE_2_COMPLETED'
+  | 'MODULE_3_IN_PROGRESS'
+  | 'COMPLETED'
+
+export type AcademyModuleCode =
+  | 'FOUNDATION_101'
+  | 'SUNDAY_SCHOOL_101'
+  | 'SUNDAY_SCHOOL_102'
+  | 'SUNDAY_SCHOOL_103'
+  | 'MEMBERSHIP_201'
+
+export interface DiscipleshipPipeline {
+  first_timer: number
+  returning_visitor: number
+  foundation_class: number
+  sunday_school_module_1: number
+  sunday_school_module_2: number
+  sunday_school_module_3: number
+  membership_class: number
+  steward: number
+  total: number
+}
+
+export interface SundaySchoolStats {
+  active_cohorts: number
+  total_enrolled: number
+  module_1_enrolled: number
+  module_2_enrolled: number
+  module_3_enrolled: number
+  graduated_count: number
+  makeup_pending_count: number
+}
+
 export type AcademyCohortStatus = 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED'
 export type AcademyEnrollmentStatus = 'ENROLLED' | 'WITHDRAWN' | 'GRADUATED' | 'RETAKE_REQUIRED'
 export type GraduationEligibilityState =
@@ -486,6 +527,7 @@ export interface AcademyEnrollmentItem {
     phone: string | null
     membership_status: MembershipStatus
     foundation_class_status: FoundationClassStatus
+    sunday_school_status?: SundaySchoolStatus
     foundation_eligible_at: string | null
   }
 }
@@ -519,12 +561,119 @@ export interface JourneyTransitionItem {
   from_status: MembershipStatus | null
   to_status: MembershipStatus
   from_foundation_status: FoundationClassStatus | null
-  to_foundation_status: FoundationClassStatus
+  to_foundation_status: FoundationClassStatus | null
+  from_sunday_school_status?: SundaySchoolStatus | null
+  to_sunday_school_status?: SundaySchoolStatus | null
   rule_version: string
   is_override: boolean
   reason: string
   actor_person_id: string | null
   actor_name: string
   evidence: Record<string, unknown> | null
+  created_at: string
+}
+
+// ── Volunteer Preferences, Probation and Placement (HOF-021) ─────────────
+
+export type VolunteerApplicationStatus =
+  | 'SUBMITTED'
+  | 'PROBATIONARY'
+  | 'PLACED'
+  | 'REJECTED'
+  | 'WITHDRAWN'
+
+export interface VolunteerStatusResponse {
+  person_id: string
+  first_name: string
+  last_name: string
+  membership_status: MembershipStatus
+  is_unlocked: boolean
+  module_2_completed: boolean
+  active_application: {
+    id: string
+    primary_department: string
+    secondary_department: string
+    skills: string | null
+    availability: string | null
+    status: VolunteerApplicationStatus
+    placed_department: string | null
+    probation_started_at: string | null
+    probation_ended_at: string | null
+    created_at: string
+  } | null
+}
+
+export interface VolunteerApplicationItem {
+  id: string
+  person_id: string
+  primary_department: string
+  secondary_department: string
+  skills: string | null
+  availability: string | null
+  status: VolunteerApplicationStatus
+  placed_department: string | null
+  probation_started_at: string | null
+  probation_ended_at: string | null
+  review_notes: string | null
+  created_at: string
+  person: {
+    id: string
+    first_name: string
+    last_name: string
+    email: string | null
+    phone: string | null
+    membership_status: MembershipStatus
+    foundation_class_status: FoundationClassStatus
+  }
+}
+
+// ── Profile Change Proposals & Maker-Checker Dual Control (HOF-017) ──────
+
+export type ProposalStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
+
+export interface ProfileProposalItem {
+  id: string
+  person_id: string
+  person: {
+    id: string
+    first_name: string
+    last_name: string
+    version: number
+    membership_status: MembershipStatus
+    current_address: string | null
+    current_phone: string | null
+    current_email: string | null
+  }
+  base_version: number
+  is_stale: boolean
+  maker: {
+    id: string
+    name: string
+  }
+  checker: {
+    id: string
+    name: string
+  } | null
+  changes: Record<string, { old: unknown; proposed: unknown }>
+  reason: string | null
+  status: ProposalStatus
+  rejection_reason: string | null
+  created_at: string
+  reviewed_at: string | null
+  can_actor_approve: boolean
+}
+
+export interface IncompleteProfileItem {
+  id: string
+  first_name: string
+  last_name: string
+  phone: string | null
+  email: string | null
+  address: string | null
+  photo_url: string | null
+  membership_status: MembershipStatus
+  is_verified: boolean
+  version: number
+  missing_fields: string[]
   created_at: string
 }
