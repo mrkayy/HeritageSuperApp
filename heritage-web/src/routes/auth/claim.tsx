@@ -4,7 +4,7 @@ import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
 import { ArrowLeft, Camera, CheckCircle2, KeyRound, Lock, ShieldCheck } from 'lucide-react'
 import { z } from 'zod'
 import { Alert, AuthCard, Badge, Button, Field } from '#/components/ui'
-import { api, ApiError, type ClaimPreview } from '#/lib/api'
+import { api, ApiError, type ClaimPreview, type Me } from '#/lib/api'
 import { meQuery } from '#/lib/auth'
 
 /**
@@ -150,7 +150,8 @@ function ClaimWizard({ token, preview }: { token: string; preview: ClaimPreview 
           pin: pin || null,
         },
       })
-      await queryClient.invalidateQueries({ queryKey: meQuery.queryKey })
+      const me = await api<Me>('/auth/me')
+      queryClient.setQueryData(meQuery.queryKey, me)
       await navigate({ to: '/dashboard', replace: true })
     } catch (err) {
       setApiError(err instanceof ApiError ? err : null)

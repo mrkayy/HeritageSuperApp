@@ -17,7 +17,7 @@ import {
   Users2,
   X,
 } from 'lucide-react'
-import { api } from '#/lib/api'
+import { api, type Me } from '#/lib/api'
 import { hasCapability, meQuery } from '#/lib/auth'
 
 /**
@@ -27,7 +27,10 @@ import { hasCapability, meQuery } from '#/lib/auth'
  */
 export const Route = createFileRoute('/_app')({
   beforeLoad: async ({ context, location }) => {
-    const me = await context.queryClient.ensureQueryData(meQuery)
+    let me = context.queryClient.getQueryData<Me | null>(meQuery.queryKey)
+    if (!me) {
+      me = await context.queryClient.fetchQuery(meQuery).catch(() => null)
+    }
     if (!me) {
       throw redirect({ to: '/login', search: { redirect: location.href } })
     }
