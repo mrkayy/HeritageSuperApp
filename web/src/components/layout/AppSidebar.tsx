@@ -162,16 +162,14 @@ export function AppSidebar() {
   const isExecutive = ['super_admin', 'church_admin', 'resident_pastor', 'general_overseer'].some(r => userRoles.includes(r));
   const userTeamName = ((user as any)?.team_name || user?.teamName || '').toLowerCase();
 
-  const isMembershipMember = isExecutive || 
-    userTeamName.includes('membership') || 
-    userRoles.includes('team_lead') || 
-    userRoles.includes('steward');
+  // Team access is determined by teamName (JWT claim), not by role tier.
+  // 'steward' and 'team_lead' are seniority levels, not team identifiers —
+  // they must NOT grant cross-team sidebar visibility.
+  const isMembershipMember = isExecutive || userTeamName.includes('membership');
 
-  const isInfoCenterMember = isExecutive || 
-    userTeamName.includes('info') || 
-    userTeamName.includes('information') || 
-    userRoles.includes('team_lead') || 
-    userRoles.includes('steward');
+  const isInfoCenterMember = isExecutive ||
+    userTeamName.includes('info') ||
+    userTeamName.includes('information');
 
   const isAdminPanelVisible = adminPanelEnabled && (isExecutive || ['super_admin', 'church_admin'].some(r => userRoles.includes(r)));
 
@@ -275,6 +273,30 @@ export function AppSidebar() {
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                     <SidebarMenuItem>
+                      <SidebarMenuButton asChild isActive={location.pathname === "/membership/academy"}>
+                        <Link to="/membership/academy" className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
+                          <GraduationCap className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0 text-emerald-500" />
+                          {!isCollapsed && <span className="text-xs font-medium">Discipleship Academy</span>}
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton asChild isActive={location.pathname === "/membership/first-timer-crm"}>
+                        <Link to="/membership/first-timer-crm" className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
+                          <LucidePhoneCall className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
+                          {!isCollapsed && <span className="text-xs">First-Timer CRM</span>}
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton asChild isActive={location.pathname === "/membership/maker-checker"}>
+                        <Link to="/membership/maker-checker" className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
+                          <UserCheck className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
+                          {!isCollapsed && <span className="text-xs">Pending Profile Edits</span>}
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
                       <SidebarMenuButton asChild isActive={location.pathname === "/teams/membership/members"}>
                         <Link to="/teams/membership/members" className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
                           <Users2 className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
@@ -283,18 +305,26 @@ export function AppSidebar() {
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                     <SidebarMenuItem>
-                      <SidebarMenuButton asChild isActive={location.pathname === "/teams/membership/birthdays"}>
-                        <Link to="/teams/membership/birthdays" className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
-                          <Cake className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
-                          {!isCollapsed && <span className="text-xs">Birthday Tracker</span>}
+                      <SidebarMenuButton asChild isActive={location.pathname === "/membership/celebrations"}>
+                        <Link to="/membership/celebrations" className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
+                          <Sparkles className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
+                          {!isCollapsed && <span className="text-xs">Celebrations & Landmarks</span>}
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                     <SidebarMenuItem>
-                      <SidebarMenuButton asChild isActive={location.pathname === "/teams/membership/anniversaries"}>
-                        <Link to="/teams/membership/anniversaries" className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
-                          <Heart className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
-                          {!isCollapsed && <span className="text-xs">Anniversary Tracker</span>}
+                      <SidebarMenuButton asChild isActive={location.pathname === "/membership/sitrep"}>
+                        <Link to="/membership/sitrep" className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
+                          <ClipboardList className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
+                          {!isCollapsed && <span className="text-xs">Pastoral SitRep Log</span>}
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton asChild isActive={location.pathname === "/membership/volunteers"}>
+                        <Link to="/membership/volunteers" className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
+                          <UserPlus className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
+                          {!isCollapsed && <span className="text-xs">Volunteer Intake</span>}
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -307,10 +337,10 @@ export function AppSidebar() {
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                     <SidebarMenuItem>
-                      <SidebarMenuButton asChild isActive={location.pathname === "/teams/membership/profiling-queue"}>
-                        <Link to="/teams/membership/profiling-queue" className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
-                          <UserCheck className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
-                          {!isCollapsed && <span className="text-xs">Profiling Queue</span>}
+                      <SidebarMenuButton asChild isActive={location.pathname === "/membership/transfers"}>
+                        <Link to="/membership/transfers" className="flex items-center gap-1 md:gap-2 lg:gap-3 px-1 md:px-2 lg:px-3 py-2">
+                          <Building className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
+                          {!isCollapsed && <span className="text-xs">Inter-Branch Transfers</span>}
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -449,7 +479,16 @@ export function AppSidebar() {
           {!isCollapsed && (
             <div className="flex-1 min-w-0">
               <p className="text-xs md:text-sm font-medium truncate">{user?.firstName} {user?.lastName}</p>
-              <p className="text-xs text-muted-foreground capitalize">{user?.role?.replace('_', ' ')}</p>
+              <p className="text-[10px] text-muted-foreground capitalize leading-tight">
+                <span className="font-medium text-foreground/70">Role:</span>{' '}
+                {user?.role?.replace(/_/g, ' ')}
+              </p>
+              {user?.currentStage && (
+                <p className="text-[10px] text-primary/70 capitalize leading-tight">
+                  <span className="font-medium">Stage:</span>{' '}
+                  {user.currentStage.replace(/_/g, ' ')}
+                </p>
+              )}
             </div>
           )}
         </div>

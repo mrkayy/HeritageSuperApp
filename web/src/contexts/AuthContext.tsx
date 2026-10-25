@@ -9,6 +9,7 @@ export interface User {
   firstName: string;
   lastName: string;
   name: string;
+  /** Permission level — controls what pages/APIs the user can access */
   role: string;
   roles?: string[];
   teamId?: string;
@@ -17,6 +18,8 @@ export interface User {
   team?: null;
   church?: null;
   phoneNumber?: string;
+  /** Discipleship journey stage — tracks spiritual progression, NOT a permission concept */
+  currentStage?: string;
 }
 
 interface AuthContextType {
@@ -52,6 +55,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         roles: roles,
         team_id: data.teamId || data.team_id || '',
         team_name: data.teamName || data.team_name || '',
+        current_stage: data.currentStage || data.current_stage || '',
       };
 
       storeLogin(fetchedUser, currentToken);
@@ -113,6 +117,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         role: storeUser.role,
         teamId: storeUser.team_id || '',
         teamName: storeUser.team_name || '',
+        currentStage: storeUser.current_stage || '',
       }
     : null;
 
