@@ -30,7 +30,7 @@ export function validateEnv(raw: Record<string, unknown>): Env {
   }
   const env = parsed.data;
   if (env.NODE_ENV === 'production' && !env.RESEND_API_KEY) {
-    throw new Error('RESEND_API_KEY is required in production');
+    console.warn('[CONFIG WARNING] RESEND_API_KEY is not set in production. Outbound emails will be logged to console.');
   }
   return env;
 }

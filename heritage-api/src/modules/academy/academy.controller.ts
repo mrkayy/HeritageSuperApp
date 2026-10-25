@@ -5,9 +5,24 @@ import { ZodBody } from '../../platform/http/errors.js';
 import { CurrentAuth, RequireCapability, type AuthContext } from '../identity/auth.guard.js';
 import { AcademyService } from './academy.service.js';
 
-const ModuleCodeEnum = z.enum(['FOUNDATION_101', 'MEMBERSHIP_201']);
-const MembershipStatusEnum = z.enum(['VISITOR', 'FIRST_TIMER', 'FOUNDATION', 'MEMBER', 'WORKER', 'INACTIVE']);
+const ModuleCodeEnum = z.enum([
+  'FOUNDATION_101',
+  'SUNDAY_SCHOOL_101',
+  'SUNDAY_SCHOOL_102',
+  'SUNDAY_SCHOOL_103',
+  'MEMBERSHIP_201',
+]);
+const MembershipStatusEnum = z.enum(['VISITOR', 'FIRST_TIMER', 'FOUNDATION', 'MEMBER', 'WORKER', 'WORK_FORCE', 'INACTIVE']);
 const FoundationStatusEnum = z.enum(['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED']);
+const SundaySchoolStatusEnum = z.enum([
+  'NOT_STARTED',
+  'MODULE_1_IN_PROGRESS',
+  'MODULE_1_COMPLETED',
+  'MODULE_2_IN_PROGRESS',
+  'MODULE_2_COMPLETED',
+  'MODULE_3_IN_PROGRESS',
+  'COMPLETED',
+]);
 
 const CreateCohortBody = z.object({
   module_code: ModuleCodeEnum.optional(),
@@ -55,8 +70,9 @@ const WithdrawEnrollmentBody = z.object({
 
 const StandingOverrideBody = z.object({
   person_id: z.string().uuid('Select a valid person'),
-  to_status: MembershipStatusEnum,
+  to_status: MembershipStatusEnum.optional(),
   to_foundation_status: FoundationStatusEnum.optional(),
+  to_sunday_school_status: SundaySchoolStatusEnum.optional(),
   reason: z.string().trim().min(1, 'Override reason is required').max(500),
   rule_version: z.string().trim().max(80).optional(),
   evidence_note: z.string().trim().max(500).optional(),
@@ -71,6 +87,18 @@ export class AcademyController {
   listCohorts(@CurrentAuth() auth: AuthContext, @Query('module_code') moduleCode?: string) {
     const validModule = ModuleCodeEnum.safeParse(moduleCode).data as AcademyModuleCode | undefined;
     return this.academy.listCohorts(auth, validModule);
+  }
+
+  @Get('pipeline')
+  @RequireCapability('academy.read')
+  pipeline(@CurrentAuth() auth: AuthContext) {
+    return this.academy.getDiscipleshipPipeline(auth);
+  }
+
+  @Get('sunday-school/stats')
+  @RequireCapability('academy.read')
+  sundaySchoolStats(@CurrentAuth() auth: AuthContext) {
+    return this.academy.getSundaySchoolStats(auth);
   }
 
   @Post('cohorts')

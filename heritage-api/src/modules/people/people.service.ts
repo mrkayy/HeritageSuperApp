@@ -5,6 +5,7 @@ import {
   ImportRowState,
   MembershipStatus as PrismaMembershipStatus,
   Prisma,
+  ProposalStatus,
   type FoundationClassStatus,
   type MembershipStatus,
   type Role,
@@ -60,6 +61,21 @@ export interface UpdatePersonInput {
   birth_day?: number | null;
   anniversary_month?: number | null;
   anniversary_day?: number | null;
+}
+
+export interface CreateProposalInput {
+  proposed_changes: Record<string, unknown>;
+  reason?: string;
+}
+
+export interface ReviewProposalInput {
+  action: 'APPROVE' | 'REJECT';
+  rejection_reason?: string;
+}
+
+export interface VerifyPersonInput {
+  notes?: string;
+  evidence?: Record<string, unknown>;
 }
 
 export interface IssueClaimInvitationInput {
@@ -478,10 +494,12 @@ export class PeopleService {
   }
 
   /**
-   * Verify a Person record independently of membership standing (HOF-002-S01 / HOF-017).
-   * Required before issuing an account-claim invitation.
+   * Verify a Person record independently of membership standing (HOF-002-S01 / HOF-017-S05).
+   * - Sets isVerified = true, verifiedAt, verifiedById.
+   * - Does NOT alter or infer membershipStatus.
+   * - Required before issuing an account-claim invitation.
    */
-  async verifyPerson(actor: AuthContext, personId: string) {
+  async verifyPerson(actor: AuthContext, personId: string, input?: VerifyPersonInput) {
     const existing = await this.prisma.person.findUnique({ where: { id: personId } });
     if (!existing) {
       throw new ApiError(HttpStatus.NOT_FOUND, 'PERSON_NOT_FOUND', 'Person not found.');
@@ -499,12 +517,350 @@ export class PeopleService {
       action: 'people.verified',
       actorId: actor.personId,
       subjectId: personId,
+      metadata: {
+        notes: input?.notes ?? null,
+        evidence: (input?.evidence as Prisma.InputJsonValue) ?? null,
+        membership_status: existing.membershipStatus,
+      },
     });
     return {
       id: updated.id,
       is_verified: updated.isVerified,
       verified_at: updated.verifiedAt?.toISOString() ?? null,
+      membership_status: updated.membershipStatus,
+      version: updated.version,
     };
+  }
+
+  // ── Profile Change Proposals & Maker-Checker Dual Control (HOF-017-S02..S04) ──
+
+  /**
+   * Submit a change proposal without mutating the live Person record (HOF-017-S02).
+   */
+  async createProfileProposal(actor: AuthContext, personId: string, input: CreateProposalInput) {
+    const existing = await this.prisma.person.findUnique({ where: { id: personId } });
+    if (!existing) {
+      throw new ApiError(HttpStatus.NOT_FOUND, 'PERSON_NOT_FOUND', 'Person not found.');
+    }
+
+    const changes: Record<string, { old: unknown; proposed: unknown }> = {};
+    for (const [key, proposedVal] of Object.entries(input.proposed_changes)) {
+      const modelKey =
+        key === 'first_name' ? 'firstName'
+        : key === 'last_name' ? 'lastName'
+        : key === 'photo_url' ? 'photoUrl'
+        : key === 'birth_month' ? 'birthMonth'
+        : key === 'birth_day' ? 'birthDay'
+        : key === 'anniversary_month' ? 'anniversaryMonth'
+        : key === 'anniversary_day' ? 'anniversaryDay'
+        : key;
+
+      const oldVal = (existing as Record<string, unknown>)[modelKey] ?? null;
+      changes[key] = { old: oldVal, proposed: proposedVal };
+    }
+
+    const proposal = await this.prisma.profileChangeProposal.create({
+      data: {
+        personId,
+        baseVersion: existing.version,
+        makerId: actor.personId,
+        changes: changes as Prisma.InputJsonValue,
+        reason: input.reason?.trim() || null,
+        status: ProposalStatus.PENDING,
+      },
+      include: {
+        person: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            version: true,
+            membershipStatus: true,
+            isVerified: true,
+          },
+        },
+        maker: { select: { id: true, firstName: true, lastName: true, email: true } },
+      },
+    });
+
+    await this.audit.record({
+      action: 'profile_proposal.created',
+      actorId: actor.personId,
+      subjectId: personId,
+      metadata: { proposalId: proposal.id, reason: input.reason },
+    });
+
+    return {
+      id: proposal.id,
+      person_id: proposal.personId,
+      base_version: proposal.baseVersion,
+      maker_id: proposal.makerId,
+      maker: {
+        id: proposal.maker.id,
+        name: `${proposal.maker.firstName} ${proposal.maker.lastName}`.trim(),
+      },
+      changes: proposal.changes,
+      reason: proposal.reason,
+      status: proposal.status,
+      created_at: proposal.createdAt.toISOString(),
+    };
+  }
+
+  /**
+   * List profile change proposals (queue for checkers to review).
+   */
+  async listProfileProposals(
+    actor: AuthContext,
+    filter?: { status?: ProposalStatus; personId?: string },
+  ) {
+    const where: Prisma.ProfileChangeProposalWhereInput = {};
+    if (filter?.status) where.status = filter.status;
+    if (filter?.personId) where.personId = filter.personId;
+
+    const proposals = await this.prisma.profileChangeProposal.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        person: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            version: true,
+            membershipStatus: true,
+            address: true,
+            phone: true,
+            email: true,
+          },
+        },
+        maker: { select: { id: true, firstName: true, lastName: true } },
+        checker: { select: { id: true, firstName: true, lastName: true } },
+      },
+    });
+
+    return proposals.map((p) => ({
+      id: p.id,
+      person_id: p.personId,
+      person: {
+        id: p.person.id,
+        first_name: p.person.firstName,
+        last_name: p.person.lastName,
+        version: p.person.version,
+        membership_status: p.person.membershipStatus,
+        current_address: p.person.address,
+        current_phone: p.person.phone,
+        current_email: p.person.email,
+      },
+      base_version: p.baseVersion,
+      is_stale: p.baseVersion !== p.person.version,
+      maker: {
+        id: p.maker.id,
+        name: `${p.maker.firstName} ${p.maker.lastName}`.trim(),
+      },
+      checker:
+        p.checker ?
+          {
+            id: p.checker.id,
+            name: `${p.checker.firstName} ${p.checker.lastName}`.trim(),
+          }
+        : null,
+      changes: p.changes,
+      reason: p.reason,
+      status: p.status,
+      rejection_reason: p.rejectionReason,
+      created_at: p.createdAt.toISOString(),
+      reviewed_at: p.reviewedAt?.toISOString() ?? null,
+      can_actor_approve: p.status === 'PENDING' && p.makerId !== actor.personId,
+    }));
+  }
+
+  /**
+   * Maker-Checker Review: Approve or Reject a change proposal (HOF-017-S03 & S04).
+   * - HOF-017-S04 Anti-Self-Approval: Maker cannot approve own proposal.
+   * - HOF-017-S04 Optimistic Version Lock: Rejects if person.version !== proposal.baseVersion.
+   * - On APPROVE: Atomically commits profile fields and increments person version.
+   * - On REJECT: Preserves person and stores reviewer feedback.
+   */
+  async reviewProfileProposal(actor: AuthContext, proposalId: string, input: ReviewProposalInput) {
+    const proposal = await this.prisma.profileChangeProposal.findUnique({
+      where: { id: proposalId },
+      include: { person: true, maker: true },
+    });
+    if (!proposal) {
+      throw new ApiError(HttpStatus.NOT_FOUND, 'PROPOSAL_NOT_FOUND', 'Proposal not found.');
+    }
+    if (proposal.status !== ProposalStatus.PENDING) {
+      throw new ApiError(
+        HttpStatus.UNPROCESSABLE_ENTITY,
+        'PROPOSAL_ALREADY_REVIEWED',
+        'This proposal has already been reviewed.',
+      );
+    }
+
+    // HOF-017-S04 Anti-Self-Approval
+    if (proposal.makerId === actor.personId) {
+      throw new ApiError(
+        HttpStatus.UNPROCESSABLE_ENTITY,
+        'CANNOT_APPROVE_OWN_PROPOSAL',
+        'Makers are not permitted to approve their own profile change proposals. Dual control requires a different authorized checker.',
+      );
+    }
+
+    if (input.action === 'REJECT') {
+      const updated = await this.prisma.profileChangeProposal.update({
+        where: { id: proposalId },
+        data: {
+          status: ProposalStatus.REJECTED,
+          checkerId: actor.personId,
+          rejectionReason: input.rejection_reason?.trim() || null,
+          reviewedAt: new Date(),
+        },
+      });
+
+      await this.audit.record({
+        action: 'profile_proposal.rejected',
+        actorId: actor.personId,
+        subjectId: proposal.personId,
+        metadata: { proposalId, rejectionReason: input.rejection_reason },
+      });
+
+      return {
+        id: updated.id,
+        status: updated.status,
+        rejection_reason: updated.rejectionReason,
+        reviewed_at: updated.reviewedAt?.toISOString() ?? null,
+      };
+    }
+
+    // HOF-017-S04 Optimistic Version Lock
+    if (proposal.person.version !== proposal.baseVersion) {
+      throw new ApiError(
+        HttpStatus.CONFLICT,
+        'BASE_PROFILE_STALE',
+        'The base profile was modified after this proposal was created. Review a fresh diff before approving.',
+      );
+    }
+
+    // HOF-017-S03 Atomic approval
+    const result = await this.prisma.$transaction(async (tx) => {
+      const updateData: Record<string, unknown> = {};
+      const changes = proposal.changes as Record<string, { old: unknown; proposed: unknown }>;
+
+      for (const [k, v] of Object.entries(changes)) {
+        if (k === 'first_name' || k === 'firstName') {
+          updateData.firstName = v.proposed ? String(v.proposed).trim() : null;
+        } else if (k === 'last_name' || k === 'lastName') {
+          updateData.lastName = v.proposed ? String(v.proposed).trim() : null;
+        } else if (k === 'phone') {
+          updateData.phone = v.proposed ? String(v.proposed).trim() : null;
+        } else if (k === 'email') {
+          updateData.email = v.proposed ? normalizeEmail(String(v.proposed)) : null;
+        } else if (k === 'address') {
+          updateData.address = v.proposed ? String(v.proposed).trim() : null;
+        } else if (k === 'photo_url' || k === 'photoUrl') {
+          updateData.photoUrl = v.proposed ? String(v.proposed).trim() : null;
+        } else if (k === 'birth_month' || k === 'birthMonth') {
+          updateData.birthMonth = v.proposed != null ? Number(v.proposed) : null;
+        } else if (k === 'birth_day' || k === 'birthDay') {
+          updateData.birthDay = v.proposed != null ? Number(v.proposed) : null;
+        } else if (k === 'anniversary_month' || k === 'anniversaryMonth') {
+          updateData.anniversaryMonth = v.proposed != null ? Number(v.proposed) : null;
+        } else if (k === 'anniversary_day' || k === 'anniversaryDay') {
+          updateData.anniversaryDay = v.proposed != null ? Number(v.proposed) : null;
+        }
+      }
+      updateData.version = { increment: 1 };
+
+      const updatedPerson = await tx.person.update({
+        where: { id: proposal.personId },
+        data: updateData,
+      });
+
+      const updatedProposal = await tx.profileChangeProposal.update({
+        where: { id: proposalId },
+        data: {
+          status: ProposalStatus.APPROVED,
+          checkerId: actor.personId,
+          reviewedAt: new Date(),
+        },
+      });
+
+      return { updatedPerson, updatedProposal };
+    });
+
+    await this.audit.record({
+      action: 'profile_proposal.approved',
+      actorId: actor.personId,
+      subjectId: proposal.personId,
+      metadata: { proposalId, changes: proposal.changes },
+    });
+
+    return {
+      id: result.updatedProposal.id,
+      status: result.updatedProposal.status,
+      reviewed_at: result.updatedProposal.reviewedAt?.toISOString() ?? null,
+      person: {
+        id: result.updatedPerson.id,
+        version: result.updatedPerson.version,
+        address: result.updatedPerson.address,
+        phone: result.updatedPerson.phone,
+        email: result.updatedPerson.email,
+        membership_status: result.updatedPerson.membershipStatus,
+      },
+    };
+  }
+
+  /**
+   * Actionable incomplete profile tasks (HOF-017-S01).
+   */
+  async getIncompleteProfiles(actor: AuthContext) {
+    const people = await this.prisma.person.findMany({
+      where: {
+        OR: [
+          { address: null },
+          { address: '' },
+          { phone: null },
+          { phone: '' },
+          { photoUrl: null },
+        ],
+      },
+      orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
+      take: 100,
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        email: true,
+        address: true,
+        photoUrl: true,
+        membershipStatus: true,
+        isVerified: true,
+        version: true,
+        createdAt: true,
+      },
+    });
+
+    return people.map((p) => {
+      const missing: string[] = [];
+      if (!p.address) missing.push('address');
+      if (!p.phone) missing.push('phone');
+      if (!p.photoUrl) missing.push('photo');
+      return {
+        id: p.id,
+        first_name: p.firstName,
+        last_name: p.lastName,
+        phone: p.phone,
+        email: p.email,
+        address: p.address,
+        photo_url: p.photoUrl,
+        membership_status: p.membershipStatus,
+        is_verified: p.isVerified,
+        version: p.version,
+        missing_fields: missing,
+        created_at: p.createdAt.toISOString(),
+      };
+    });
   }
 
   /**
@@ -1282,7 +1638,7 @@ const VALID_MEMBERSHIP_STATUSES = new Set<string>([
   PrismaMembershipStatus.FIRST_TIMER,
   PrismaMembershipStatus.FOUNDATION,
   PrismaMembershipStatus.MEMBER,
-  PrismaMembershipStatus.WORKER,
+  PrismaMembershipStatus.WORK_FORCE,
   PrismaMembershipStatus.INACTIVE,
 ]);
 
@@ -1420,7 +1776,10 @@ function evaluateImportRow(
     errors.push(`Invalid phone number "${phone}" (at least 7 digits required)`);
   }
 
-  const rawStatus = (raw.membership_status?.trim() || 'MEMBER').toUpperCase();
+  let rawStatus = (raw.membership_status?.trim() || 'MEMBER').toUpperCase();
+  if (rawStatus === 'WORKER') {
+    rawStatus = PrismaMembershipStatus.WORK_FORCE;
+  }
   let membershipStatus: MembershipStatus = PrismaMembershipStatus.MEMBER;
   if (VALID_MEMBERSHIP_STATUSES.has(rawStatus)) {
     membershipStatus = rawStatus as MembershipStatus;

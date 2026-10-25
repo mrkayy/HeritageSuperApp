@@ -6,6 +6,7 @@ import {
   type AcademyModuleCode,
   type FoundationClassStatus,
   type MembershipStatus,
+  type SundaySchoolStatus,
 } from '../../generated/prisma/client.js';
 import { AuditService } from '../../platform/audit/audit.module.js';
 import { PrismaService } from '../../platform/database/prisma.module.js';
@@ -13,14 +14,51 @@ import { ApiError } from '../../platform/http/errors.js';
 import type { AuthContext } from '../identity/auth.guard.js';
 
 export const DEFAULT_ACADEMY_RULE_VERSION = 'v1:6_sessions_50_pass';
-export const DEFAULT_SIX_SESSIONS = [
-  'Session 1: Salvation & New Creation Realities',
-  'Session 2: The Word, Prayer & Spiritual Growth',
-  'Session 3: The Holy Spirit & Kingdom Living',
-  'Session 4: Christian Character, Family & Stewardship',
-  'Session 5: The Local Church & Heritage Vision',
-  'Session 6: Ministry Service, Covenant & Review',
-];
+
+export const MODULE_CURRICULA: Record<AcademyModuleCode, string[]> = {
+  FOUNDATION_101: [
+    'Session 1: Salvation & New Creation Realities',
+    'Session 2: The Word, Prayer & Spiritual Growth',
+    'Session 3: The Holy Spirit & Kingdom Living',
+    'Session 4: Christian Character, Family & Stewardship',
+    'Session 5: The Local Church & Heritage Vision',
+    'Session 6: Ministry Service, Covenant & Review',
+  ],
+  SUNDAY_SCHOOL_101: [
+    'Session 1: The Authority of the Scriptures & Sound Doctrine',
+    'Session 2: Effective Prayer Life & Fasting',
+    'Session 3: Praise, Worship & Spiritual Warfare',
+    'Session 4: Walking in Righteousness & Integrity',
+    'Session 5: Faith, Grace & Overcoming Life Challenges',
+    'Session 6: Evangelism, Soul Winning & Personal Discipleship',
+  ],
+  SUNDAY_SCHOOL_102: [
+    'Session 1: Discovering Your Spiritual Gifts & Talents',
+    'Session 2: Biblical Financial Stewardship & Tithing',
+    'Session 3: Servant Leadership & Kingdom Mindset',
+    'Session 4: Family Life, Relationships & Christian Ethics',
+    'Session 5: Ministry Departments & Service in the Church Body',
+    'Session 6: Practical Ministry Preparation & Workforce Readiness',
+  ],
+  SUNDAY_SCHOOL_103: [
+    'Session 1: The Great Commission & Global Missions',
+    'Session 2: Spiritual Authority & Church Subjection',
+    'Session 3: Handling Conflicts & Church Discipline',
+    'Session 4: Apologetics & Defending the Faith',
+    'Session 5: Leadership Pitfalls & Finishing Well',
+    'Session 6: Commissioning & Final Review',
+  ],
+  MEMBERSHIP_201: [
+    'Session 1: Heritage Model Church History & Commission',
+    'Session 2: Church Articles of Faith & Ordinances',
+    'Session 3: Church Government, Protocols & Accountability',
+    'Session 4: Covenant Partnership & Commitment',
+    'Session 5: Ministry Commissioning & Pastoral Alignment',
+    'Session 6: Graduation & Steward Induction',
+  ],
+};
+
+export const DEFAULT_SIX_SESSIONS = MODULE_CURRICULA.FOUNDATION_101;
 
 export interface CreateCohortInput {
   module_code?: AcademyModuleCode;
@@ -53,8 +91,9 @@ export interface ApproveMakeupInput {
 
 export interface OverrideStandingInput {
   person_id: string;
-  to_status: MembershipStatus;
+  to_status?: MembershipStatus;
   to_foundation_status?: FoundationClassStatus;
+  to_sunday_school_status?: SundaySchoolStatus;
   reason: string;
   rule_version?: string;
   evidence_note?: string;
@@ -120,6 +159,7 @@ export class AcademyService {
                 phone: true,
                 membershipStatus: true,
                 foundationClassStatus: true,
+                sundaySchoolStatus: true,
                 foundationEligibleAt: true,
               },
             },
@@ -181,7 +221,7 @@ export class AcademyService {
     const sessionTitles =
       input.session_titles && input.session_titles.length === 6
         ? input.session_titles
-        : DEFAULT_SIX_SESSIONS;
+        : (MODULE_CURRICULA[moduleCode] ?? DEFAULT_SIX_SESSIONS);
 
     const uniqueTeacherIds = [...new Set(input.teacher_person_ids ?? [])];
 
@@ -352,15 +392,73 @@ export class AcademyService {
           },
         );
       }
-    } else if (cohort.moduleCode === 'MEMBERSHIP_201') {
+    } else if (cohort.moduleCode === 'SUNDAY_SCHOOL_101') {
       const hasCompletedFoundation = person.foundationClassStatus === 'COMPLETED';
       if (!hasCompletedFoundation && !hasOverride) {
         throw new ApiError(
           HttpStatus.UNPROCESSABLE_ENTITY,
           'MISSING_PREREQUISITE',
-          `${person.firstName} ${person.lastName} must complete Foundation Class (FOUNDATION_101) before enrolling in Membership Class (MEMBERSHIP_201), unless an approved exemption is recorded.`,
+          `${person.firstName} ${person.lastName} must complete Foundation Class (FOUNDATION_101) before enrolling in Sunday School Module 1 (SUNDAY_SCHOOL_101), unless an approved exemption is recorded.`,
           {
             missing_prerequisite: 'FOUNDATION_101',
+            module_code: 'SUNDAY_SCHOOL_101',
+          },
+        );
+      }
+    } else if (cohort.moduleCode === 'SUNDAY_SCHOOL_102') {
+      const hasCompletedSS1 =
+        person.sundaySchoolStatus === 'MODULE_1_COMPLETED' ||
+        person.sundaySchoolStatus === 'MODULE_2_IN_PROGRESS' ||
+        person.sundaySchoolStatus === 'MODULE_2_COMPLETED' ||
+        person.sundaySchoolStatus === 'MODULE_3_IN_PROGRESS' ||
+        person.sundaySchoolStatus === 'COMPLETED' ||
+        person.academyEnrollments.some(
+          (e) => e.moduleCode === 'SUNDAY_SCHOOL_101' && e.status === 'GRADUATED',
+        );
+      if (!hasCompletedSS1 && !hasOverride) {
+        throw new ApiError(
+          HttpStatus.UNPROCESSABLE_ENTITY,
+          'MISSING_PREREQUISITE',
+          `${person.firstName} ${person.lastName} must complete Sunday School Module 1 before enrolling in Sunday School Module 2, unless an approved exemption is recorded.`,
+          {
+            missing_prerequisite: 'SUNDAY_SCHOOL_101',
+            module_code: 'SUNDAY_SCHOOL_102',
+          },
+        );
+      }
+    } else if (cohort.moduleCode === 'SUNDAY_SCHOOL_103') {
+      const hasCompletedSS2 =
+        person.sundaySchoolStatus === 'MODULE_2_COMPLETED' ||
+        person.sundaySchoolStatus === 'MODULE_3_IN_PROGRESS' ||
+        person.sundaySchoolStatus === 'COMPLETED' ||
+        person.academyEnrollments.some(
+          (e) => e.moduleCode === 'SUNDAY_SCHOOL_102' && e.status === 'GRADUATED',
+        );
+      if (!hasCompletedSS2 && !hasOverride) {
+        throw new ApiError(
+          HttpStatus.UNPROCESSABLE_ENTITY,
+          'MISSING_PREREQUISITE',
+          `${person.firstName} ${person.lastName} must complete Sunday School Module 2 before enrolling in Sunday School Module 3, unless an approved exemption is recorded.`,
+          {
+            missing_prerequisite: 'SUNDAY_SCHOOL_102',
+            module_code: 'SUNDAY_SCHOOL_103',
+          },
+        );
+      }
+    } else if (cohort.moduleCode === 'MEMBERSHIP_201') {
+      const hasCompletedPrereq =
+        person.sundaySchoolStatus === 'COMPLETED' ||
+        person.academyEnrollments.some(
+          (e) => e.moduleCode === 'SUNDAY_SCHOOL_103' && e.status === 'GRADUATED',
+        ) ||
+        person.foundationClassStatus === 'COMPLETED';
+      if (!hasCompletedPrereq && !hasOverride) {
+        throw new ApiError(
+          HttpStatus.UNPROCESSABLE_ENTITY,
+          'MISSING_PREREQUISITE',
+          `${person.firstName} ${person.lastName} must complete Sunday School Module 3 before enrolling in Membership Class (MEMBERSHIP_201), unless an approved exemption is recorded.`,
+          {
+            missing_prerequisite: 'SUNDAY_SCHOOL_103',
             module_code: 'MEMBERSHIP_201',
           },
         );
@@ -395,6 +493,7 @@ export class AcademyService {
               phone: true,
               membershipStatus: true,
               foundationClassStatus: true,
+              sundaySchoolStatus: true,
               foundationEligibleAt: true,
             },
           },
@@ -410,6 +509,33 @@ export class AcademyService {
           },
         });
         created.person.foundationClassStatus = 'IN_PROGRESS';
+      } else if (cohort.moduleCode === 'SUNDAY_SCHOOL_101' && person.sundaySchoolStatus === 'NOT_STARTED') {
+        await tx.person.update({
+          where: { id: person.id },
+          data: {
+            sundaySchoolStatus: 'MODULE_1_IN_PROGRESS',
+            version: { increment: 1 },
+          },
+        });
+        created.person.sundaySchoolStatus = 'MODULE_1_IN_PROGRESS';
+      } else if (cohort.moduleCode === 'SUNDAY_SCHOOL_102' && person.sundaySchoolStatus === 'MODULE_1_COMPLETED') {
+        await tx.person.update({
+          where: { id: person.id },
+          data: {
+            sundaySchoolStatus: 'MODULE_2_IN_PROGRESS',
+            version: { increment: 1 },
+          },
+        });
+        created.person.sundaySchoolStatus = 'MODULE_2_IN_PROGRESS';
+      } else if (cohort.moduleCode === 'SUNDAY_SCHOOL_103' && person.sundaySchoolStatus === 'MODULE_2_COMPLETED') {
+        await tx.person.update({
+          where: { id: person.id },
+          data: {
+            sundaySchoolStatus: 'MODULE_3_IN_PROGRESS',
+            version: { increment: 1 },
+          },
+        });
+        created.person.sundaySchoolStatus = 'MODULE_3_IN_PROGRESS';
       }
 
       await this.audit.record(
@@ -482,6 +608,7 @@ export class AcademyService {
             phone: true,
             membershipStatus: true,
             foundationClassStatus: true,
+            sundaySchoolStatus: true,
             foundationEligibleAt: true,
           },
         },
@@ -513,6 +640,7 @@ export class AcademyService {
             phone: true,
             membershipStatus: true,
             foundationClassStatus: true,
+            sundaySchoolStatus: true,
             foundationEligibleAt: true,
           },
         },
@@ -596,6 +724,7 @@ export class AcademyService {
             phone: true,
             membershipStatus: true,
             foundationClassStatus: true,
+            sundaySchoolStatus: true,
             foundationEligibleAt: true,
           },
         },
@@ -645,6 +774,7 @@ export class AcademyService {
             phone: true,
             membershipStatus: true,
             foundationClassStatus: true,
+            sundaySchoolStatus: true,
             foundationEligibleAt: true,
           },
         },
@@ -694,6 +824,7 @@ export class AcademyService {
             phone: true,
             membershipStatus: true,
             foundationClassStatus: true,
+            sundaySchoolStatus: true,
             foundationEligibleAt: true,
           },
         },
@@ -767,12 +898,23 @@ export class AcademyService {
             enrollment.person.membershipStatus === 'FOUNDATION'
             ? 'MEMBER'
             : enrollment.person.membershipStatus
-          : 'MEMBER';
+          : enrollment.moduleCode === 'MEMBERSHIP_201'
+            ? 'WORKER'
+            : enrollment.person.membershipStatus;
 
       const nextFoundationStatus: FoundationClassStatus =
         enrollment.moduleCode === 'FOUNDATION_101'
           ? 'COMPLETED'
           : enrollment.person.foundationClassStatus;
+
+      const nextSundaySchoolStatus: SundaySchoolStatus =
+        enrollment.moduleCode === 'SUNDAY_SCHOOL_101'
+          ? 'MODULE_1_COMPLETED'
+          : enrollment.moduleCode === 'SUNDAY_SCHOOL_102'
+            ? 'MODULE_2_COMPLETED'
+            : enrollment.moduleCode === 'SUNDAY_SCHOOL_103'
+              ? 'COMPLETED'
+              : enrollment.person.sundaySchoolStatus;
 
       const updatedEnrollment = await tx.academyEnrollment.update({
         where: { id: enrollmentId },
@@ -791,6 +933,7 @@ export class AcademyService {
         data: {
           membershipStatus: nextMembershipStatus,
           foundationClassStatus: nextFoundationStatus,
+          sundaySchoolStatus: nextSundaySchoolStatus,
           version: { increment: 1 },
         },
       });
@@ -802,6 +945,8 @@ export class AcademyService {
           toStatus: nextMembershipStatus,
           fromFoundationStatus: enrollment.person.foundationClassStatus,
           toFoundationStatus: nextFoundationStatus,
+          fromSundaySchoolStatus: enrollment.person.sundaySchoolStatus,
+          toSundaySchoolStatus: nextSundaySchoolStatus,
           ruleVersion: enrollment.ruleVersion,
           isOverride: false,
           reason: `Graduated ${enrollment.moduleCode} with score ${enrollment.totalScore}/100 and ${enrollment.creditedSessionCount}/6 sessions.`,
@@ -849,14 +994,25 @@ export class AcademyService {
 
       updatedEnrollment.person.membershipStatus = nextMembershipStatus;
       updatedEnrollment.person.foundationClassStatus = nextFoundationStatus;
+      updatedEnrollment.person.sundaySchoolStatus = nextSundaySchoolStatus;
       return { enrollment: updatedEnrollment, replayed: false };
     });
+
+    const nextStageEligible =
+      result.enrollment.moduleCode === 'FOUNDATION_101'
+        ? 'SUNDAY_SCHOOL_101'
+        : result.enrollment.moduleCode === 'SUNDAY_SCHOOL_101'
+          ? 'SUNDAY_SCHOOL_102'
+          : result.enrollment.moduleCode === 'SUNDAY_SCHOOL_102'
+            ? 'SUNDAY_SCHOOL_103'
+            : result.enrollment.moduleCode === 'SUNDAY_SCHOOL_103'
+              ? 'MEMBERSHIP_201'
+              : 'STEWARD';
 
     return {
       ...formatEnrollmentItem(result.enrollment),
       replayed: result.replayed,
-      next_stage_eligible:
-        result.enrollment.moduleCode === 'FOUNDATION_101' ? 'MEMBERSHIP_201' : 'VOLUNTEER_PLACEMENT',
+      next_stage_eligible: nextStageEligible,
     };
   }
 
@@ -883,6 +1039,7 @@ export class AcademyService {
             phone: true,
             membershipStatus: true,
             foundationClassStatus: true,
+            sundaySchoolStatus: true,
             foundationEligibleAt: true,
           },
         },
@@ -911,15 +1068,18 @@ export class AcademyService {
       throw new ApiError(HttpStatus.NOT_FOUND, 'PERSON_NOT_FOUND', 'Person not found.');
     }
 
+    const toStatus = input.to_status ?? person.membershipStatus;
     const toFoundationStatus = input.to_foundation_status ?? person.foundationClassStatus;
+    const toSundaySchoolStatus = input.to_sunday_school_status ?? person.sundaySchoolStatus;
     const ruleVersion = input.rule_version?.trim() || DEFAULT_ACADEMY_RULE_VERSION;
 
     const transition = await this.prisma.$transaction(async (tx) => {
       await tx.person.update({
         where: { id: person.id },
         data: {
-          membershipStatus: input.to_status,
+          membershipStatus: toStatus,
           foundationClassStatus: toFoundationStatus,
+          sundaySchoolStatus: toSundaySchoolStatus,
           version: { increment: 1 },
         },
       });
@@ -928,9 +1088,11 @@ export class AcademyService {
         data: {
           personId: person.id,
           fromStatus: person.membershipStatus,
-          toStatus: input.to_status,
+          toStatus,
           fromFoundationStatus: person.foundationClassStatus,
           toFoundationStatus,
+          fromSundaySchoolStatus: person.sundaySchoolStatus,
+          toSundaySchoolStatus,
           ruleVersion,
           isOverride: true,
           reason: input.reason.trim(),
@@ -947,9 +1109,11 @@ export class AcademyService {
           metadata: {
             transitionId: created.id,
             fromStatus: person.membershipStatus,
-            toStatus: input.to_status,
+            toStatus,
             fromFoundationStatus: person.foundationClassStatus,
             toFoundationStatus,
+            fromSundaySchoolStatus: person.sundaySchoolStatus,
+            toSundaySchoolStatus,
             ruleVersion,
             reason: input.reason.trim(),
           },
@@ -967,10 +1131,129 @@ export class AcademyService {
       to_status: transition.toStatus,
       from_foundation_status: transition.fromFoundationStatus,
       to_foundation_status: transition.toFoundationStatus,
+      from_sunday_school_status: transition.fromSundaySchoolStatus,
+      to_sunday_school_status: transition.toSundaySchoolStatus,
       rule_version: transition.ruleVersion,
       is_override: transition.isOverride,
       reason: transition.reason,
       created_at: transition.createdAt.toISOString(),
+    };
+  }
+
+  /**
+   * Returns aggregate pipeline counts across the 8 standard discipleship stages:
+   * first_timer -> returning_visitor -> foundation_class -> sunday_school_module_1 ->
+   * sunday_school_module_2 -> sunday_school_module_3 -> membership_class -> steward
+   */
+  async getDiscipleshipPipeline(_actor: AuthContext) {
+    const people = await this.prisma.person.findMany({
+      select: {
+        membershipStatus: true,
+        foundationClassStatus: true,
+        sundaySchoolStatus: true,
+        foundationEligibleAt: true,
+      },
+    });
+
+    const pipeline = {
+      first_timer: 0,
+      returning_visitor: 0,
+      foundation_class: 0,
+      sunday_school_module_1: 0,
+      sunday_school_module_2: 0,
+      sunday_school_module_3: 0,
+      membership_class: 0,
+      steward: 0,
+      total: people.length,
+    };
+
+    for (const p of people) {
+      if (p.membershipStatus === 'WORKER') {
+        pipeline.steward++;
+      } else if (p.sundaySchoolStatus === 'COMPLETED') {
+        pipeline.membership_class++;
+      } else if (
+        p.sundaySchoolStatus === 'MODULE_3_IN_PROGRESS' ||
+        p.sundaySchoolStatus === 'MODULE_2_COMPLETED'
+      ) {
+        pipeline.sunday_school_module_3++;
+      } else if (
+        p.sundaySchoolStatus === 'MODULE_2_IN_PROGRESS' ||
+        p.sundaySchoolStatus === 'MODULE_1_COMPLETED'
+      ) {
+        pipeline.sunday_school_module_2++;
+      } else if (
+        p.sundaySchoolStatus === 'MODULE_1_IN_PROGRESS' ||
+        (p.foundationClassStatus === 'COMPLETED' && p.sundaySchoolStatus === 'NOT_STARTED')
+      ) {
+        pipeline.sunday_school_module_1++;
+      } else if (p.foundationClassStatus === 'IN_PROGRESS' || p.membershipStatus === 'FOUNDATION') {
+        pipeline.foundation_class++;
+      } else if (p.membershipStatus === 'FIRST_TIMER') {
+        pipeline.first_timer++;
+      } else {
+        pipeline.returning_visitor++;
+      }
+    }
+
+    return pipeline;
+  }
+
+  /**
+   * Returns Sunday School-specific metrics for the Sunday School dashboard tab.
+   */
+  async getSundaySchoolStats(_actor: AuthContext) {
+    const [cohorts, enrollments] = await Promise.all([
+      this.prisma.academyCohort.findMany({
+        where: {
+          moduleCode: {
+            in: ['SUNDAY_SCHOOL_101', 'SUNDAY_SCHOOL_102', 'SUNDAY_SCHOOL_103'],
+          },
+        },
+        select: { id: true, moduleCode: true, status: true },
+      }),
+      this.prisma.academyEnrollment.findMany({
+        where: {
+          moduleCode: {
+            in: ['SUNDAY_SCHOOL_101', 'SUNDAY_SCHOOL_102', 'SUNDAY_SCHOOL_103'],
+          },
+        },
+        select: {
+          id: true,
+          moduleCode: true,
+          status: true,
+          creditedSessionCount: true,
+          makeupApproved: true,
+        },
+      }),
+    ]);
+
+    const activeCohorts = cohorts.filter((c) => c.status !== 'COMPLETED').length;
+    const module1Enrolled = enrollments.filter(
+      (e) => e.moduleCode === 'SUNDAY_SCHOOL_101' && e.status === 'ENROLLED',
+    ).length;
+    const module2Enrolled = enrollments.filter(
+      (e) => e.moduleCode === 'SUNDAY_SCHOOL_102' && e.status === 'ENROLLED',
+    ).length;
+    const module3Enrolled = enrollments.filter(
+      (e) => e.moduleCode === 'SUNDAY_SCHOOL_103' && e.status === 'ENROLLED',
+    ).length;
+    const graduatedCount = enrollments.filter((e) => e.status === 'GRADUATED').length;
+    const makeupPendingCount = enrollments.filter(
+      (e) =>
+        e.status === 'ENROLLED' &&
+        (e.creditedSessionCount === 4 || e.creditedSessionCount === 5) &&
+        !e.makeupApproved,
+    ).length;
+
+    return {
+      active_cohorts: activeCohorts,
+      total_enrolled: module1Enrolled + module2Enrolled + module3Enrolled,
+      module_1_enrolled: module1Enrolled,
+      module_2_enrolled: module2Enrolled,
+      module_3_enrolled: module3Enrolled,
+      graduated_count: graduatedCount,
+      makeup_pending_count: makeupPendingCount,
     };
   }
 
@@ -1012,6 +1295,8 @@ export class AcademyService {
       to_status: t.toStatus,
       from_foundation_status: t.fromFoundationStatus,
       to_foundation_status: t.toFoundationStatus,
+      from_sunday_school_status: t.fromSundaySchoolStatus,
+      to_sunday_school_status: t.toSundaySchoolStatus,
       rule_version: t.ruleVersion,
       is_override: t.isOverride,
       reason: t.reason,
@@ -1056,6 +1341,7 @@ function formatEnrollmentItem(e: {
     phone: string | null;
     membershipStatus: MembershipStatus;
     foundationClassStatus: FoundationClassStatus;
+    sundaySchoolStatus?: SundaySchoolStatus;
     foundationEligibleAt: Date | null;
   };
 }) {
@@ -1104,6 +1390,7 @@ function formatEnrollmentItem(e: {
       phone: e.person.phone,
       membership_status: e.person.membershipStatus,
       foundation_class_status: e.person.foundationClassStatus,
+      sunday_school_status: e.person.sundaySchoolStatus ?? 'NOT_STARTED',
       foundation_eligible_at: e.person.foundationEligibleAt?.toISOString() ?? null,
     },
   };

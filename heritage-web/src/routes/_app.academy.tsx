@@ -7,7 +7,9 @@ import {
   CheckCircle2,
   GraduationCap,
   History,
+  Layers,
   Plus,
+  School,
   ShieldAlert,
   Sparkles,
   UserPlus,
@@ -22,8 +24,10 @@ import {
   type AcademyEnrollmentItem,
   type AcademyModuleCode,
   type DirectoryPerson,
+  type DiscipleshipPipeline,
   type JourneyTransitionItem,
   type Steward,
+  type SundaySchoolStats,
 } from '#/lib/api'
 import { hasCapability, meQuery } from '#/lib/auth'
 
@@ -67,6 +71,49 @@ const ELIGIBILITY_BADGE: Record<
   incomplete_assessment: { label: 'Ungraded Rubric', variant: 'secondary' },
 }
 
+const MODULE_FILTER_OPTIONS = [
+  { key: 'ALL', label: 'All Modules' },
+  { key: 'SUNDAY_SCHOOL', label: 'Sunday School (SS1–3)' },
+  { key: 'FOUNDATION_101', label: 'Foundation Class (101)' },
+  { key: 'SUNDAY_SCHOOL_101', label: 'Sunday School 1' },
+  { key: 'SUNDAY_SCHOOL_102', label: 'Sunday School 2' },
+  { key: 'SUNDAY_SCHOOL_103', label: 'Sunday School 3' },
+  { key: 'MEMBERSHIP_201', label: 'Membership Maturity (201)' },
+] as const
+
+function getModuleBadge(code: AcademyModuleCode) {
+  switch (code) {
+    case 'FOUNDATION_101':
+      return <Badge variant="default">Foundation 101</Badge>
+    case 'SUNDAY_SCHOOL_101':
+      return (
+        <span className="inline-flex items-center rounded-full bg-cyan-500/10 px-2.5 py-0.5 text-[11px] font-bold text-cyan-700 border border-cyan-500/30">
+          Sunday School Module 1
+        </span>
+      )
+    case 'SUNDAY_SCHOOL_102':
+      return (
+        <span className="inline-flex items-center rounded-full bg-teal-500/10 px-2.5 py-0.5 text-[11px] font-bold text-teal-700 border border-teal-500/30">
+          Sunday School Module 2
+        </span>
+      )
+    case 'SUNDAY_SCHOOL_103':
+      return (
+        <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700 border border-emerald-500/30">
+          Sunday School Module 3
+        </span>
+      )
+    case 'MEMBERSHIP_201':
+      return (
+        <span className="inline-flex items-center rounded-full bg-amber-500/10 px-2.5 py-0.5 text-[11px] font-bold text-amber-700 border border-amber-500/30">
+          Membership Class
+        </span>
+      )
+    default:
+      return <Badge variant="outline">{code}</Badge>
+  }
+}
+
 function AcademyPage() {
   const { data: me } = useSuspenseQuery(meQuery)
   const queryClient = useQueryClient()
@@ -74,6 +121,7 @@ function AcademyPage() {
   const canManageAcademy = hasCapability(me, 'academy.manage')
 
   const [selectedCohortId, setSelectedCohortId] = useState<string>('')
+  const [moduleFilter, setModuleFilter] = useState<string>('ALL')
   const [showNewCohortForm, setShowNewCohortForm] = useState(false)
   const [showEnrollModal, setShowEnrollModal] = useState(false)
   const [editingGradesId, setEditingGradesId] = useState<string | null>(null)
@@ -85,6 +133,18 @@ function AcademyPage() {
     queryKey: ['academy-cohorts'],
     enabled: canReadCohortWorkspace,
     queryFn: () => api<AcademyCohortItem[]>('/academy/cohorts'),
+  })
+
+  const pipeline = useQuery({
+    queryKey: ['discipleship-pipeline'],
+    enabled: canReadCohortWorkspace,
+    queryFn: () => api<DiscipleshipPipeline>('/academy/pipeline'),
+  })
+
+  const sundaySchoolStats = useQuery({
+    queryKey: ['sunday-school-stats'],
+    enabled: canReadCohortWorkspace,
+    queryFn: () => api<SundaySchoolStats>('/academy/sunday-school/stats'),
   })
 
   const myClasses = useQuery({
@@ -117,8 +177,20 @@ function AcademyPage() {
     queryFn: () => api<JourneyTransitionItem[]>(`/academy/journey/${journeyPersonId}`),
   })
 
+  const filteredCohorts = (cohorts.data ?? []).filter((c) => {
+    if (moduleFilter === 'ALL') return true
+    if (moduleFilter === 'SUNDAY_SCHOOL') {
+      return (
+        c.module_code === 'SUNDAY_SCHOOL_101' ||
+        c.module_code === 'SUNDAY_SCHOOL_102' ||
+        c.module_code === 'SUNDAY_SCHOOL_103'
+      )
+    }
+    return c.module_code === moduleFilter
+  })
+
   const activeCohort =
-    cohorts.data?.find((c) => c.id === selectedCohortId) ?? cohorts.data?.[0] ?? null
+    filteredCohorts.find((c) => c.id === selectedCohortId) ?? filteredCohorts[0] ?? null
 
   const createCohortMutation = useMutation({
     mutationFn: (body: Record<string, unknown>) =>
@@ -127,7 +199,11 @@ function AcademyPage() {
       setShowNewCohortForm(false)
       setSelectedCohortId(created.id)
       setBanner({ tone: 'success', text: '6-session cohort scheduled.' })
-      await queryClient.invalidateQueries({ queryKey: ['academy-cohorts'] })
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['academy-cohorts'] }),
+        queryClient.invalidateQueries({ queryKey: ['discipleship-pipeline'] }),
+        queryClient.invalidateQueries({ queryKey: ['sunday-school-stats'] }),
+      ])
     },
     onError: (err) =>
       setBanner({ tone: 'error', text: err instanceof ApiError ? err.message : 'Could not create cohort.' }),
@@ -155,7 +231,11 @@ function AcademyPage() {
         body: { credited_sessions },
       }),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['academy-cohorts'] })
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['academy-cohorts'] }),
+        queryClient.invalidateQueries({ queryKey: ['discipleship-pipeline'] }),
+        queryClient.invalidateQueries({ queryKey: ['sunday-school-stats'] }),
+      ])
     },
     onError: (err) =>
       setBanner({ tone: 'error', text: err instanceof ApiError ? err.message : 'Could not update sessions.' }),
@@ -170,7 +250,11 @@ function AcademyPage() {
     onSuccess: async () => {
       setEditingGradesId(null)
       setBanner({ tone: 'success', text: '6-part rubric scores saved.' })
-      await queryClient.invalidateQueries({ queryKey: ['academy-cohorts'] })
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['academy-cohorts'] }),
+        queryClient.invalidateQueries({ queryKey: ['discipleship-pipeline'] }),
+        queryClient.invalidateQueries({ queryKey: ['sunday-school-stats'] }),
+      ])
     },
     onError: (err) =>
       setBanner({ tone: 'error', text: err instanceof ApiError ? err.message : 'Could not save rubric scores.' }),
@@ -193,7 +277,11 @@ function AcademyPage() {
     onSuccess: async () => {
       setMakeupDecisionId(null)
       setBanner({ tone: 'success', text: 'Coordinator makeup decision recorded.' })
-      await queryClient.invalidateQueries({ queryKey: ['academy-cohorts'] })
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['academy-cohorts'] }),
+        queryClient.invalidateQueries({ queryKey: ['discipleship-pipeline'] }),
+        queryClient.invalidateQueries({ queryKey: ['sunday-school-stats'] }),
+      ])
     },
     onError: (err) =>
       setBanner({ tone: 'error', text: err instanceof ApiError ? err.message : 'Could not save makeup decision.' }),
@@ -262,15 +350,15 @@ function AcademyPage() {
   return (
     <div className="space-y-6">
       <PageBanner
-        badge="Membership Team · Foundation & Academy"
+        badge="Membership Team · Discipleship Academy & Sunday School"
         badgeIcon={<GraduationCap className="h-3.5 w-3.5" />}
         secondaryBadge={
           <Badge variant="outline" className="font-normal">
             {(cohorts.data ?? []).length} cohorts
           </Badge>
         }
-        title="Foundation Class & Membership Academy"
-        subtitle="Schedule 6-session cohorts, enroll candidates recommended by the Information Center, grade the 6-part rubric, and graduate members."
+        title="Sunday School & Discipleship Academy"
+        subtitle="Manage the 8-stage discipleship pipeline from Foundation Class through Sunday School Modules 1, 2, 3 to Membership Maturity. Grade continuous assessment rubrics and certify stage progression."
         actions={
           canManageAcademy ? (
             <Button onClick={() => setShowNewCohortForm((v) => !v)}>
@@ -289,6 +377,110 @@ function AcademyPage() {
       />
 
       {banner && <Alert tone={banner.tone}>{banner.text}</Alert>}
+
+      {/* 8-Stage Discipleship Growth Pipeline Overview */}
+      {canReadCohortWorkspace && pipeline.data && (
+        <div className="glass-card rounded-2xl border border-border/60 p-5 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/50 pb-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <Layers className="h-4 w-4 text-primary" />
+                <h2 className="text-sm font-bold text-foreground">Discipleship Growth Pipeline Progression</h2>
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Official single-church pathway: First Timer → Returning Visitor → Foundation Class → Sunday School 1..3 → Membership Class → Workforce
+              </p>
+            </div>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
+              <Users className="h-3 w-3" />
+              {pipeline.data.total} Souls Tracked
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5 pt-1">
+            <div className="rounded-xl border border-blue-500/20 bg-blue-500/10 p-3">
+              <p className="text-[11px] font-semibold text-blue-700 dark:text-blue-400">1. First Timer</p>
+              <p className="text-xl font-bold text-blue-800 dark:text-blue-300 mt-1">{pipeline.data.first_timer}</p>
+              <p className="text-[10px] text-blue-600/80">Guest Intake</p>
+            </div>
+            <div className="rounded-xl border border-indigo-500/20 bg-indigo-500/10 p-3">
+              <p className="text-[11px] font-semibold text-indigo-700 dark:text-indigo-400">2. Returning</p>
+              <p className="text-xl font-bold text-indigo-800 dark:text-indigo-300 mt-1">{pipeline.data.returning_visitor}</p>
+              <p className="text-[10px] text-indigo-600/80">≥2 Visits (Eligible)</p>
+            </div>
+            <div className="rounded-xl border border-violet-500/20 bg-violet-500/10 p-3">
+              <p className="text-[11px] font-semibold text-violet-700 dark:text-violet-400">3. Foundation</p>
+              <p className="text-xl font-bold text-violet-800 dark:text-violet-300 mt-1">{pipeline.data.foundation_class}</p>
+              <p className="text-[10px] text-violet-600/80">Module 0 (101)</p>
+            </div>
+            <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/10 p-3">
+              <p className="text-[11px] font-semibold text-cyan-700 dark:text-cyan-400">4. Sunday School 1</p>
+              <p className="text-xl font-bold text-cyan-800 dark:text-cyan-300 mt-1">{pipeline.data.sunday_school_module_1}</p>
+              <p className="text-[10px] text-cyan-600/80">Doctrine & Prayer</p>
+            </div>
+            <div className="rounded-xl border border-teal-500/20 bg-teal-500/10 p-3">
+              <p className="text-[11px] font-semibold text-teal-700 dark:text-teal-400">5. Sunday School 2</p>
+              <p className="text-xl font-bold text-teal-800 dark:text-teal-300 mt-1">{pipeline.data.sunday_school_module_2}</p>
+              <p className="text-[10px] text-teal-600/80">Stewardship & Gifts</p>
+            </div>
+            <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3">
+              <p className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">6. Sunday School 3</p>
+              <p className="text-xl font-bold text-emerald-800 dark:text-emerald-300 mt-1">{pipeline.data.sunday_school_module_3}</p>
+              <p className="text-[10px] text-emerald-600/80">Leadership & Missions</p>
+            </div>
+            <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-3">
+              <p className="text-[11px] font-semibold text-amber-700 dark:text-amber-400">7. Membership</p>
+              <p className="text-xl font-bold text-amber-800 dark:text-amber-300 mt-1">{pipeline.data.membership_class}</p>
+              <p className="text-[10px] text-amber-600/80">Covenant Class (201)</p>
+            </div>
+            <div className="rounded-xl border border-purple-500/20 bg-purple-500/10 p-3">
+              <p className="text-[11px] font-semibold text-purple-700 dark:text-purple-400">8. Workforce</p>
+              <p className="text-xl font-bold text-purple-800 dark:text-purple-300 mt-1">{pipeline.data.steward}</p>
+              <p className="text-[10px] text-purple-600/80">Active Stewards</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sunday School Quick Metrics */}
+      {canReadCohortWorkspace && sundaySchoolStats.data && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="glass-card rounded-2xl border border-border/60 p-4">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+              <School className="h-3.5 w-3.5 text-cyan-600" />
+              <span>Active SS Cohorts</span>
+            </div>
+            <p className="text-2xl font-bold text-foreground mt-1.5">{sundaySchoolStats.data.active_cohorts}</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">Across Modules 1, 2 & 3</p>
+          </div>
+          <div className="glass-card rounded-2xl border border-border/60 p-4">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+              <Users className="h-3.5 w-3.5 text-primary" />
+              <span>Currently Enrolled</span>
+            </div>
+            <p className="text-2xl font-bold text-primary mt-1.5">{sundaySchoolStats.data.total_enrolled}</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              SS1: {sundaySchoolStats.data.module_1_enrolled} · SS2: {sundaySchoolStats.data.module_2_enrolled} · SS3: {sundaySchoolStats.data.module_3_enrolled}
+            </p>
+          </div>
+          <div className="glass-card rounded-2xl border border-border/60 p-4">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+              <GraduationCap className="h-3.5 w-3.5 text-emerald-600" />
+              <span>Sunday School Graduates</span>
+            </div>
+            <p className="text-2xl font-bold text-emerald-600 mt-1.5">{sundaySchoolStats.data.graduated_count}</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">Completed module achievements</p>
+          </div>
+          <div className="glass-card rounded-2xl border border-border/60 p-4">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+              <Sparkles className="h-3.5 w-3.5 text-amber-600" />
+              <span>Makeup Decisions Pending</span>
+            </div>
+            <p className="text-2xl font-bold text-amber-600 mt-1.5">{sundaySchoolStats.data.makeup_pending_count}</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">4–5 sessions completed</p>
+          </div>
+        </div>
+      )}
 
       {/* Schedule Cohort Form */}
       {showNewCohortForm && canManageAcademy && (
@@ -311,11 +503,14 @@ function AcademyPage() {
             <label className="text-xs font-semibold text-foreground">Program Module</label>
             <select
               name="module_code"
-              defaultValue="FOUNDATION_101"
+              defaultValue="SUNDAY_SCHOOL_101"
               className="h-11 rounded-xl border border-input bg-white/85 px-3.5 text-sm text-foreground shadow-2xs outline-none focus:border-primary"
             >
-              <option value="FOUNDATION_101">FOUNDATION_101 — Foundation Class</option>
-              <option value="MEMBERSHIP_201">MEMBERSHIP_201 — Membership Maturity</option>
+              <option value="FOUNDATION_101">FOUNDATION_101 — Foundation Class (Module 0)</option>
+              <option value="SUNDAY_SCHOOL_101">SUNDAY_SCHOOL_101 — Sunday School Module 1 (Christian Foundations)</option>
+              <option value="SUNDAY_SCHOOL_102">SUNDAY_SCHOOL_102 — Sunday School Module 2 (Stewardship & Ministry)</option>
+              <option value="SUNDAY_SCHOOL_103">SUNDAY_SCHOOL_103 — Sunday School Module 3 (Missions & Leadership)</option>
+              <option value="MEMBERSHIP_201">MEMBERSHIP_201 — Membership Maturity Class</option>
             </select>
           </div>
 
@@ -358,18 +553,50 @@ function AcademyPage() {
           <section className="space-y-3">
             <div className="flex items-center justify-between px-1">
               <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                Academy Cohorts
+                Cohorts & Modules
               </h2>
               <BookOpen className="h-4 w-4 text-primary/70" />
             </div>
 
-            {(cohorts.data?.length ?? 0) === 0 ? (
+            {/* Module Filter Pills */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+              {MODULE_FILTER_OPTIONS.map((opt) => (
+                <button
+                  key={opt.key}
+                  type="button"
+                  onClick={() => {
+                    setModuleFilter(opt.key)
+                    const matches = (cohorts.data ?? []).filter((c) => {
+                      if (opt.key === 'ALL') return true
+                      if (opt.key === 'SUNDAY_SCHOOL') {
+                        return (
+                          c.module_code === 'SUNDAY_SCHOOL_101' ||
+                          c.module_code === 'SUNDAY_SCHOOL_102' ||
+                          c.module_code === 'SUNDAY_SCHOOL_103'
+                        )
+                      }
+                      return c.module_code === opt.key
+                    })
+                    if (matches.length > 0) setSelectedCohortId(matches[0].id)
+                  }}
+                  className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg whitespace-nowrap transition-all ${
+                    moduleFilter === opt.key
+                      ? 'bg-primary text-white shadow-2xs'
+                      : 'bg-white/80 dark:bg-slate-800 text-muted-foreground hover:text-foreground border border-border/60'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+
+            {filteredCohorts.length === 0 ? (
               <div className="glass-card rounded-2xl border border-dashed border-border p-8 text-center text-xs text-muted-foreground">
-                No cohorts scheduled yet. Click &ldquo;Schedule 6-Session Cohort&rdquo; to open the first class.
+                No cohorts found matching the selected filter. Click &ldquo;Schedule 6-Session Cohort&rdquo; to open a class.
               </div>
             ) : (
               <div className="space-y-2.5">
-                {(cohorts.data ?? []).map((c) => {
+                {filteredCohorts.map((c) => {
                   const isActive = c.id === activeCohort?.id
                   return (
                     <button
@@ -384,9 +611,7 @@ function AcademyPage() {
                     >
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                          <Badge variant={c.module_code === 'FOUNDATION_101' ? 'default' : 'secondary'}>
-                            {c.module_code}
-                          </Badge>
+                          {getModuleBadge(c.module_code)}
                           <span className="text-xs text-muted-foreground">{c.starts_on}</span>
                         </div>
                         <p className="font-bold text-foreground">{c.title}</p>
@@ -419,7 +644,7 @@ function AcademyPage() {
                   <div className="space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <h2 className="text-lg font-bold text-foreground">{activeCohort.title}</h2>
-                      <Badge variant="default">{activeCohort.module_code}</Badge>
+                      {getModuleBadge(activeCohort.module_code)}
                       <Badge variant="outline">Rule: {activeCohort.rule_version}</Badge>
                     </div>
                     <p className="text-xs text-muted-foreground">
@@ -466,8 +691,11 @@ function AcademyPage() {
                           </option>
                           {(peopleList.data ?? []).map((p) => (
                             <option key={p.id} value={p.id}>
-                              {p.first_name} {p.last_name} ({p.membership_status} · Foundation:{' '}
+                              {p.first_name} {p.last_name} ({p.membership_status} · FC:{' '}
                               {p.foundation_class_status}
+                              {p.sunday_school_status && p.sunday_school_status !== 'NOT_STARTED'
+                                ? ` · SS: ${p.sunday_school_status}`
+                                : ''}
                               {p.foundation_eligible_at ? ' · Eligible' : ''})
                             </option>
                           ))}

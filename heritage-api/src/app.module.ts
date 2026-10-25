@@ -10,6 +10,7 @@ import { PeopleModule } from './modules/people/people.module.js';
 import { PrayerNotesModule } from './modules/prayer-notes/prayer-notes.module.js';
 import { StewardsModule } from './modules/stewards/stewards.module.js';
 import { TeamsModule } from './modules/teams/teams.module.js';
+import { VolunteersModule } from './modules/volunteers/volunteers.module.js';
 import { AuditModule } from './platform/audit/audit.module.js';
 import { AppConfigModule } from './platform/config/config.module.js';
 import { PrismaModule } from './platform/database/prisma.module.js';
@@ -39,6 +40,7 @@ import { OriginCheckMiddleware, RequestIdMiddleware } from './platform/http/midd
     PrayerNotesModule,
     CelebrationsModule,
     AcademyModule,
+    VolunteersModule,
   ],
   controllers: [HealthController],
   providers: [

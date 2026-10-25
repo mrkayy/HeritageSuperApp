@@ -2,18 +2,24 @@ import { Controller, Get, ServiceUnavailableException } from '@nestjs/common';
 import { Public } from '../../modules/identity/auth.guard.js';
 import { PrismaService } from '../database/prisma.module.js';
 
-@Controller('health')
+@Controller()
 export class HealthController {
   constructor(private readonly prisma: PrismaService) {}
 
   @Public()
-  @Get('live')
+  @Get(['', 'api'])
+  root() {
+    return { name: 'Heritage API', status: 'alive' };
+  }
+
+  @Public()
+  @Get(['health/live', 'api/health/live'])
   live() {
     return { status: 'alive' };
   }
 
   @Public()
-  @Get('ready')
+  @Get(['health/ready', 'api/health/ready'])
   async ready() {
     try {
       await this.prisma.$queryRaw`SELECT 1`;

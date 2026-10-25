@@ -5,7 +5,7 @@ import { ZodBody } from '../../platform/http/errors.js';
 import { CurrentAuth, RequireCapability, type AuthContext } from '../identity/auth.guard.js';
 import { PeopleService } from './people.service.js';
 
-const MembershipStatusEnum = z.enum(['VISITOR', 'FIRST_TIMER', 'FOUNDATION', 'MEMBER', 'WORKER', 'INACTIVE']);
+const MembershipStatusEnum = z.enum(['VISITOR', 'FIRST_TIMER', 'FOUNDATION', 'MEMBER', 'WORK_FORCE', 'INACTIVE']);
 const FoundationStatusEnum = z.enum(['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED']);
 
 const VisitorCaptureBody = z.object({
@@ -50,6 +50,21 @@ const CreateImportJobBody = z.object({
   file_name: z.string().trim().max(120).optional(),
   csv_text: z.string().min(1, 'CSV content is required').max(1_000_000, 'CSV is too large'),
 });
+
+const CreateProposalBody = z.object({
+  proposed_changes: z.record(z.string(), z.unknown()),
+  reason: z.string().trim().max(500).optional(),
+});
+
+const ReviewProposalBody = z.object({
+  action: z.enum(['APPROVE', 'REJECT']),
+  rejection_reason: z.string().trim().max(500).optional(),
+});
+
+const VerifyPersonBody = z.object({
+  notes: z.string().trim().max(500).optional(),
+  evidence: z.record(z.string(), z.unknown()).optional(),
+}).optional();
 
 const UpdateImportRowBody = z.object({
   first_name: z.string().trim().max(80).optional(),
@@ -136,11 +151,52 @@ export class PeopleController {
     return this.people.updatePerson(auth, personId, body);
   }
 
+  @Get('incomplete-profiles')
+  @RequireCapability('people.read')
+  getIncompleteProfiles(@CurrentAuth() auth: AuthContext) {
+    return this.people.getIncompleteProfiles(auth);
+  }
+
+  @Get('proposals')
+  @RequireCapability('people.read')
+  listProposals(
+    @CurrentAuth() auth: AuthContext,
+    @Query('status') status?: 'PENDING' | 'APPROVED' | 'REJECTED',
+    @Query('person_id') personId?: string,
+  ) {
+    return this.people.listProfileProposals(auth, { status, personId });
+  }
+
+  @Post('proposals/:proposalId/review')
+  @RequireCapability('proposals.review')
+  @HttpCode(200)
+  reviewProposal(
+    @CurrentAuth() auth: AuthContext,
+    @Param('proposalId', ParseUUIDPipe) proposalId: string,
+    @Body(new ZodBody(ReviewProposalBody)) body: z.infer<typeof ReviewProposalBody>,
+  ) {
+    return this.people.reviewProfileProposal(auth, proposalId, body);
+  }
+
+  @Post(':personId/proposals')
+  @RequireCapability('proposals.create')
+  createProposal(
+    @CurrentAuth() auth: AuthContext,
+    @Param('personId', ParseUUIDPipe) personId: string,
+    @Body(new ZodBody(CreateProposalBody)) body: z.infer<typeof CreateProposalBody>,
+  ) {
+    return this.people.createProfileProposal(auth, personId, body);
+  }
+
   @Post(':personId/verifications')
   @RequireCapability('people.write')
   @HttpCode(200)
-  verify(@CurrentAuth() auth: AuthContext, @Param('personId', ParseUUIDPipe) personId: string) {
-    return this.people.verifyPerson(auth, personId);
+  verify(
+    @CurrentAuth() auth: AuthContext,
+    @Param('personId', ParseUUIDPipe) personId: string,
+    @Body(new ZodBody(VerifyPersonBody)) body?: z.infer<typeof VerifyPersonBody>,
+  ) {
+    return this.people.verifyPerson(auth, personId, body);
   }
 
   @Post(':personId/claim-invitations')
