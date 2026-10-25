@@ -1,0 +1,14 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: heritage
+      POSTGRES_PASSWORD: heritage
+      POSTGRES_DB: heritage
+    ports:
+      - '5433:5432'
+    volumes:
+      - heritage_pg:/var/lib/postgresql/data
+
+volumes:
+  heritage_pg:

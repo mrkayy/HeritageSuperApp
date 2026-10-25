@@ -139,6 +139,12 @@ const SuperAdminSettings = () => {
   const [diagnostics, setDiagnostics] = useState<SystemDiagnostics | null>(null);
   const [diagnosticsLoading, setDiagnosticsLoading] = useState(false);
 
+  // State: Test Email Dispatcher
+  const [testEmailTemplate, setTestEmailTemplate] = useState('magic_link');
+  const [testEmailRecipient, setTestEmailRecipient] = useState('');
+  const [testEmailName, setTestEmailName] = useState('');
+  const [sendingTestEmail, setSendingTestEmail] = useState(false);
+
   // Initial Data Fetch
   const loadSystemSettings = useCallback(async () => {
     try {
@@ -290,6 +296,33 @@ const SuperAdminSettings = () => {
       });
     } finally {
       setSavingSettings(false);
+    }
+  };
+
+  const handleSendTestEmail = async () => {
+    if (!testEmailRecipient.trim()) {
+      toast({ title: "Email Required", description: "Please enter a valid recipient email address.", variant: "destructive" });
+      return;
+    }
+    try {
+      setSendingTestEmail(true);
+      const res = await SystemSettingsService.sendTestEmail({
+        template: testEmailTemplate,
+        to_email: testEmailRecipient.trim(),
+        name: testEmailName.trim() || undefined,
+      });
+      toast({
+        title: "Test Email Sent",
+        description: res.message || `Test email dispatched to ${testEmailRecipient}`,
+      });
+    } catch (err: any) {
+      toast({
+        title: "Email Dispatch Failed",
+        description: err.response?.data?.message || err.message || "Failed to send email via SMTP",
+        variant: "destructive",
+      });
+    } finally {
+      setSendingTestEmail(false);
     }
   };
 
@@ -819,6 +852,87 @@ const SuperAdminSettings = () => {
                       onChange={e => setSettings({ ...settings, sms_sender_id: e.target.value })}
                       placeholder="HOFCHURCH"
                     />
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Live Email Template Dispatcher & Testing Card */}
+              <Card className="border-border/60 bg-gradient-to-br from-card via-card to-primary/5 shadow-xs">
+                <CardHeader className="pb-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                        <Mail className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-base font-semibold">Live Email Template Dispatcher & Testing</CardTitle>
+                        <CardDescription className="text-xs">
+                          Trigger any of the 10 responsive email templates directly via your configured SMTP gateway.
+                        </CardDescription>
+                      </div>
+                    </div>
+                    <Badge variant="outline" className="text-[11px] bg-emerald-500/10 text-emerald-600 border-emerald-500/30">
+                      SMTP Ready
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="test_email_template" className="text-xs font-medium">Choose Email Template</Label>
+                      <Select value={testEmailTemplate} onValueChange={setTestEmailTemplate}>
+                        <SelectTrigger id="test_email_template" className="h-9 text-xs">
+                          <SelectValue placeholder="Select template" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="magic_link">Magic Link / Account Approval</SelectItem>
+                          <SelectItem value="birthday">Birthday Greeting & Blessing</SelectItem>
+                          <SelectItem value="otp">OTP / Verification Code</SelectItem>
+                          <SelectItem value="welcome_visitor">First-Timer & Soul Welcome</SelectItem>
+                          <SelectItem value="new_member_welcome">New Member Portal Onboarding</SelectItem>
+                          <SelectItem value="anniversary">Wedding Anniversary Celebration</SelectItem>
+                          <SelectItem value="team_assignment">Ministry / Team Assignment</SelectItem>
+                          <SelectItem value="event_reminder">Event & Service Reminder</SelectItem>
+                          <SelectItem value="donation_receipt">Donation & Tithe Receipt</SelectItem>
+                          <SelectItem value="pastoral_care">Pastoral Care Note</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label htmlFor="test_email_recipient" className="text-xs font-medium">Recipient Email Address</Label>
+                      <Input 
+                        id="test_email_recipient" 
+                        type="email"
+                        value={testEmailRecipient} 
+                        onChange={e => setTestEmailRecipient(e.target.value)}
+                        placeholder="e.g. your-email@gmail.com"
+                        className="h-9 text-xs"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label htmlFor="test_email_name" className="text-xs font-medium">Recipient Name (Optional)</Label>
+                      <Input 
+                        id="test_email_name" 
+                        value={testEmailName} 
+                        onChange={e => setTestEmailName(e.target.value)}
+                        placeholder="e.g. Pastor Joseph"
+                        className="h-9 text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end pt-2">
+                    <Button 
+                      type="button" 
+                      onClick={handleSendTestEmail} 
+                      disabled={sendingTestEmail}
+                      className="gap-2 text-xs h-9 bg-primary hover:bg-primary/90"
+                    >
+                      <Mail className="w-3.5 h-3.5" />
+                      {sendingTestEmail ? "Dispatching Email..." : "Send Test Email"}
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
