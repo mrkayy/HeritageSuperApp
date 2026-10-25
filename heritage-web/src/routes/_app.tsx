@@ -5,6 +5,7 @@ import {
   Building2,
   Cake,
   ClipboardCheck,
+  GraduationCap,
   HeartHandshake,
   Home,
   LogOut,
@@ -84,6 +85,12 @@ function AppShell() {
           label: 'Follow-Up Queue',
           icon: PhoneCall,
           show: hasCapability(me, 'followups.read'),
+        },
+        {
+          to: '/academy' as const,
+          label: 'Foundation & Academy',
+          icon: GraduationCap,
+          show: hasCapability(me, 'academy.read'),
         },
         {
           to: '/celebrations' as const,

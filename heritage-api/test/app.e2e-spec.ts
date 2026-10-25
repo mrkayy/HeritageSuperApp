@@ -75,6 +75,7 @@ describe('Heritage Single-Church MVP E2E', () => {
           { firstName: 'Chioma', lastName: 'Nwosu' },
           { firstName: 'JanTwo', lastName: 'Celebrant' },
           { firstName: 'LeapDay', lastName: 'Celebrant' },
+          { firstName: 'Tosin', lastName: 'Fashola' },
         ],
       },
     });
@@ -911,5 +912,330 @@ describe('Heritage Single-Church MVP E2E', () => {
 
     const emailsAfter = sentEmails.filter((m) => m.to === 'leapday.celebrant@example.com').length;
     expect(emailsAfter - emailsBefore).toBe(1);
+  });
+
+  // ── HOF-015: Foundation Eligibility, Recommendation & IC-to-Membership Handoff ──
+
+  it('HOF-015-S01, S02 & S03: 2 qualifying visits produce Foundation eligibility only, corrected attendance refuses stale recommendation, and recommendation delivers one Membership task idempotently', async () => {
+    // Ensure we have two distinct service occurrences
+    const occ1Res = await request(app.getHttpServer())
+      .post('/api/attendance/occurrences')
+      .set('Origin', ORIGIN)
+      .set('Cookie', adminCookie)
+      .send({
+        title: 'Sunday 1st Service (HOF-015 Week 1)',
+        kind: 'SUNDAY_FIRST',
+        service_date: '2026-10-04',
+        headcount: 100,
+      });
+    const occ1Id =
+      occ1Res.status === 201
+        ? (occ1Res.body.id as string)
+        : (
+            await prisma.serviceOccurrence.findFirstOrThrow({
+              where: { serviceDate: new Date('2026-10-04T00:00:00.000Z'), kind: 'SUNDAY_FIRST' },
+            })
+          ).id;
+
+    const occ2Res = await request(app.getHttpServer())
+      .post('/api/attendance/occurrences')
+      .set('Origin', ORIGIN)
+      .set('Cookie', adminCookie)
+      .send({
+        title: 'Sunday 1st Service (HOF-015 Week 2)',
+        kind: 'SUNDAY_FIRST',
+        service_date: '2026-10-11',
+        headcount: 110,
+      });
+    const occ2Id =
+      occ2Res.status === 201
+        ? (occ2Res.body.id as string)
+        : (
+            await prisma.serviceOccurrence.findFirstOrThrow({
+              where: { serviceDate: new Date('2026-10-11T00:00:00.000Z'), kind: 'SUNDAY_FIRST' },
+            })
+          ).id;
+
+    // 1. Capture visitor on Visit #1 -> 1 qualifying visit, NOT yet eligible
+    const visit1 = await request(app.getHttpServer())
+      .post('/api/people/visitor-intakes')
+      .set('Origin', ORIGIN)
+      .set('Cookie', adminCookie)
+      .send({
+        first_name: 'Tosin',
+        last_name: 'Fashola',
+        phone: '+2348035550150',
+        service_occurrence_id: occ1Id,
+      });
+    expect(visit1.status).toBe(201);
+    const tosinId = visit1.body.person_id as string;
+    expect(visit1.body.qualifying_visits_count).toBe(1);
+    expect(visit1.body.foundation_eligible).toBe(false);
+
+    // 2. HOF-015-S01: Commit second qualifying visit -> Foundation eligibility is recorded against rule v1:2_visits,
+    //    and NO Foundation enrollment, Account, or completed achievement is created
+    const visit2 = await request(app.getHttpServer())
+      .post(`/api/attendance/occurrences/${occ2Id}/check-ins`)
+      .set('Origin', ORIGIN)
+      .set('Cookie', adminCookie)
+      .send({ person_id: tosinId });
+    expect(visit2.status).toBe(200);
+    expect(visit2.body.qualifying_visits_count).toBe(2);
+    expect(visit2.body.foundation_eligible).toBe(true);
+    expect(visit2.body.foundation_rule_version).toBe('v1:2_visits');
+
+    const tosinAfterVisit2 = await prisma.person.findUniqueOrThrow({
+      where: { id: tosinId },
+      include: { account: true },
+    });
+    expect(tosinAfterVisit2.foundationEligibleAt).not.toBeNull();
+    expect(tosinAfterVisit2.foundationRuleVersion).toBe('v1:2_visits');
+    expect(tosinAfterVisit2.foundationClassStatus).toBe('NOT_STARTED');
+    expect(tosinAfterVisit2.membershipStatus).toBe('FIRST_TIMER');
+    expect(tosinAfterVisit2.account).toBeNull();
+
+    // 3. HOF-015-S03: Attendance on Visit #2 is corrected/removed before recommendation ->
+    //    attempting a recommendation against stale eligibility re-evaluates evidence and refuses with 422
+    const removeVisit2 = await request(app.getHttpServer())
+      .delete(`/api/attendance/occurrences/${occ2Id}/check-ins/${tosinId}?reason=mistaken_checkin`)
+      .set('Origin', ORIGIN)
+      .set('Cookie', adminCookie);
+    expect(removeVisit2.status).toBe(200);
+    expect(removeVisit2.body.qualifying_visits_count).toBe(1);
+    expect(removeVisit2.body.foundation_eligible).toBe(false);
+
+    const staleRecommendAttempt = await request(app.getHttpServer())
+      .post(`/api/people/${tosinId}/foundation-recommendations`)
+      .set('Origin', ORIGIN)
+      .set('Cookie', adminCookie)
+      .send({
+        note: 'Recommending Tosin for Foundation Class cohort.',
+      });
+    expect(staleRecommendAttempt.status).toBe(422);
+    expect(staleRecommendAttempt.body.code).toBe('INSUFFICIENT_QUALIFYING_VISITS');
+
+    // 4. Restore second qualifying visit and submit recommendation TWICE (replay) ->
+    //    HOF-015-S02: recommendation and durable audit event commit together, exactly ONE
+    //    FOUNDATION_HANDOFF task appears in Membership, and IC sees handoff status
+    await request(app.getHttpServer())
+      .post(`/api/attendance/occurrences/${occ2Id}/check-ins`)
+      .set('Origin', ORIGIN)
+      .set('Cookie', adminCookie)
+      .send({ person_id: tosinId });
+
+    const rec1 = await request(app.getHttpServer())
+      .post(`/api/people/${tosinId}/foundation-recommendations`)
+      .set('Origin', ORIGIN)
+      .set('Cookie', adminCookie)
+      .send({
+        note: 'Attended two Sundays and eager to start Foundation Class.',
+      });
+    expect(rec1.status).toBe(200);
+    expect(rec1.body.handoff_status).toBe('HANDED_OFF_TO_MEMBERSHIP');
+    expect(rec1.body.replayed).toBe(false);
+
+    const rec2Replay = await request(app.getHttpServer())
+      .post(`/api/people/${tosinId}/foundation-recommendations`)
+      .set('Origin', ORIGIN)
+      .set('Cookie', adminCookie)
+      .send({
+        note: 'Attended two Sundays and eager to start Foundation Class.',
+      });
+    expect(rec2Replay.status).toBe(200);
+    expect(rec2Replay.body.replayed).toBe(true);
+    expect(rec2Replay.body.recommendation_id).toBe(rec1.body.recommendation_id);
+    expect(rec2Replay.body.followup_task_id).toBe(rec1.body.followup_task_id);
+
+    const handoffTasks = await prisma.followUpTask.findMany({
+      where: { personId: tosinId, kind: 'FOUNDATION_HANDOFF' },
+    });
+    expect(handoffTasks).toHaveLength(1);
+    expect(handoffTasks[0].recommendationNote).toBe(
+      'Attended two Sundays and eager to start Foundation Class.',
+    );
+
+    // IC eligibility projection shows HANDED_OFF_TO_MEMBERSHIP
+    const icEligibilityRes = await request(app.getHttpServer())
+      .get('/api/people/foundation-eligibility')
+      .set('Cookie', adminCookie);
+    expect(icEligibilityRes.status).toBe(200);
+    const tosinProjection = (icEligibilityRes.body as Array<Record<string, unknown>>).find(
+      (item) => item.person_id === tosinId,
+    );
+    expect(tosinProjection).toBeDefined();
+    expect(tosinProjection?.handoff_status).toBe('HANDED_OFF_TO_MEMBERSHIP');
+  });
+
+  // ── HOF-018, HOF-019 & HOF-020: Academy Cohorts, 6-Part Rubric, Attendance-Gated Graduation & Journey ──
+
+  it('HOF-018, HOF-019 & HOF-020: schedules a 6-session cohort, enforces prerequisites, computes 6-part rubric (85.3/100), enforces attendance gates (2/3 retake, 4/5 makeup, 6 eligible), graduates idempotently, and records journey history', async () => {
+    const tosin = await prisma.person.findFirstOrThrow({
+      where: { firstName: 'Tosin', lastName: 'Fashola' },
+    });
+
+    // 1. HOF-019-S01: Coordinator schedules a Foundation 101 cohort with 6 sessions and a Membership 201 cohort
+    const foundCohortRes = await request(app.getHttpServer())
+      .post('/api/academy/cohorts')
+      .set('Origin', ORIGIN)
+      .set('Cookie', adminCookie)
+      .send({
+        module_code: 'FOUNDATION_101',
+        title: 'October 2026 Foundation Cohort',
+        starts_on: '2026-10-18',
+        teacher_person_ids: [stewardPersonId],
+      });
+    expect(foundCohortRes.status).toBe(201);
+    expect(foundCohortRes.body.sessions_count).toBe(6);
+    expect(foundCohortRes.body.teachers_count).toBe(1);
+    const foundationCohortId = foundCohortRes.body.id as string;
+
+    const memCohortRes = await request(app.getHttpServer())
+      .post('/api/academy/cohorts')
+      .set('Origin', ORIGIN)
+      .set('Cookie', adminCookie)
+      .send({
+        module_code: 'MEMBERSHIP_201',
+        title: 'November 2026 Membership Maturity Cohort',
+        starts_on: '2026-11-01',
+      });
+    expect(memCohortRes.status).toBe(201);
+    const membershipCohortId = memCohortRes.body.id as string;
+
+    // 2. HOF-019-S02: Attempting to enroll Tosin in MEMBERSHIP_201 before completing FOUNDATION_101 fails with 422 MISSING_PREREQUISITE
+    const prematureMemEnroll = await request(app.getHttpServer())
+      .post(`/api/academy/cohorts/${membershipCohortId}/enrollments`)
+      .set('Origin', ORIGIN)
+      .set('Cookie', adminCookie)
+      .send({ person_id: tosin.id });
+    expect(prematureMemEnroll.status).toBe(422);
+    expect(prematureMemEnroll.body.code).toBe('MISSING_PREREQUISITE');
+
+    // 3. Enroll Tosin (who has Foundation eligibility + IC handoff) in FOUNDATION_101
+    const enrollRes = await request(app.getHttpServer())
+      .post(`/api/academy/cohorts/${foundationCohortId}/enrollments`)
+      .set('Origin', ORIGIN)
+      .set('Cookie', adminCookie)
+      .send({ person_id: tosin.id });
+    expect(enrollRes.status).toBe(201);
+    const enrollmentId = enrollRes.body.id as string;
+    expect(enrollRes.body.person.foundation_class_status).toBe('IN_PROGRESS');
+
+    // Reactivate steward and sign in freshly (since HOF-001-S04 suspended and revoked their earlier session)
+    await request(app.getHttpServer())
+      .post(`/api/stewards/${stewardPersonId}/reactivate`)
+      .set('Origin', ORIGIN)
+      .set('Cookie', adminCookie);
+
+    const stewardLogin = await request(app.getHttpServer())
+      .post('/api/auth/login')
+      .set('Origin', ORIGIN)
+      .send({ email: 'steward.test@example.com', password: 'StewardPassword1' });
+    stewardCookie = stewardLogin.headers['set-cookie'] as unknown as string[];
+
+    // 4. HOF-020-S01: Assigned teacher grades the 6-part rubric:
+    //    Out-of-range component value (>20 on part 1) is rejected with 422
+    const invalidGrade = await request(app.getHttpServer())
+      .patch(`/api/academy/enrollments/${enrollmentId}/grades`)
+      .set('Origin', ORIGIN)
+      .set('Cookie', stewardCookie)
+      .send({ scores: [25, 16, 17, 18, 8, 8.3] });
+    expect(invalidGrade.status).toBe(422);
+    expect(invalidGrade.body.code).toBe('RUBRIC_SCORE_OUT_OF_RANGE');
+
+    //    Valid scores [18, 16, 17, 18, 8, 8.3] -> server computes 85.3 out of 100
+    const validGrade = await request(app.getHttpServer())
+      .patch(`/api/academy/enrollments/${enrollmentId}/grades`)
+      .set('Origin', ORIGIN)
+      .set('Cookie', stewardCookie)
+      .send({ scores: [18, 16, 17, 18, 8, 8.3] });
+    expect(validGrade.status).toBe(200);
+    expect(validGrade.body.total_score).toBe(85.3);
+
+    // 5. HOF-020-S02: Attendance gates graduation:
+    //    - 2 or 3 sessions -> retake_required
+    const s2 = await request(app.getHttpServer())
+      .patch(`/api/academy/enrollments/${enrollmentId}/sessions`)
+      .set('Origin', ORIGIN)
+      .set('Cookie', stewardCookie)
+      .send({ credited_sessions: [1, 2] });
+    expect(s2.body.graduation_eligibility).toBe('retake_required');
+
+    const s3 = await request(app.getHttpServer())
+      .patch(`/api/academy/enrollments/${enrollmentId}/sessions`)
+      .set('Origin', ORIGIN)
+      .set('Cookie', stewardCookie)
+      .send({ credited_sessions: [1, 2, 3] });
+    expect(s3.body.graduation_eligibility).toBe('retake_required');
+
+    //    - 4 or 5 sessions -> coordinator_makeup_decision_required
+    const s4 = await request(app.getHttpServer())
+      .patch(`/api/academy/enrollments/${enrollmentId}/sessions`)
+      .set('Origin', ORIGIN)
+      .set('Cookie', stewardCookie)
+      .send({ credited_sessions: [1, 2, 3, 4] });
+    expect(s4.body.graduation_eligibility).toBe('coordinator_makeup_decision_required');
+
+    const s5 = await request(app.getHttpServer())
+      .patch(`/api/academy/enrollments/${enrollmentId}/sessions`)
+      .set('Origin', ORIGIN)
+      .set('Cookie', stewardCookie)
+      .send({ credited_sessions: [1, 2, 3, 4, 5] });
+    expect(s5.body.graduation_eligibility).toBe('coordinator_makeup_decision_required');
+
+    //    Attempting to graduate at 5 sessions before makeup approval is refused with 422
+    const prematureGrad = await request(app.getHttpServer())
+      .post(`/api/academy/enrollments/${enrollmentId}/graduate`)
+      .set('Origin', ORIGIN)
+      .set('Cookie', adminCookie);
+    expect(prematureGrad.status).toBe(422);
+    expect(prematureGrad.body.code).toBe('GRADUATION_REQUIREMENTS_UNMET');
+
+    //    Coordinator approves makeup for Session 6 -> eligibility becomes 'eligible'
+    const makeupRes = await request(app.getHttpServer())
+      .post(`/api/academy/enrollments/${enrollmentId}/makeup`)
+      .set('Origin', ORIGIN)
+      .set('Cookie', adminCookie)
+      .send({
+        approved: true,
+        reason: 'Completed makeup session 6 with teacher review.',
+      });
+    expect(makeupRes.status).toBe(200);
+    expect(makeupRes.body.graduation_eligibility).toBe('eligible');
+
+    // 6. HOF-020-S03: Graduate once and retry -> one achievement and next-stage eligibility recorded,
+    //    and no automatic enrollment in MEMBERSHIP_201 cohort is created
+    const grad1 = await request(app.getHttpServer())
+      .post(`/api/academy/enrollments/${enrollmentId}/graduate`)
+      .set('Origin', ORIGIN)
+      .set('Cookie', adminCookie);
+    expect(grad1.status).toBe(200);
+    expect(grad1.body.status).toBe('GRADUATED');
+    expect(grad1.body.replayed).toBe(false);
+    expect(grad1.body.next_stage_eligible).toBe('MEMBERSHIP_201');
+    expect(grad1.body.person.foundation_class_status).toBe('COMPLETED');
+    expect(grad1.body.person.membership_status).toBe('MEMBER');
+
+    const grad2Replay = await request(app.getHttpServer())
+      .post(`/api/academy/enrollments/${enrollmentId}/graduate`)
+      .set('Origin', ORIGIN)
+      .set('Cookie', adminCookie);
+    expect(grad2Replay.status).toBe(200);
+    expect(grad2Replay.body.replayed).toBe(true);
+
+    const memEnrollmentsAfterGrad = await prisma.academyEnrollment.count({
+      where: { personId: tosin.id, moduleCode: 'MEMBERSHIP_201' },
+    });
+    expect(memEnrollmentsAfterGrad).toBe(0);
+
+    // 7. HOF-018-S02: Journey timeline shows the recorded transition, rule version, actor, and evidence
+    const journeyRes = await request(app.getHttpServer())
+      .get(`/api/academy/journey/${tosin.id}`)
+      .set('Cookie', adminCookie);
+    expect(journeyRes.status).toBe(200);
+    expect(journeyRes.body).toHaveLength(1);
+    expect(journeyRes.body[0].to_status).toBe('MEMBER');
+    expect(journeyRes.body[0].to_foundation_status).toBe('COMPLETED');
+    expect(journeyRes.body[0].rule_version).toBe('v1:6_sessions_50_pass');
+    expect(journeyRes.body[0].is_override).toBe(false);
   });
 });

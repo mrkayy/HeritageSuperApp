@@ -1,5 +1,11 @@
 # API Documentation & Integration Guide — Heritage MMC
 
+> [!WARNING]
+> **HISTORICAL REFERENCE ONLY — V1 API DEPRECATED**:
+> The V1 REST endpoints documented below on port `8080` have been decommissioned.
+> Active backend development is on **V2 Foundation** (`:8081`, `/api/v2`).
+> Refer to [`church-backend/api_docs/v2/openapi.yaml`](file:///Users/mac/Desktop/HeritageSuperApp/church-backend/api_docs/v2/openapi.yaml) for current contracts.
+
 Comprehensive API documentation, authentication workflows, email dispatch endpoints, and route reference for Heritage MMC.
 
 ---
