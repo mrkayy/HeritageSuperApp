@@ -88,25 +88,25 @@ function getModuleBadge(code: AcademyModuleCode) {
     case 'SUNDAY_SCHOOL_101':
       return (
         <span className="inline-flex items-center rounded-full bg-cyan-500/10 px-2.5 py-0.5 text-[11px] font-bold text-cyan-700 border border-cyan-500/30">
-          Sunday School 1
+          Sunday School Module 1
         </span>
       )
     case 'SUNDAY_SCHOOL_102':
       return (
         <span className="inline-flex items-center rounded-full bg-teal-500/10 px-2.5 py-0.5 text-[11px] font-bold text-teal-700 border border-teal-500/30">
-          Sunday School 2
+          Sunday School Module 2
         </span>
       )
     case 'SUNDAY_SCHOOL_103':
       return (
         <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700 border border-emerald-500/30">
-          Sunday School 3
+          Sunday School Module 3
         </span>
       )
     case 'MEMBERSHIP_201':
       return (
         <span className="inline-flex items-center rounded-full bg-amber-500/10 px-2.5 py-0.5 text-[11px] font-bold text-amber-700 border border-amber-500/30">
-          Membership 201
+          Membership Class
         </span>
       )
     default:
