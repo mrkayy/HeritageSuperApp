@@ -33,3 +33,17 @@ church-backend/.env
 church-backend/app.log
 church-backend/server
 church-backend/tmp/
+
+# Environment files & secrets (all workspaces)
+.env
+.env.*
+.env.local
+.env.production
+.env.staging
+.env.development
+!.env.example
+heritage-api/.env*
+!heritage-api/.env.example
+heritage-web/.env*
+!heritage-web/.env.example
+

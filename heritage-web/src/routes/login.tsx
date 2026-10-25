@@ -4,20 +4,27 @@ import { useState, type FormEvent } from 'react'
 import { KeyRound, Lock, Mail, Send, Sparkles } from 'lucide-react'
 import { z } from 'zod'
 import { Alert, AuthCard, Button, Field } from '#/components/ui'
-import { api, ApiError } from '#/lib/api'
+import { api, ApiError, type Me } from '#/lib/api'
 import { meQuery } from '#/lib/auth'
 
 export const Route = createFileRoute('/login')({
   validateSearch: z.object({ redirect: z.string().optional() }),
   beforeLoad: async ({ context }) => {
-    if (await context.queryClient.ensureQueryData(meQuery)) throw redirect({ to: '/dashboard' })
+    let me = context.queryClient.getQueryData<Me | null>(meQuery.queryKey)
+    if (me === undefined) {
+      me = await context.queryClient.fetchQuery(meQuery).catch(() => null)
+    }
+    if (me) throw redirect({ to: '/dashboard' })
   },
   component: LoginPage,
 })
 
-/** Only allow internal redirects to avoid open-redirect abuse. */
+/** Only allow internal non-login redirects to avoid open-redirect and bounce loops. */
 function safeRedirect(target?: string) {
-  return target && target.startsWith('/') && !target.startsWith('//') ? target : '/dashboard'
+  if (!target) return '/dashboard'
+  if (!target.startsWith('/') || target.startsWith('//')) return '/dashboard'
+  if (target === '/login' || target.startsWith('/login?') || target.startsWith('/login/')) return '/dashboard'
+  return target
 }
 
 function LoginPage() {
@@ -46,8 +53,10 @@ function PasswordLogin({ onSwitch }: { onSwitch: () => void }) {
         method: 'POST',
         body: { email: form.get('email'), password: form.get('password') },
       })
-      await queryClient.invalidateQueries({ queryKey: meQuery.queryKey })
-      await navigate({ to: safeRedirect(redirectTo) })
+      const me = await api<Me>('/auth/me')
+      queryClient.setQueryData(meQuery.queryKey, me)
+      const destination = safeRedirect(redirectTo)
+      await navigate({ to: destination as any, replace: true })
     } catch (err) {
       setError(err instanceof ApiError ? err : null)
       setPending(false)
