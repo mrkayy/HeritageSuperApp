@@ -22,17 +22,24 @@ import {
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { SuperAdminService, LeadershipInvite, CreateLeadershipInvitePayload, LocalChurchBranch } from '@/services/superAdminService';
+import api from '@/lib/api';
 
 const LEADERSHIP_ROLES = [
   { value: 'resident_pastor', label: 'Resident Pastor (Branch Super-Admin)' },
   { value: 'church_admin', label: 'Church Admin' },
+  { value: 'team_lead', label: 'Team Lead' },
+  { value: 'steward', label: 'Steward / Worker' },
   { value: 'super_admin', label: 'Super Admin (Global Platform)' },
   { value: 'general_overseer', label: 'General Overseer' }
 ];
 
+// Roles that must be assigned to a specific team
+const TEAM_SCOPED_ROLES = ['team_lead', 'steward', 'member'];
+
 export default function SuperAdminInvites() {
   const [invites, setInvites] = useState<LeadershipInvite[]>([]);
   const [branches, setBranches] = useState<LocalChurchBranch[]>([]);
+  const [teams, setTeams] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
@@ -47,6 +54,7 @@ export default function SuperAdminInvites() {
   const [formLastName, setFormLastName] = useState('');
   const [formRole, setFormRole] = useState('resident_pastor');
   const [formChurchId, setFormChurchId] = useState('');
+  const [formTeamId, setFormTeamId] = useState('');
 
   // Copied state
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -54,12 +62,14 @@ export default function SuperAdminInvites() {
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const [inviteList, branchList] = await Promise.all([
+      const [inviteList, branchList, teamsRes] = await Promise.all([
         SuperAdminService.listLeadershipInvites(),
         SuperAdminService.listBranches(),
+        api.get('/teams').catch(() => ({ data: [] })),
       ]);
       setInvites(inviteList);
       setBranches(branchList);
+      setTeams(teamsRes.data || []);
     } catch {
       toast({
         title: "Error",
@@ -81,6 +91,7 @@ export default function SuperAdminInvites() {
     setFormLastName('');
     setFormRole('resident_pastor');
     setFormChurchId(branches[0]?.id || '');
+    setFormTeamId('');
     setInviteOpen(true);
   };
 
@@ -91,14 +102,22 @@ export default function SuperAdminInvites() {
       return;
     }
 
+    const needsTeam = TEAM_SCOPED_ROLES.includes(formRole);
+    if (needsTeam && !formTeamId) {
+      toast({ title: "Validation Error", description: "Please assign this worker to a team.", variant: "destructive" });
+      return;
+    }
+
     try {
       setSubmitting(true);
+      const isGlobal = ['super_admin', 'general_overseer'].includes(formRole);
       const payload: CreateLeadershipInvitePayload = {
         email: formEmail.trim(),
         first_name: formFirstName.trim(),
         last_name: formLastName.trim(),
         role: formRole,
-        church_id: ['super_admin', 'general_overseer'].includes(formRole) ? undefined : (formChurchId || undefined),
+        church_id: isGlobal ? undefined : (formChurchId || undefined),
+        team_id: needsTeam ? (formTeamId || undefined) : undefined,
       };
 
       const result = await SuperAdminService.createLeadershipInvite(payload);
@@ -392,6 +411,27 @@ export default function SuperAdminInvites() {
                     <option key={b.id} value={b.id}>{b.name} ({b.slug})</option>
                   ))}
                 </select>
+              </div>
+            )}
+
+            {TEAM_SCOPED_ROLES.includes(formRole) && (
+              <div className="space-y-2">
+                <Label htmlFor="invTeam">Assigned Team *</Label>
+                <select
+                  id="invTeam"
+                  className="w-full h-10 px-3 rounded-lg border border-input bg-background text-xs"
+                  value={formTeamId}
+                  onChange={e => setFormTeamId(e.target.value)}
+                  required
+                >
+                  <option value="">— Select a team —</option>
+                  {teams.map((t: any) => (
+                    <option key={t.id || t.team_id} value={t.id || t.team_id}>{t.name}</option>
+                  ))}
+                </select>
+                <p className="text-[11px] text-muted-foreground">
+                  The invited worker will only see this team's pages and APIs.
+                </p>
               </div>
             )}
 
