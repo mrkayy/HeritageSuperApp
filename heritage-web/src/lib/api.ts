@@ -17,6 +17,9 @@ export class ApiError extends Error {
   ) {
     super(body.message)
   }
+  get code() {
+    return this.body.code
+  }
   get fieldErrors() {
     return this.body.field_errors ?? {}
   }

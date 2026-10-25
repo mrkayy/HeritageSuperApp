@@ -241,12 +241,12 @@ function MakerCheckerProposalsPage() {
                         <h3 className="text-lg font-bold text-slate-900 dark:text-white">
                           {proposal.person.first_name} {proposal.person.last_name}
                         </h3>
-                        <Badge tone="default">{proposal.person.membership_status}</Badge>
-                        <Badge tone="info" className="text-xs">
+                        <Badge variant="default">{proposal.person.membership_status}</Badge>
+                        <Badge variant="secondary" className="text-xs">
                           v{proposal.base_version}
                         </Badge>
                         {proposal.is_stale && (
-                          <Badge tone="error">
+                          <Badge variant="danger">
                             Stale Base Record (Live v{proposal.person.version})
                           </Badge>
                         )}
@@ -265,7 +265,7 @@ function MakerCheckerProposalsPage() {
                       )}
                     </div>
 
-                    <Badge tone="warning">Pending Dual-Control Review</Badge>
+                    <Badge variant="warning">Pending Dual-Control Review</Badge>
                   </div>
 
                   {/* Diffs comparison grid */}
@@ -406,12 +406,12 @@ function MakerCheckerProposalsPage() {
                         <p className="text-xs text-slate-400">Created {new Date(p.created_at).toLocaleDateString()}</p>
                       </td>
                       <td className="p-3">
-                        <Badge tone="default">{p.membership_status}</Badge>
+                        <Badge variant="default">{p.membership_status}</Badge>
                       </td>
                       <td className="p-3">
                         <div className="flex flex-wrap gap-1">
                           {p.missing_fields.map((f) => (
-                            <Badge key={f} tone="error">
+                            <Badge key={f} variant="danger">
                               {f}
                             </Badge>
                           ))}
@@ -426,11 +426,11 @@ function MakerCheckerProposalsPage() {
                       </td>
                       <td className="p-3 text-right">
                         {p.is_verified ? (
-                          <Badge tone="success">
+                          <Badge variant="success">
                             <CheckCircle2 className="mr-1 h-3 w-3" /> Verified
                           </Badge>
                         ) : (
-                          <Badge tone="neutral">Unverified</Badge>
+                          <Badge variant="outline">Unverified</Badge>
                         )}
                       </td>
                     </tr>
@@ -463,7 +463,7 @@ function MakerCheckerProposalsPage() {
                       <h4 className="font-bold text-slate-900 dark:text-white">
                         {proposal.person.first_name} {proposal.person.last_name}
                       </h4>
-                      <Badge tone={proposal.status === 'APPROVED' ? 'success' : 'error'}>
+                      <Badge variant={proposal.status === 'APPROVED' ? 'success' : 'danger'}>
                         {proposal.status}
                       </Badge>
                     </div>
