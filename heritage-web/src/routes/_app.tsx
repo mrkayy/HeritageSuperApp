@@ -95,7 +95,7 @@ function AppShell() {
         },
         {
           to: '/academy' as const,
-          label: 'Foundation & Academy',
+          label: 'Sunday School & Academy',
           icon: GraduationCap,
           show: hasCapability(me, 'academy.read'),
         },
@@ -104,6 +104,12 @@ function AppShell() {
           label: 'Volunteer Placement',
           icon: HeartHandshake,
           show: hasCapability(me, 'volunteers.apply') || hasCapability(me, 'volunteers.manage'),
+        },
+        {
+          to: '/proposals' as const,
+          label: 'Profile Approvals',
+          icon: ShieldCheck,
+          show: hasCapability(me, 'people.read'),
         },
         {
           to: '/celebrations' as const,

@@ -37,6 +37,8 @@ export const CAPABILITIES = [
   'academy.read',
   'academy.manage',       // Membership / Academy Coordinator: schedule cohorts, enroll, makeup & graduate (HOF-018..020)
   'academy.grade',        // Assigned cohort teachers (or coordinators): record 6-part rubric & session attendance
+  'proposals.create',     // HOF-017-S02: propose profile changes for dual control
+  'proposals.review',     // HOF-017-S03..S04: approve/reject profile change proposals
   'volunteers.apply',     // Personal member: submit ranked department preferences after Module 2 (HOF-021-S01)
   'volunteers.manage',    // Membership / Pastor / Admin: place probationary volunteer, notify department (HOF-021-S02)
   'governance.audit.read',
@@ -131,6 +133,8 @@ export function expandGrants(assignments: AssignmentContext[]): Grant[] {
       push('academy.read', 'CHURCH');
       push('academy.manage', 'CHURCH');
       push('academy.grade', 'CHURCH');
+      push('proposals.create', 'CHURCH');
+      push('proposals.review', 'CHURCH');
       push('volunteers.manage', 'CHURCH');
       push('governance.audit.read', 'CHURCH');
     } else if (a.role === 'PASTOR') {
@@ -154,6 +158,8 @@ export function expandGrants(assignments: AssignmentContext[]): Grant[] {
       push('academy.read', 'CHURCH');
       push('academy.manage', 'CHURCH');
       push('academy.grade', 'CHURCH');
+      push('proposals.create', 'CHURCH');
+      push('proposals.review', 'CHURCH');
       push('volunteers.manage', 'CHURCH');
       push('governance.audit.read', 'CHURCH');
     } else if (a.role === 'TEAM_LEAD') {
@@ -164,6 +170,7 @@ export function expandGrants(assignments: AssignmentContext[]): Grant[] {
       push('people.read', 'CHURCH');
       push('people.import', 'CHURCH');
       push('people.write', 'CHURCH');
+      push('proposals.create', 'CHURCH');
       push('visitors.capture', 'CHURCH');
       push('reports.read', 'TEAM');
       push('celebrations.read', 'CHURCH');
@@ -187,6 +194,7 @@ export function expandGrants(assignments: AssignmentContext[]): Grant[] {
         push('academy.read', 'CHURCH');
         push('academy.manage', 'CHURCH');
         push('academy.grade', 'CHURCH');
+        push('proposals.review', 'CHURCH');
         push('volunteers.manage', 'CHURCH');
       }
     } else if (a.role === 'ASSISTANT_TEAM_LEAD') {
@@ -195,6 +203,7 @@ export function expandGrants(assignments: AssignmentContext[]): Grant[] {
       push('teams.read', 'CHURCH');
       push('people.read', 'CHURCH');
       push('people.import', 'CHURCH');
+      push('proposals.create', 'CHURCH');
       push('visitors.capture', 'CHURCH');
       push('reports.read', 'TEAM');
       push('celebrations.read', 'CHURCH');
@@ -216,11 +225,13 @@ export function expandGrants(assignments: AssignmentContext[]): Grant[] {
         push('academy.read', 'CHURCH');
         push('academy.manage', 'CHURCH');
         push('academy.grade', 'CHURCH');
+        push('proposals.review', 'CHURCH');
         push('volunteers.manage', 'CHURCH');
       }
     } else if (a.role === 'STEWARD') {
       push('teams.read', 'CHURCH');
       push('people.read', 'TEAM');
+      push('proposals.create', 'TEAM');
       push('visitors.capture', 'CHURCH');
       push('celebrations.read', 'TEAM');
       push('celebrations.contact', 'TEAM');
