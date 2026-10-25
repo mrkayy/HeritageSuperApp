@@ -50,7 +50,9 @@ describe('Heritage Single-Church MVP E2E', () => {
       .compile();
 
     app = moduleRef.createNestApplication<NestExpressApplication>();
-    app.setGlobalPrefix('api');
+    app.setGlobalPrefix('api', {
+      exclude: ['/', 'api', 'health/live', 'health/ready', 'api/health/live', 'api/health/ready'],
+    });
     app.use(cookieParser());
     await app.init();
 
@@ -83,6 +85,20 @@ describe('Heritage Single-Church MVP E2E', () => {
 
   afterAll(async () => {
     await app.close();
+  });
+
+  it('System Health: serves health/live, health/ready and root probes with 200', async () => {
+    const live = await request(app.getHttpServer()).get('/health/live');
+    expect(live.status).toBe(200);
+    expect(live.body.status).toBe('alive');
+
+    const ready = await request(app.getHttpServer()).get('/health/ready');
+    expect(ready.status).toBe(200);
+    expect(ready.body.status).toBe('ready');
+
+    const root = await request(app.getHttpServer()).get('/');
+    expect(root.status).toBe(200);
+    expect(root.body.status).toBe('alive');
   });
 
   it('HOF-001-S02: rejects unknown accounts and wrong passwords with the same non-enumerating 401', async () => {

@@ -23,7 +23,7 @@ const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 @Injectable()
 export class OriginCheckMiddleware implements NestMiddleware {
   private readonly allowed: Set<string>;
-  constructor(config: AppConfig) {
+  constructor(private readonly config: AppConfig) {
     this.allowed = new Set(config.get('ALLOWED_ORIGINS'));
   }
 
@@ -33,6 +33,9 @@ export class OriginCheckMiddleware implements NestMiddleware {
     // Server-to-server calls (TanStack Start SSR) send no Origin but carry our marker header.
     if (!origin && req.header('x-heritage-client') === 'web-ssr') return next();
     if (origin && this.allowed.has(origin)) return next();
+    if (!this.config.isProduction && origin && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+      return next();
+    }
     throw new ForbiddenException({
       code: 'ORIGIN_REJECTED',
       message: 'Request origin is not allowed.',
