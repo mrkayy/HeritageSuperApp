@@ -50,7 +50,9 @@ describe('Heritage Single-Church MVP E2E', () => {
       .compile();
 
     app = moduleRef.createNestApplication<NestExpressApplication>();
-    app.setGlobalPrefix('api');
+    app.setGlobalPrefix('api', {
+      exclude: ['/', 'api', 'health/live', 'health/ready', 'api/health/live', 'api/health/ready'],
+    });
     app.use(cookieParser());
     await app.init();
 
@@ -83,6 +85,20 @@ describe('Heritage Single-Church MVP E2E', () => {
 
   afterAll(async () => {
     await app.close();
+  });
+
+  it('System Health: serves health/live, health/ready and root probes with 200', async () => {
+    const live = await request(app.getHttpServer()).get('/health/live');
+    expect(live.status).toBe(200);
+    expect(live.body.status).toBe('alive');
+
+    const ready = await request(app.getHttpServer()).get('/health/ready');
+    expect(ready.status).toBe(200);
+    expect(ready.body.status).toBe('ready');
+
+    const root = await request(app.getHttpServer()).get('/');
+    expect(root.status).toBe(200);
+    expect(root.body.status).toBe('alive');
   });
 
   it('HOF-001-S02: rejects unknown accounts and wrong passwords with the same non-enumerating 401', async () => {
@@ -1261,6 +1277,137 @@ describe('Heritage Single-Church MVP E2E', () => {
     expect(journeyRes.body[0].to_foundation_status).toBe('COMPLETED');
     expect(journeyRes.body[0].rule_version).toBe('v1:6_sessions_50_pass');
     expect(journeyRes.body[0].is_override).toBe(false);
+  });
 
+  // ── HOF-021: Volunteer Preferences, Probation and Placement ──────────────
+
+  it('HOF-021-S01..S03: Module 2 unlocks volunteer preferences, member ranks 2 departments idempotently, membership places probationary volunteer, and graduation elevates to full WORK_FORCE standing', async () => {
+    const tosin = await prisma.person.findFirstOrThrow({
+      where: { firstName: 'Tosin', lastName: 'Fashola' },
+      include: { account: true },
+    });
+
+    // 1. Create an active claimed account for Tosin so they can call self endpoints
+    const tosinToken = await (app.get(PrismaService) as any).authToken.create({
+      data: {
+        personId: tosin.id,
+        purpose: 'CLAIM',
+        tokenHash: 'tosin-hash-e2e',
+        expiresAt: new Date(Date.now() + 3600000),
+      },
+    });
+
+    // Sign in as Tosin (first give them an account if not present)
+    if (!tosin.account) {
+      await (app.get(PrismaService) as any).account.create({
+        data: {
+          personId: tosin.id,
+          loginEmail: 'tosin.fashola@example.com',
+          passwordHash: '$argon2id$v=19$m=65536,t=3,p=4$dummyhash',
+          status: 'ACTIVE',
+        },
+      });
+    }
+
+    // Set a known password and log in
+    const tosinLogin = await request(app.getHttpServer())
+      .post('/api/auth/login')
+      .set('Origin', ORIGIN)
+      .send({ email: 'securesuperadmin@heritagemmc.site', password: ADMIN_PASSWORD });
+    // Use admin cookie as reviewer, create a dedicated session for Tosin via manual session creation
+    const tosinAccount = await prisma.account.findUniqueOrThrow({ where: { personId: tosin.id } });
+    const rawSessionToken = 'tosin-session-raw-token-1234567890';
+    const crypto = await import('node:crypto');
+    const tokenHash = crypto.createHash('sha256').update(rawSessionToken).digest('hex');
+    await prisma.session.create({
+      data: {
+        accountId: tosinAccount.id,
+        tokenHash,
+        expiresAt: new Date(Date.now() + 3600000),
+      },
+    });
+    const tosinCookie = [`hof_session=${rawSessionToken}; Path=/; HttpOnly`];
+
+    // HOF-021-S01: Tosin has graduated Foundation Class and is a MEMBER (unlocked)
+    const statusRes = await request(app.getHttpServer())
+      .get('/api/volunteers/status')
+      .set('Cookie', tosinCookie);
+    expect(statusRes.status).toBe(200);
+    expect(statusRes.body.is_unlocked).toBe(true);
+
+    // Submitting with identical departments is rejected
+    const sameDept = await request(app.getHttpServer())
+      .post('/api/volunteers/preferences')
+      .set('Origin', ORIGIN)
+      .set('Cookie', tosinCookie)
+      .send({
+        primary_department: 'Choir',
+        secondary_department: 'Choir',
+      });
+    expect(sameDept.status).toBe(422);
+    expect(sameDept.body.code).toBe('DISTINCT_DEPARTMENTS_REQUIRED');
+
+    // Repeated clicks with same idempotency key deliver one application
+    const app1 = await request(app.getHttpServer())
+      .post('/api/volunteers/preferences')
+      .set('Origin', ORIGIN)
+      .set('Cookie', tosinCookie)
+      .send({
+        primary_department: 'Choir',
+        secondary_department: 'Media & Technical',
+        skills: 'Vocalist, Sight-reading, Piano basics',
+        availability: 'Sunday mornings and Thursday rehearsals',
+        idempotency_key: `vol-pref-${tosin.id}`,
+      });
+    expect(app1.status).toBe(200);
+    expect(app1.body.replayed).toBe(false);
+    const applicationId = app1.body.id as string;
+
+    const app1Replay = await request(app.getHttpServer())
+      .post('/api/volunteers/preferences')
+      .set('Origin', ORIGIN)
+      .set('Cookie', tosinCookie)
+      .send({
+        primary_department: 'Choir',
+        secondary_department: 'Media & Technical',
+        idempotency_key: `vol-pref-${tosin.id}`,
+      });
+    expect(app1Replay.status).toBe(200);
+    expect(app1Replay.body.replayed).toBe(true);
+    expect(app1Replay.body.id).toBe(applicationId);
+
+    // HOF-021-S02: Membership reviewer places Tosin on probation in Choir
+    const placeRes = await request(app.getHttpServer())
+      .post(`/api/volunteers/applications/${applicationId}/place-probationary`)
+      .set('Origin', ORIGIN)
+      .set('Cookie', adminCookie)
+      .send({
+        placed_department: 'Choir',
+        review_notes: 'Passed voice assessment. Placed on 4-week probation with Choir director.',
+      });
+    expect(placeRes.status).toBe(200);
+    expect(placeRes.body.status).toBe('PROBATIONARY');
+    expect(placeRes.body.placed_department).toBe('Choir');
+
+    // HOF-021-S03: Successful probation completion elevates to full WORK_FORCE standing
+    const completeRes = await request(app.getHttpServer())
+      .post(`/api/volunteers/applications/${applicationId}/complete-probation`)
+      .set('Origin', ORIGIN)
+      .set('Cookie', adminCookie)
+      .send({
+        completion_notes: 'Faithfully attended rehearsals and Sunday ministrations.',
+      });
+    expect(completeRes.status).toBe(200);
+    expect(completeRes.body.status).toBe('PLACED');
+    expect(completeRes.body.membership_status).toBe('WORK_FORCE');
+
+    const tosinFinal = await prisma.person.findUniqueOrThrow({ where: { id: tosin.id } });
+    expect(tosinFinal.membershipStatus).toBe('WORK_FORCE');
+
+    // Audited transition was recorded in journey
+    const finalJourney = await request(app.getHttpServer())
+      .get(`/api/academy/journey/${tosin.id}`)
+      .set('Cookie', adminCookie);
+    expect(finalJourney.body.some((j: any) => j.to_status === 'WORK_FORCE')).toBe(true);
   });
 });

@@ -75,7 +75,7 @@ function DashboardPage() {
       label: 'Total People in Directory',
       value: summary.data?.total_people ?? '—',
       to: '/directory' as const,
-      hint: 'All visitors, members & workers',
+      hint: 'All visitors, members & workforce',
       icon: Users,
       iconTone: 'bg-primary/10 text-primary',
     },

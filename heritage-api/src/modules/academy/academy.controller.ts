@@ -6,7 +6,7 @@ import { CurrentAuth, RequireCapability, type AuthContext } from '../identity/au
 import { AcademyService } from './academy.service.js';
 
 const ModuleCodeEnum = z.enum(['FOUNDATION_101', 'MEMBERSHIP_201']);
-const MembershipStatusEnum = z.enum(['VISITOR', 'FIRST_TIMER', 'FOUNDATION', 'MEMBER', 'WORKER', 'INACTIVE']);
+const MembershipStatusEnum = z.enum(['VISITOR', 'FIRST_TIMER', 'FOUNDATION', 'MEMBER', 'WORK_FORCE', 'INACTIVE']);
 const FoundationStatusEnum = z.enum(['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED']);
 
 const CreateCohortBody = z.object({
