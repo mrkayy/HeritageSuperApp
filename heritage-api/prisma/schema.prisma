@@ -1,0 +1,301 @@
+// Heritage MVP — single-church schema.
+// No organization/branch tenancy: every row belongs to the one church this
+// deployment serves. Person, Account and Assignment remain separate concepts
+// (master-architecture §2) so identity, login and authority never collapse.
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── People & Directory ────────────────────────────────────────────────────
+
+enum MembershipStatus {
+  VISITOR
+  FIRST_TIMER
+  FOUNDATION
+  MEMBER
+  WORKER
+  INACTIVE
+}
+
+enum FoundationClassStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+/// The human being. May exist without an Account (visitors, children, etc.).
+model Person {
+  id                    String                @id @default(uuid()) @db.Uuid
+  firstName             String
+  lastName              String
+  email                 String?               // contact email; NOT a unique identity key
+  phone                 String?
+  address               String?
+  missingContactReason  String?               // HOF-013-S03: recorded when no phone/email available
+  membershipStatus      MembershipStatus      @default(VISITOR)
+  foundationClassStatus FoundationClassStatus @default(NOT_STARTED)
+  birthMonth            Int?                  // 1–12 (partial birthday without fabricating year)
+  birthDay              Int?                  // 1–31
+  anniversaryMonth      Int?                  // 1–12
+  anniversaryDay        Int?                  // 1–31
+  inviterPersonId       String?               @db.Uuid
+  firstVisitedAt        DateTime?
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  version               Int                   @default(1)
+
+  inviter            Person?            @relation("PersonInviter", fields: [inviterPersonId], references: [id])
+  invitees           Person[]           @relation("PersonInviter")
+  account            Account?
+  assignments        Assignment[]
+  authTokens         AuthToken[]
+  attendanceRecords  AttendanceRecord[]
+  followUpTasks      FollowUpTask[]
+  prayerNotes        PrayerNote[]
+
+  @@index([lastName, firstName])
+  @@index([email])
+  @@index([phone])
+  @@index([membershipStatus])
+  @@index([birthMonth, birthDay])
+  @@index([anniversaryMonth, anniversaryDay])
+}
+
+/// HOF-013-S04: Prayer notes are stored separately from the directory record so
+/// ordinary directory responses never leak pastoral/confidential requests.
+model PrayerNote {
+  id                  String   @id @default(uuid()) @db.Uuid
+  personId            String   @db.Uuid
+  serviceOccurrenceId String?  @db.Uuid
+  content             String
+  createdById         String   @db.Uuid
+  createdAt           DateTime @default(now())
+
+  person            Person             @relation(fields: [personId], references: [id], onDelete: Cascade)
+  serviceOccurrence ServiceOccurrence? @relation(fields: [serviceOccurrenceId], references: [id], onDelete: SetNull)
+
+  @@index([personId, createdAt])
+}
+
+// ─── Service Occurrences & Attendance (HOF-014) ────────────────────────────
+
+enum ServiceKind {
+  SUNDAY_FIRST
+  SUNDAY_SECOND
+  SUNDAY_COMBINED
+  MIDWEEK
+  SPECIAL
+}
+
+model ServiceOccurrence {
+  id          String      @id @default(uuid()) @db.Uuid
+  title       String      // e.g. "Sunday 1st Service"
+  kind        ServiceKind @default(SUNDAY_FIRST)
+  serviceDate DateTime    // UTC date of the service occurrence
+  headcount   Int         @default(0) // Aggregate auditorium count (men/women/children total)
+  notes       String?
+  createdById String?     @db.Uuid
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  attendanceRecords AttendanceRecord[]
+  followUpTasks     FollowUpTask[]
+  prayerNotes       PrayerNote[]
+
+  @@unique([serviceDate, kind])
+  @@index([serviceDate(sort: Desc)])
+}
+
+/// Unique by (serviceOccurrenceId, personId) so concurrent check-ins are idempotent (HOF-014-S01).
+model AttendanceRecord {
+  id                  String   @id @default(uuid()) @db.Uuid
+  serviceOccurrenceId String   @db.Uuid
+  personId            String   @db.Uuid
+  source              String   @default("check_in") // "visitor_intake" | "check_in"
+  isFirstVisit        Boolean  @default(false)
+  recordedById        String?  @db.Uuid
+  createdAt           DateTime @default(now())
+
+  serviceOccurrence ServiceOccurrence @relation(fields: [serviceOccurrenceId], references: [id], onDelete: Cascade)
+  person            Person            @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  @@unique([serviceOccurrenceId, personId])
+  @@index([personId, createdAt(sort: Desc)])
+}
+
+// ─── Follow-Up Queue & Call Logging (HOF-016) ──────────────────────────────
+
+enum FollowUpTaskStatus {
+  OPEN
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum CallOutcome {
+  REACHED
+  UNREACHABLE
+  VOICEMAIL
+  WRONG_NUMBER
+  REQUESTED_PRAYER
+  NEEDS_PASTORAL_VISIT
+}
+
+model FollowUpTask {
+  id                  String             @id @default(uuid()) @db.Uuid
+  personId            String             @db.Uuid
+  serviceOccurrenceId String?            @db.Uuid
+  assigneePersonId    String?            @db.Uuid // Steward Person ID
+  assignedById        String?            @db.Uuid
+  assignedAt          DateTime?
+  status              FollowUpTaskStatus @default(OPEN)
+  lastOutcome         CallOutcome?
+  needsPastoralVisit  Boolean            @default(false)
+  dueAt               DateTime?
+  nextActionAt        DateTime?
+  completedAt         DateTime?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  person            Person             @relation(fields: [personId], references: [id], onDelete: Cascade)
+  serviceOccurrence ServiceOccurrence? @relation(fields: [serviceOccurrenceId], references: [id], onDelete: SetNull)
+  callLogs          CallLog[]
+
+  @@index([status, assigneePersonId])
+  @@index([personId])
+}
+
+model CallLog {
+  id                 String      @id @default(uuid()) @db.Uuid
+  taskId             String      @db.Uuid
+  callerPersonId     String      @db.Uuid
+  outcome            CallOutcome
+  note               String?
+  needsPastoralVisit Boolean     @default(false)
+  nextActionAt       DateTime?
+  createdAt          DateTime    @default(now())
+
+  task FollowUpTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId, createdAt(sort: Desc)])
+}
+
+// ─── Identity (HOF-001 / HOF-002) ──────────────────────────────────────────
+
+enum AccountStatus {
+  PENDING   // invited, not yet claimed
+  ACTIVE
+  SUSPENDED
+}
+
+/// Authentication principal. Exactly one per Person in the MVP.
+model Account {
+  id           String        @id @default(uuid()) @db.Uuid
+  personId     String        @unique @db.Uuid
+  loginEmail   String        @unique // normalized lowercase login identifier
+  passwordHash String?
+  status       AccountStatus @default(PENDING)
+  lastLoginAt  DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  person   Person    @relation(fields: [personId], references: [id], onDelete: Cascade)
+  sessions Session[]
+}
+
+/// Server-side session. Only the SHA-256 hash of the cookie value is stored.
+model Session {
+  id         String    @id @default(uuid()) @db.Uuid
+  accountId  String    @db.Uuid
+  tokenHash  String    @unique
+  createdAt  DateTime  @default(now())
+  lastSeenAt DateTime  @default(now())
+  expiresAt  DateTime  // absolute expiry
+  revokedAt  DateTime?
+  userAgent  String?
+  ip         String?
+
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId])
+}
+
+enum AuthTokenPurpose {
+  CLAIM        // steward invitation → set password, activate account
+  MAGIC_LOGIN  // passwordless sign-in / recovery for an ACTIVE account
+}
+
+/// Single-use, purpose-bound, hashed token sent by email (Resend).
+/// GET never consumes; only an explicit POST does (HOF-002-S04).
+model AuthToken {
+  id          String           @id @default(uuid()) @db.Uuid
+  personId    String           @db.Uuid
+  purpose     AuthTokenPurpose
+  tokenHash   String           @unique
+  expiresAt   DateTime
+  consumedAt  DateTime?
+  revokedAt   DateTime?
+  createdById String?          @db.Uuid
+  createdAt   DateTime         @default(now())
+
+  person Person @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  @@index([personId, purpose])
+}
+
+// ─── Access ────────────────────────────────────────────────────────────────
+
+/// Role templates. Capabilities are resolved in code (access/capabilities.ts).
+enum Role {
+  ADMIN       // church admin: configuration, invites, appointments
+  PASTOR      // oversight & reporting
+  TEAM_LEAD   // leads a team: allocation, approvals within the team
+  STEWARD     // team worker
+}
+
+model Team {
+  id        String   @id @default(uuid()) @db.Uuid
+  key       String   @unique // e.g. "information_center", "membership"
+  name      String
+  createdAt DateTime @default(now())
+
+  assignments Assignment[]
+}
+
+/// Operational appointment. A Person may hold several (e.g. STEWARD in two teams).
+/// Team-scoped roles (TEAM_LEAD, STEWARD) require teamId; ADMIN/PASTOR are church-wide.
+model Assignment {
+  id          String    @id @default(uuid()) @db.Uuid
+  personId    String    @db.Uuid
+  role        Role
+  teamId      String?   @db.Uuid
+  startsAt    DateTime  @default(now())
+  endedAt     DateTime?
+  createdById String?   @db.Uuid
+  createdAt   DateTime  @default(now())
+
+  person Person @relation(fields: [personId], references: [id], onDelete: Cascade)
+  team   Team?  @relation(fields: [teamId], references: [id])
+
+  @@index([personId])
+}
+
+// ─── Governance ────────────────────────────────────────────────────────────
+
+model AuditEvent {
+  id        String   @id @default(uuid()) @db.Uuid
+  actorId   String?  @db.Uuid // Person id, null for anonymous/system
+  action    String   // e.g. "auth.login.succeeded"
+  subjectId String?
+  metadata  Json?
+  ip        String?
+  createdAt DateTime @default(now())
+
+  @@index([action, createdAt])
+}

@@ -1,0 +1,15 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist/client",
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "https://apis.heritagemmc.site/api/$1"
+    },
+    {
+      "source": "/((?!assets/|favicon\\.ico|robots\\.txt|manifest\\.json).*)",
+      "destination": "/api/ssr"
+    }
+  ]
+}
