@@ -48,7 +48,7 @@ export async function api<T>(path: string, init: { method?: string; body?: unkno
 // ── Contracts ────────────────────────────────────────────────────────────
 
 export type Role = 'ADMIN' | 'PASTOR' | 'TEAM_LEAD' | 'ASSISTANT_TEAM_LEAD' | 'STEWARD'
-export type MembershipStatus = 'VISITOR' | 'FIRST_TIMER' | 'FOUNDATION' | 'MEMBER' | 'WORKER' | 'INACTIVE'
+export type MembershipStatus = 'VISITOR' | 'FIRST_TIMER' | 'FOUNDATION' | 'MEMBER' | 'WORK_FORCE' | 'INACTIVE'
 export type FoundationClassStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED'
 export type ServiceKind = 'SUNDAY_FIRST' | 'SUNDAY_SECOND' | 'SUNDAY_COMBINED' | 'MIDWEEK' | 'SPECIAL'
 export type FollowUpTaskKind = 'WELCOME' | 'FOUNDATION_HANDOFF'
@@ -571,6 +571,60 @@ export interface JourneyTransitionItem {
   actor_name: string
   evidence: Record<string, unknown> | null
   created_at: string
+}
+
+// ── Volunteer Preferences, Probation and Placement (HOF-021) ─────────────
+
+export type VolunteerApplicationStatus =
+  | 'SUBMITTED'
+  | 'PROBATIONARY'
+  | 'PLACED'
+  | 'REJECTED'
+  | 'WITHDRAWN'
+
+export interface VolunteerStatusResponse {
+  person_id: string
+  first_name: string
+  last_name: string
+  membership_status: MembershipStatus
+  is_unlocked: boolean
+  module_2_completed: boolean
+  active_application: {
+    id: string
+    primary_department: string
+    secondary_department: string
+    skills: string | null
+    availability: string | null
+    status: VolunteerApplicationStatus
+    placed_department: string | null
+    probation_started_at: string | null
+    probation_ended_at: string | null
+    created_at: string
+  } | null
+}
+
+export interface VolunteerApplicationItem {
+  id: string
+  person_id: string
+  primary_department: string
+  secondary_department: string
+  skills: string | null
+  availability: string | null
+  status: VolunteerApplicationStatus
+  placed_department: string | null
+  probation_started_at: string | null
+  probation_ended_at: string | null
+  review_notes: string | null
+  created_at: string
+  person: {
+    id: string
+    first_name: string
+    last_name: string
+    email: string | null
+    phone: string | null
+    membership_status: MembershipStatus
+    foundation_class_status: FoundationClassStatus
+  }
 }
 
 // ── Profile Change Proposals & Maker-Checker Dual Control (HOF-017) ──────

@@ -30,7 +30,7 @@ import { hasCapability, meQuery } from '#/lib/auth'
  * Unified Church People & Membership Directory (replaces 6 redundant legacy tables).
  * Includes:
  * - Instant search by name, phone, or email
- * - Stage filters: All | First-Timers | Visitors | Foundation | Members | Workers
+ * - Stage filters: All | First-Timers | Visitors | Foundation | Members | Workforce
  * - Celebrations filter (Birthdays & Anniversaries this month)
  * - Direct inline status & Foundation Class progress updates (no Maker-Checker friction)
  * - Profile verification & Controlled Claim Invitation dispatch (HOF-002-S01)
@@ -51,7 +51,7 @@ const STATUS_TABS: { key: '' | MembershipStatus | 'CELEBRATIONS'; label: string 
   { key: 'VISITOR', label: 'Visitors' },
   { key: 'FOUNDATION', label: 'Foundation Class' },
   { key: 'MEMBER', label: 'Members' },
-  { key: 'WORKER', label: 'Workers' },
+  { key: 'WORK_FORCE', label: 'Workforce' },
   { key: 'CELEBRATIONS', label: 'Celebrations (This Month)' },
 ]
 
@@ -63,7 +63,7 @@ const STATUS_BADGE_VARIANT: Record<
   VISITOR: 'warning',
   FOUNDATION: 'purple',
   MEMBER: 'success',
-  WORKER: 'default',
+  WORK_FORCE: 'default',
   INACTIVE: 'secondary',
 }
 
@@ -220,7 +220,7 @@ function DirectoryPage() {
             <div>
               <h2 className="text-base font-bold text-foreground">Add Person to Directory</h2>
               <p className="text-xs text-muted-foreground">
-                Create a verified church member or worker record directly in the canonical directory.
+                Create a verified church member or workforce record directly in the canonical directory.
               </p>
             </div>
             <Badge variant="default">Direct Entry</Badge>
@@ -260,7 +260,7 @@ function DirectoryPage() {
               <option value="VISITOR">Visitor</option>
               <option value="FOUNDATION">Foundation Candidate</option>
               <option value="MEMBER">Member</option>
-              <option value="WORKER">Worker</option>
+              <option value="WORK_FORCE">Workforce</option>
             </select>
           </div>
 
@@ -405,7 +405,7 @@ function DirectoryPage() {
                           <option value="VISITOR">VISITOR</option>
                           <option value="FOUNDATION">FOUNDATION</option>
                           <option value="MEMBER">MEMBER</option>
-                          <option value="WORKER">WORKER</option>
+                          <option value="WORK_FORCE">WORK_FORCE</option>
                           <option value="INACTIVE">INACTIVE</option>
                         </select>
                       ) : (

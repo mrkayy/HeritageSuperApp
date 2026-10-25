@@ -23,6 +23,7 @@ import { Route as AppIntakeRouteImport } from './routes/_app.intake'
 import { Route as AppPrayerNotesRouteImport } from './routes/_app.prayer-notes'
 import { Route as AppProposalsRouteImport } from './routes/_app.proposals'
 import { Route as AppStewardsRouteImport } from './routes/_app.stewards'
+import { Route as AppVolunteersRouteImport } from './routes/_app.volunteers'
 import { Route as AuthClaimRouteImport } from './routes/auth/claim'
 import { Route as AuthMagicRouteImport } from './routes/auth/magic'
 
@@ -95,6 +96,11 @@ const AppStewardsRoute = AppStewardsRouteImport.update({
   path: '/stewards',
   getParentRoute: () => AppRoute,
 } as any)
+const AppVolunteersRoute = AppVolunteersRouteImport.update({
+  id: '/volunteers',
+  path: '/volunteers',
+  getParentRoute: () => AppRoute,
+} as any)
 const AuthClaimRoute = AuthClaimRouteImport.update({
   id: '/auth/claim',
   path: '/auth/claim',
@@ -120,6 +126,7 @@ export interface FileRoutesByFullPath {
   '/prayer-notes': typeof AppPrayerNotesRoute
   '/proposals': typeof AppProposalsRoute
   '/stewards': typeof AppStewardsRoute
+  '/volunteers': typeof AppVolunteersRoute
   '/auth/claim': typeof AuthClaimRoute
   '/auth/magic': typeof AuthMagicRoute
 }
@@ -137,6 +144,7 @@ export interface FileRoutesByTo {
   '/prayer-notes': typeof AppPrayerNotesRoute
   '/proposals': typeof AppProposalsRoute
   '/stewards': typeof AppStewardsRoute
+  '/volunteers': typeof AppVolunteersRoute
   '/auth/claim': typeof AuthClaimRoute
   '/auth/magic': typeof AuthMagicRoute
 }
@@ -156,6 +164,7 @@ export interface FileRoutesById {
   '/_app/prayer-notes': typeof AppPrayerNotesRoute
   '/_app/proposals': typeof AppProposalsRoute
   '/_app/stewards': typeof AppStewardsRoute
+  '/_app/volunteers': typeof AppVolunteersRoute
   '/auth/claim': typeof AuthClaimRoute
   '/auth/magic': typeof AuthMagicRoute
 }
@@ -175,6 +184,7 @@ export interface FileRouteTypes {
     | '/prayer-notes'
     | '/proposals'
     | '/stewards'
+    | '/volunteers'
     | '/auth/claim'
     | '/auth/magic'
   fileRoutesByTo: FileRoutesByTo
@@ -192,6 +202,7 @@ export interface FileRouteTypes {
     | '/prayer-notes'
     | '/proposals'
     | '/stewards'
+    | '/volunteers'
     | '/auth/claim'
     | '/auth/magic'
   id:
@@ -210,6 +221,7 @@ export interface FileRouteTypes {
     | '/_app/prayer-notes'
     | '/_app/proposals'
     | '/_app/stewards'
+    | '/_app/volunteers'
     | '/auth/claim'
     | '/auth/magic'
   fileRoutesById: FileRoutesById
@@ -322,6 +334,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppStewardsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/volunteers': {
+      id: '/_app/volunteers'
+      path: '/volunteers'
+      fullPath: '/volunteers'
+      preLoaderRoute: typeof AppVolunteersRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/auth/claim': {
       id: '/auth/claim'
       path: '/auth/claim'
@@ -351,6 +370,7 @@ interface AppRouteChildren {
   AppPrayerNotesRoute: typeof AppPrayerNotesRoute
   AppProposalsRoute: typeof AppProposalsRoute
   AppStewardsRoute: typeof AppStewardsRoute
+  AppVolunteersRoute: typeof AppVolunteersRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -365,6 +385,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppPrayerNotesRoute: AppPrayerNotesRoute,
   AppProposalsRoute: AppProposalsRoute,
   AppStewardsRoute: AppStewardsRoute,
+  AppVolunteersRoute: AppVolunteersRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

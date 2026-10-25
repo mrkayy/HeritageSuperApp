@@ -100,6 +100,12 @@ function AppShell() {
           show: hasCapability(me, 'academy.read'),
         },
         {
+          to: '/volunteers' as const,
+          label: 'Volunteer Placement',
+          icon: HeartHandshake,
+          show: hasCapability(me, 'volunteers.apply') || hasCapability(me, 'volunteers.manage'),
+        },
+        {
           to: '/proposals' as const,
           label: 'Profile Approvals',
           icon: ShieldCheck,

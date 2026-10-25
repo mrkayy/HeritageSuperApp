@@ -1776,7 +1776,10 @@ function evaluateImportRow(
     errors.push(`Invalid phone number "${phone}" (at least 7 digits required)`);
   }
 
-  const rawStatus = (raw.membership_status?.trim() || 'MEMBER').toUpperCase();
+  let rawStatus = (raw.membership_status?.trim() || 'MEMBER').toUpperCase();
+  if (rawStatus === 'WORKER') {
+    rawStatus = PrismaMembershipStatus.WORK_FORCE;
+  }
   let membershipStatus: MembershipStatus = PrismaMembershipStatus.MEMBER;
   if (VALID_MEMBERSHIP_STATUSES.has(rawStatus)) {
     membershipStatus = rawStatus as MembershipStatus;

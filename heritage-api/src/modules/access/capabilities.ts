@@ -39,6 +39,8 @@ export const CAPABILITIES = [
   'academy.grade',        // Assigned cohort teachers (or coordinators): record 6-part rubric & session attendance
   'proposals.create',     // HOF-017-S02: propose profile changes for dual control
   'proposals.review',     // HOF-017-S03..S04: approve/reject profile change proposals
+  'volunteers.apply',     // Personal member: submit ranked department preferences after Module 2 (HOF-021-S01)
+  'volunteers.manage',    // Membership / Pastor / Admin: place probationary volunteer, notify department (HOF-021-S02)
   'governance.audit.read',
 ] as const;
 
@@ -69,6 +71,7 @@ export const BASELINE_SELF_CAPABILITIES: readonly Capability[] = [
   'self.profile.read',
   'self.profile.write',
   'self.journey.read',
+  'volunteers.apply',
 ];
 
 export const ROLE_LABELS: Record<Role, string> = {
@@ -132,6 +135,7 @@ export function expandGrants(assignments: AssignmentContext[]): Grant[] {
       push('academy.grade', 'CHURCH');
       push('proposals.create', 'CHURCH');
       push('proposals.review', 'CHURCH');
+      push('volunteers.manage', 'CHURCH');
       push('governance.audit.read', 'CHURCH');
     } else if (a.role === 'PASTOR') {
       push('stewards.read', 'CHURCH');
@@ -156,6 +160,7 @@ export function expandGrants(assignments: AssignmentContext[]): Grant[] {
       push('academy.grade', 'CHURCH');
       push('proposals.create', 'CHURCH');
       push('proposals.review', 'CHURCH');
+      push('volunteers.manage', 'CHURCH');
       push('governance.audit.read', 'CHURCH');
     } else if (a.role === 'TEAM_LEAD') {
       push('stewards.read', 'TEAM');
@@ -190,6 +195,7 @@ export function expandGrants(assignments: AssignmentContext[]): Grant[] {
         push('academy.manage', 'CHURCH');
         push('academy.grade', 'CHURCH');
         push('proposals.review', 'CHURCH');
+        push('volunteers.manage', 'CHURCH');
       }
     } else if (a.role === 'ASSISTANT_TEAM_LEAD') {
       push('stewards.read', 'TEAM');
@@ -220,6 +226,7 @@ export function expandGrants(assignments: AssignmentContext[]): Grant[] {
         push('academy.manage', 'CHURCH');
         push('academy.grade', 'CHURCH');
         push('proposals.review', 'CHURCH');
+        push('volunteers.manage', 'CHURCH');
       }
     } else if (a.role === 'STEWARD') {
       push('teams.read', 'CHURCH');
