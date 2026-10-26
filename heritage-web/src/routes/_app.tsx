@@ -12,6 +12,7 @@ import {
   Menu,
   PhoneCall,
   ShieldCheck,
+  TrendingUp,
   UserPlus,
   Users2,
   X,
@@ -81,6 +82,12 @@ function AppShell() {
           to: '/directory' as const,
           label: 'People Directory',
           icon: Users2,
+          show: hasCapability(me, 'people.read'),
+        },
+        {
+          to: '/journey' as const,
+          label: 'Member Journey',
+          icon: TrendingUp,
           show: hasCapability(me, 'people.read'),
         },
         {

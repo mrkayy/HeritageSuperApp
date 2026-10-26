@@ -20,6 +20,7 @@ import { Route as AppDirectoryRouteImport } from './routes/_app.directory'
 import { Route as AppFollowUpRouteImport } from './routes/_app.follow-up'
 import { Route as AppImportRouteImport } from './routes/_app.import'
 import { Route as AppIntakeRouteImport } from './routes/_app.intake'
+import { Route as AppJourneyRouteImport } from './routes/_app.journey'
 import { Route as AppPrayerNotesRouteImport } from './routes/_app.prayer-notes'
 import { Route as AppProposalsRouteImport } from './routes/_app.proposals'
 import { Route as AppStewardsRouteImport } from './routes/_app.stewards'
@@ -81,6 +82,11 @@ const AppIntakeRoute = AppIntakeRouteImport.update({
   path: '/intake',
   getParentRoute: () => AppRoute,
 } as any)
+const AppJourneyRoute = AppJourneyRouteImport.update({
+  id: '/journey',
+  path: '/journey',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppPrayerNotesRoute = AppPrayerNotesRouteImport.update({
   id: '/prayer-notes',
   path: '/prayer-notes',
@@ -123,6 +129,7 @@ export interface FileRoutesByFullPath {
   '/follow-up': typeof AppFollowUpRoute
   '/import': typeof AppImportRoute
   '/intake': typeof AppIntakeRoute
+  '/journey': typeof AppJourneyRoute
   '/prayer-notes': typeof AppPrayerNotesRoute
   '/proposals': typeof AppProposalsRoute
   '/stewards': typeof AppStewardsRoute
@@ -141,6 +148,7 @@ export interface FileRoutesByTo {
   '/follow-up': typeof AppFollowUpRoute
   '/import': typeof AppImportRoute
   '/intake': typeof AppIntakeRoute
+  '/journey': typeof AppJourneyRoute
   '/prayer-notes': typeof AppPrayerNotesRoute
   '/proposals': typeof AppProposalsRoute
   '/stewards': typeof AppStewardsRoute
@@ -161,6 +169,7 @@ export interface FileRoutesById {
   '/_app/follow-up': typeof AppFollowUpRoute
   '/_app/import': typeof AppImportRoute
   '/_app/intake': typeof AppIntakeRoute
+  '/_app/journey': typeof AppJourneyRoute
   '/_app/prayer-notes': typeof AppPrayerNotesRoute
   '/_app/proposals': typeof AppProposalsRoute
   '/_app/stewards': typeof AppStewardsRoute
@@ -181,6 +190,7 @@ export interface FileRouteTypes {
     | '/follow-up'
     | '/import'
     | '/intake'
+    | '/journey'
     | '/prayer-notes'
     | '/proposals'
     | '/stewards'
@@ -199,6 +209,7 @@ export interface FileRouteTypes {
     | '/follow-up'
     | '/import'
     | '/intake'
+    | '/journey'
     | '/prayer-notes'
     | '/proposals'
     | '/stewards'
@@ -218,6 +229,7 @@ export interface FileRouteTypes {
     | '/_app/follow-up'
     | '/_app/import'
     | '/_app/intake'
+    | '/_app/journey'
     | '/_app/prayer-notes'
     | '/_app/proposals'
     | '/_app/stewards'
@@ -313,6 +325,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIntakeRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/journey': {
+      id: '/_app/journey'
+      path: '/journey'
+      fullPath: '/journey'
+      preLoaderRoute: typeof AppJourneyRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/prayer-notes': {
       id: '/_app/prayer-notes'
       path: '/prayer-notes'
@@ -367,6 +386,7 @@ interface AppRouteChildren {
   AppFollowUpRoute: typeof AppFollowUpRoute
   AppImportRoute: typeof AppImportRoute
   AppIntakeRoute: typeof AppIntakeRoute
+  AppJourneyRoute: typeof AppJourneyRoute
   AppPrayerNotesRoute: typeof AppPrayerNotesRoute
   AppProposalsRoute: typeof AppProposalsRoute
   AppStewardsRoute: typeof AppStewardsRoute
@@ -382,6 +402,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppFollowUpRoute: AppFollowUpRoute,
   AppImportRoute: AppImportRoute,
   AppIntakeRoute: AppIntakeRoute,
+  AppJourneyRoute: AppJourneyRoute,
   AppPrayerNotesRoute: AppPrayerNotesRoute,
   AppProposalsRoute: AppProposalsRoute,
   AppStewardsRoute: AppStewardsRoute,
