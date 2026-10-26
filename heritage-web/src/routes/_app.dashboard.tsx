@@ -6,7 +6,6 @@ import {
   ClipboardCheck,
   Eye,
   Heart,
-  HeartHandshake,
   PhoneCall,
   RefreshCw,
   ShieldCheck,
@@ -59,15 +58,16 @@ function DashboardPage() {
       borderHover: 'hover:border-emerald-500/40',
       show: hasCapability(me, 'followups.read'),
     },
-    {
-      title: 'Pastoral Prayer Notes',
-      subtitle: 'Format confidential prayer requests & email Resident Pastor',
-      to: '/prayer-notes' as const,
-      icon: HeartHandshake,
-      iconBox: 'bg-purple-500/10 text-purple-600 group-hover:bg-purple-500/20',
-      borderHover: 'hover:border-purple-500/40',
-      show: hasCapability(me, 'prayer_notes.manage'),
-    },
+    // [Refinement Pending] Pastoral Prayer Notes
+    // {
+    //   title: 'Pastoral Prayer Notes',
+    //   subtitle: 'Format confidential prayer requests & email Resident Pastor',
+    //   to: '/prayer-notes' as const,
+    //   icon: HeartHandshake,
+    //   iconBox: 'bg-purple-500/10 text-purple-600 group-hover:bg-purple-500/20',
+    //   borderHover: 'hover:border-purple-500/40',
+    //   show: hasCapability(me, 'prayer_notes.manage'),
+    // },
   ].filter((a) => a.show)
 
   const stats = [
