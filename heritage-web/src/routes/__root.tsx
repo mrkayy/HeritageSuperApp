@@ -1,5 +1,6 @@
 import { HeadContent, Scripts, createRootRouteWithContext } from '@tanstack/react-router'
 import type { QueryClient } from '@tanstack/react-query'
+import { Analytics } from '@vercel/analytics/react'
 import appCss from '../styles.css?url'
 
 interface RouterContext {
@@ -45,6 +46,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body className="font-sans antialiased">
         {children}
+        <Analytics />
         <Scripts />
       </body>
     </html>
