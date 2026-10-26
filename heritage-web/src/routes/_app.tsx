@@ -6,7 +6,6 @@ import {
   Cake,
   ClipboardCheck,
   FileSpreadsheet,
-  GraduationCap,
   HeartHandshake,
   Home,
   LogOut,
@@ -96,36 +95,39 @@ function AppShell() {
           icon: FileSpreadsheet,
           show: hasCapability(me, 'people.import'),
         },
-        {
-          to: '/academy' as const,
-          label: 'Sunday School & Academy',
-          icon: GraduationCap,
-          show: hasCapability(me, 'academy.read'),
-        },
+        // [Refinement Pending] Sunday School & Discipleship Academy
+        // {
+        //   to: '/academy' as const,
+        //   label: 'Sunday School & Academy',
+        //   icon: GraduationCap,
+        //   show: hasCapability(me, 'academy.read'),
+        // },
         {
           to: '/volunteers' as const,
           label: 'Volunteer Placement',
           icon: HeartHandshake,
           show: hasCapability(me, 'volunteers.apply') || hasCapability(me, 'volunteers.manage'),
         },
-        {
-          to: '/proposals' as const,
-          label: 'Profile Approvals',
-          icon: ShieldCheck,
-          show: hasCapability(me, 'people.read'),
-        },
+        // [Refinement Pending] Profile Approvals (Maker-Checker Queue)
+        // {
+        //   to: '/proposals' as const,
+        //   label: 'Profile Approvals',
+        //   icon: ShieldCheck,
+        //   show: hasCapability(me, 'people.read'),
+        // },
         {
           to: '/celebrations' as const,
           label: 'Celebrations & Landmarks',
           icon: Cake,
           show: hasCapability(me, 'celebrations.read') || hasCapability(me, 'people.read'),
         },
-        {
-          to: '/prayer-notes' as const,
-          label: 'Pastoral Prayer Notes',
-          icon: HeartHandshake,
-          show: hasCapability(me, 'prayer_notes.manage'),
-        },
+        // [Refinement Pending] Pastoral Prayer Notes
+        // {
+        //   to: '/prayer-notes' as const,
+        //   label: 'Pastoral Prayer Notes',
+        //   icon: HeartHandshake,
+        //   show: hasCapability(me, 'prayer_notes.manage'),
+        // },
       ].filter((i) => i.show),
     },
     {
