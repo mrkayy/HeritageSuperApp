@@ -41,6 +41,19 @@ enum SundaySchoolStatus {
   COMPLETED
 }
 
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum MaritalStatus {
+  SINGLE
+  MARRIED
+  SEPARATED
+  DIVORCED
+  WIDOWED
+}
+
 /// The human being. May exist without an Account (visitors, children, etc.).
 model Person {
   id                    String                @id @default(uuid()) @db.Uuid
@@ -63,6 +76,10 @@ model Person {
   birthDay              Int?                  // 1–31
   anniversaryMonth      Int?                  // 1–12
   anniversaryDay        Int?                  // 1–31
+  gender                Gender?
+  maritalStatus         MaritalStatus?
+  occupation            String?               // job / occupation as captured on the member data form
+  primaryTeamId         String?               @db.Uuid // team the person primarily serves in (not an authority grant — see Assignment)
   inviterPersonId       String?               @db.Uuid
   firstVisitedAt        DateTime?
   createdAt             DateTime              @default(now())
@@ -71,6 +88,7 @@ model Person {
 
   inviter            Person?            @relation("PersonInviter", fields: [inviterPersonId], references: [id])
   invitees           Person[]           @relation("PersonInviter")
+  primaryTeam        Team?              @relation("PersonPrimaryTeam", fields: [primaryTeamId], references: [id], onDelete: SetNull)
   account            Account?
   assignments        Assignment[]
   authTokens         AuthToken[]
@@ -87,6 +105,7 @@ model Person {
   authoredProposals        ProfileChangeProposal[] @relation("ProposalMaker")
   reviewedProposals        ProfileChangeProposal[] @relation("ProposalChecker")
   volunteerApplications    VolunteerApplication[]
+  matchedImportRows        ImportJobRow[]         @relation("ImportMatchedPerson")
 
   @@index([lastName, firstName])
   @@index([email])
@@ -94,6 +113,7 @@ model Person {
   @@index([membershipStatus])
   @@index([birthMonth, birthDay])
   @@index([anniversaryMonth, anniversaryDay])
+  @@index([primaryTeamId])
 }
 
 /// HOF-017-S02..S04: Profile Enrichment & Maker-Checker Dual-Control Change Proposals
@@ -140,6 +160,12 @@ enum ImportRowState {
   SKIPPED
 }
 
+enum ImportRowAction {
+  CREATE
+  UPDATE_EXISTING
+  SKIP
+}
+
 model ImportJob {
   id                  String          @id @default(uuid()) @db.Uuid
   fileName            String?
@@ -173,16 +199,22 @@ model ImportJobRow {
   birthDay          Int?
   anniversaryMonth  Int?
   anniversaryDay    Int?
+  gender            Gender?
+  maritalStatus     MaritalStatus?
+  occupation        String?
+  primaryTeamId     String?        @db.Uuid
   state             ImportRowState @default(READY)
   errors            Json?          // string[] validation messages
   warnings          Json?          // string[] duplicate / review warnings
   matchedPersonId   String?        @db.Uuid
+  action            ImportRowAction @default(CREATE)
   appliedPersonId   String?        @db.Uuid
   appliedAt         DateTime?
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
 
-  job ImportJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  job           ImportJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  matchedPerson Person?   @relation("ImportMatchedPerson", fields: [matchedPersonId], references: [id], onDelete: SetNull)
 
   @@unique([jobId, rowIndex])
   @@index([jobId, state])
@@ -434,7 +466,8 @@ model Team {
   name      String
   createdAt DateTime @default(now())
 
-  assignments Assignment[]
+  assignments    Assignment[]
+  primaryMembers Person[]     @relation("PersonPrimaryTeam")
 }
 
 /// Operational appointment. A Person may hold several (e.g. STEWARD in two teams).

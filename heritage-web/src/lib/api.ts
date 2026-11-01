@@ -264,6 +264,7 @@ export interface DashboardSummary {
 }
 
 export type ImportRowState = 'READY' | 'INVALID' | 'REVIEW_REQUIRED' | 'APPLIED' | 'SKIPPED'
+export type ImportRowAction = 'CREATE' | 'UPDATE_EXISTING' | 'SKIP'
 
 export interface ImportJobRowItem {
   id: string
@@ -280,10 +281,32 @@ export interface ImportJobRowItem {
   birth_day: number | null
   anniversary_month: number | null
   anniversary_day: number | null
+  gender?: 'MALE' | 'FEMALE' | null
+  marital_status?: 'SINGLE' | 'MARRIED' | 'SEPARATED' | 'DIVORCED' | 'WIDOWED' | null
+  occupation?: string | null
+  primary_team_id?: string | null
   state: ImportRowState
+  action: ImportRowAction
   errors: string[]
   warnings: string[]
   matched_person_id: string | null
+  matched_person?: {
+    id: string
+    first_name: string
+    last_name: string
+    email: string | null
+    phone: string | null
+    address: string | null
+    gender: 'MALE' | 'FEMALE' | null
+    marital_status: 'SINGLE' | 'MARRIED' | 'SEPARATED' | 'DIVORCED' | 'WIDOWED' | null
+    occupation: string | null
+    birth_month: number | null
+    birth_day: number | null
+    anniversary_month: number | null
+    anniversary_day: number | null
+    membership_status: MembershipStatus
+    is_verified: boolean
+  } | null
   applied_person_id: string | null
   applied_at: string | null
   formula_safe_first_name: string

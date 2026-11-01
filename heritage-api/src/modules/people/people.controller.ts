@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
 import { z } from 'zod';
 import type { FoundationClassStatus, MembershipStatus } from '../../generated/prisma/client.js';
 import { ZodBody } from '../../platform/http/errors.js';
@@ -7,6 +7,12 @@ import { PeopleService } from './people.service.js';
 
 const MembershipStatusEnum = z.enum(['VISITOR', 'FIRST_TIMER', 'FOUNDATION', 'MEMBER', 'WORK_FORCE', 'INACTIVE']);
 const FoundationStatusEnum = z.enum(['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED']);
+const ImportRowActionEnum = z.enum(['CREATE', 'UPDATE_EXISTING', 'SKIP']);
+const GenderEnum = z.preprocess((v) => (typeof v === 'string' ? v.trim().toUpperCase() : v), z.enum(['MALE', 'FEMALE']));
+const MaritalStatusEnum = z.preprocess(
+  (v) => (typeof v === 'string' ? v.trim().toUpperCase() : v),
+  z.enum(['SINGLE', 'MARRIED', 'SEPARATED', 'DIVORCED', 'WIDOWED']),
+);
 
 const VisitorCaptureBody = z.object({
   first_name: z.string().trim().min(1, 'First name is required').max(80),
@@ -36,6 +42,10 @@ const CreatePersonBody = z.object({
   birth_day: z.coerce.number().int().min(1).max(31).nullish(),
   anniversary_month: z.coerce.number().int().min(1).max(12).nullish(),
   anniversary_day: z.coerce.number().int().min(1).max(31).nullish(),
+  gender: GenderEnum.nullish(),
+  marital_status: MaritalStatusEnum.nullish(),
+  occupation: z.string().trim().max(160).nullish(),
+  primary_team_id: z.string().uuid('Select a valid team').nullish(),
 });
 
 const UpdatePersonBody = CreatePersonBody.partial();
@@ -49,6 +59,7 @@ const ClaimInvitationBody = z.object({
 const CreateImportJobBody = z.object({
   file_name: z.string().trim().max(120).optional(),
   csv_text: z.string().min(1, 'CSV content is required').max(1_000_000, 'CSV is too large'),
+  default_membership_status: MembershipStatusEnum.optional().default('WORK_FORCE'),
 });
 
 const CreateProposalBody = z.object({
@@ -77,6 +88,13 @@ const UpdateImportRowBody = z.object({
   birth_day: z.coerce.number().int().min(1).max(31).nullish(),
   anniversary_month: z.coerce.number().int().min(1).max(12).nullish(),
   anniversary_day: z.coerce.number().int().min(1).max(31).nullish(),
+  birth_date: z.string().trim().max(40).nullish(),
+  anniversary_date: z.string().trim().max(40).nullish(),
+  gender: GenderEnum.nullish(),
+  marital_status: MaritalStatusEnum.nullish(),
+  occupation: z.string().trim().max(160).nullish(),
+  primary_team: z.string().trim().max(120).nullish(),
+  action: ImportRowActionEnum.optional(),
   approve_review: z.boolean().optional(),
 });
 
@@ -237,6 +255,26 @@ export class PeopleController {
   @RequireCapability('people.import')
   async importErrorReport(@CurrentAuth() auth: AuthContext, @Param('jobId', ParseUUIDPipe) jobId: string) {
     return { file_name: `import-${jobId}-errors.csv`, csv: await this.people.buildImportErrorReport(auth, jobId) };
+  }
+
+    @Delete('import-jobs/:jobId/rows/:rowId')
+  @RequireCapability('people.import')
+  deleteImportRow(
+    @CurrentAuth() auth: AuthContext,
+    @Param('jobId', ParseUUIDPipe) jobId: string,
+    @Param('rowId', ParseUUIDPipe) rowId: string,
+  ) {
+    return this.people.deleteImportRow(auth, jobId, rowId);
+  }
+
+  @Post('import-jobs/:jobId/rows')
+  @RequireCapability('people.import')
+  addImportRow(
+    @CurrentAuth() auth: AuthContext,
+    @Param('jobId', ParseUUIDPipe) jobId: string,
+    @Body(new ZodBody(UpdateImportRowBody)) body: z.infer<typeof UpdateImportRowBody>,
+  ) {
+    return this.people.addImportRow(auth, jobId, body);
   }
 
   @Patch('import-jobs/:jobId/rows/:rowId')
