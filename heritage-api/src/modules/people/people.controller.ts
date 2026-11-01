@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Patch, P
 import { z } from 'zod';
 import type { FoundationClassStatus, MembershipStatus } from '../../generated/prisma/client.js';
 import { ZodBody } from '../../platform/http/errors.js';
-import { CurrentAuth, RequireCapability, type AuthContext } from '../identity/auth.guard.js';
+import { CurrentAuth, RequireAnyCapability, RequireCapability, type AuthContext } from '../identity/auth.guard.js';
 import { PeopleService } from './people.service.js';
 
 const MembershipStatusEnum = z.enum(['VISITOR', 'FIRST_TIMER', 'FOUNDATION', 'MEMBER', 'WORK_FORCE', 'INACTIVE']);
@@ -60,6 +60,7 @@ const CreateImportJobBody = z.object({
   file_name: z.string().trim().max(120).optional(),
   csv_text: z.string().min(1, 'CSV content is required').max(1_000_000, 'CSV is too large'),
   default_membership_status: MembershipStatusEnum.optional().default('WORK_FORCE'),
+  service_occurrence_id: z.string().uuid().nullish(),
 });
 
 const CreateProposalBody = z.object({
@@ -94,6 +95,8 @@ const UpdateImportRowBody = z.object({
   marital_status: MaritalStatusEnum.nullish(),
   occupation: z.string().trim().max(160).nullish(),
   primary_team: z.string().trim().max(120).nullish(),
+  prayer_request: z.string().trim().max(1000).nullish(),
+  inviter: z.string().trim().max(160).nullish(),
   action: ImportRowActionEnum.optional(),
   approve_review: z.boolean().optional(),
 });
@@ -230,7 +233,7 @@ export class PeopleController {
   // ── Bulk CSV Directory Import (HOF-012-S02 / S03 / S04) ───────────────────
 
   @Post('import-jobs')
-  @RequireCapability('people.import')
+  @RequireAnyCapability('people.import', 'visitors.capture')
   createImportPreview(
     @CurrentAuth() auth: AuthContext,
     @Body(new ZodBody(CreateImportJobBody)) body: z.infer<typeof CreateImportJobBody>,
@@ -239,26 +242,26 @@ export class PeopleController {
   }
 
   @Get('import-jobs')
-  @RequireCapability('people.import')
+  @RequireAnyCapability('people.import', 'visitors.capture')
   listImportJobs(@CurrentAuth() auth: AuthContext) {
     return this.people.listImportJobs(auth);
   }
 
   @Get('import-jobs/:jobId')
-  @RequireCapability('people.import')
+  @RequireAnyCapability('people.import', 'visitors.capture')
   getImportJob(@CurrentAuth() auth: AuthContext, @Param('jobId', ParseUUIDPipe) jobId: string) {
     return this.people.getImportJob(jobId, auth);
   }
 
   /** HOF-012-S04: formula-safe CSV of failed and review-required rows (authorized job only). */
   @Get('import-jobs/:jobId/error-report')
-  @RequireCapability('people.import')
+  @RequireAnyCapability('people.import', 'visitors.capture')
   async importErrorReport(@CurrentAuth() auth: AuthContext, @Param('jobId', ParseUUIDPipe) jobId: string) {
     return { file_name: `import-${jobId}-errors.csv`, csv: await this.people.buildImportErrorReport(auth, jobId) };
   }
 
     @Delete('import-jobs/:jobId/rows/:rowId')
-  @RequireCapability('people.import')
+  @RequireAnyCapability('people.import', 'visitors.capture')
   deleteImportRow(
     @CurrentAuth() auth: AuthContext,
     @Param('jobId', ParseUUIDPipe) jobId: string,
@@ -268,7 +271,7 @@ export class PeopleController {
   }
 
   @Post('import-jobs/:jobId/rows')
-  @RequireCapability('people.import')
+  @RequireAnyCapability('people.import', 'visitors.capture')
   addImportRow(
     @CurrentAuth() auth: AuthContext,
     @Param('jobId', ParseUUIDPipe) jobId: string,
@@ -278,7 +281,7 @@ export class PeopleController {
   }
 
   @Patch('import-jobs/:jobId/rows/:rowId')
-  @RequireCapability('people.import')
+  @RequireAnyCapability('people.import', 'visitors.capture')
   updateImportRow(
     @CurrentAuth() auth: AuthContext,
     @Param('jobId', ParseUUIDPipe) jobId: string,
@@ -289,7 +292,7 @@ export class PeopleController {
   }
 
   @Post('import-jobs/:jobId/commit')
-  @RequireCapability('people.import')
+  @RequireAnyCapability('people.import', 'visitors.capture')
   @HttpCode(200)
   commitImportJob(
     @CurrentAuth() auth: AuthContext,

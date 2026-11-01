@@ -202,3 +202,47 @@ describe('duplicate detection and update selection', () => {
     expect(fixed.membershipStatus).toBe('WORK_FORCE');
   });
 });
+
+describe('visitor data form import parsing', () => {
+  const VISITOR_CSV = [
+    'First Name,Surname,Phone Number,Email Address,Home Address,Date of Birth,Prayer Request / Notes,Invited By',
+    'Samuel,Ogunleye,+2348021234567,samuel.o@example.com,14 Lekki Phase 1,12-August,Please pray for healing and peace,Sister Deborah',
+    'Grace,Adeleke,08039876543,grace.a@example.com,,03/15,Safe delivery,Deacon James',
+  ].join('\n');
+
+  it('maps visitor columns including prayer request and inviter', () => {
+    const rows = parseCsvRecords(VISITOR_CSV);
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toMatchObject({
+      first_name: 'Samuel',
+      last_name: 'Ogunleye',
+      phone: '+2348021234567',
+      email: 'samuel.o@example.com',
+      address: '14 Lekki Phase 1',
+      birth_date: '12-August',
+      prayer_request: 'Please pray for healing and peace',
+      inviter: 'Sister Deborah',
+    });
+    expect(rows[1]).toMatchObject({
+      first_name: 'Grace',
+      last_name: 'Adeleke',
+      phone: '08039876543',
+      prayer_request: 'Safe delivery',
+      inviter: 'Deacon James',
+    });
+  });
+
+  it('evaluates visitor rows with default status FIRST_TIMER', () => {
+    const parsedRows = parseCsvRecords(VISITOR_CSV);
+    const row = parsedRows[0];
+    const evaluated = evaluateImportRow(1, row, [], parsedRows, false, [], undefined, 'FIRST_TIMER');
+
+    expect(evaluated.membershipStatus).toBe('FIRST_TIMER');
+    expect(evaluated.prayerRequest).toBe('Please pray for healing and peace');
+    expect(evaluated.inviter).toBe('Sister Deborah');
+    expect(evaluated.birthMonth).toBe(8);
+    expect(evaluated.birthDay).toBe(12);
+    expect(evaluated.errors).toHaveLength(0);
+    expect(evaluated.state).toBe('READY');
+  });
+});

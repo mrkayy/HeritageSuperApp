@@ -95,6 +95,7 @@ export interface CreateImportJobInput {
   file_name?: string;
   csv_text: string;
   default_membership_status?: MembershipStatus;
+  service_occurrence_id?: string | null;
 }
 
 export interface UpdateImportRowInput {
@@ -115,6 +116,8 @@ export interface UpdateImportRowInput {
   occupation?: string | null;
   /** Team id, key or name (case-insensitive). */
   primary_team?: string | null;
+  prayer_request?: string | null;
+  inviter?: string | null;
   action?: ImportRowAction;
   approve_review?: boolean;
 }
@@ -1097,6 +1100,7 @@ export class PeopleService {
         fileName: input.file_name?.trim() || 'directory-import.csv',
         status: ImportJobStatus.PREVIEW,
         createdById: actor.personId,
+        serviceOccurrenceId: input.service_occurrence_id ?? null,
         rows: {
           create: evaluatedRows.map((r) => ({
             rowIndex: r.rowIndex,
@@ -1116,6 +1120,8 @@ export class PeopleService {
             maritalStatus: r.maritalStatus,
             occupation: r.occupation,
             primaryTeamId: r.primaryTeamId,
+            prayerRequest: r.prayerRequest,
+            inviter: r.inviter,
             state: r.state,
             errors: r.errors,
             warnings: r.warnings,
@@ -1125,6 +1131,9 @@ export class PeopleService {
         },
       },
       include: {
+        serviceOccurrence: {
+          select: { id: true, title: true, serviceDate: true, kind: true },
+        },
         rows: {
           orderBy: { rowIndex: 'asc' },
           include: {
@@ -1192,6 +1201,9 @@ export class PeopleService {
     const job = await this.prisma.importJob.findUnique({
       where: { id: jobId },
       include: {
+        serviceOccurrence: {
+          select: { id: true, title: true, serviceDate: true, kind: true },
+        },
         rows: {
           orderBy: { rowIndex: 'asc' },
           include: {
@@ -1376,6 +1388,8 @@ export class PeopleService {
       marital_status: input.marital_status !== undefined ? input.marital_status ?? '' : row.maritalStatus ?? '',
       occupation: input.occupation !== undefined ? input.occupation ?? '' : row.occupation ?? '',
       primary_team: input.primary_team !== undefined ? input.primary_team ?? '' : row.primaryTeamId ?? '',
+      prayer_request: input.prayer_request !== undefined ? input.prayer_request ?? '' : row.prayerRequest ?? '',
+      inviter: input.inviter !== undefined ? input.inviter ?? '' : row.inviter ?? '',
     };
 
     const allRawRows: RawCsvRow[] = job.rows.map((r) =>
@@ -1398,6 +1412,8 @@ export class PeopleService {
             marital_status: r.maritalStatus ?? '',
             occupation: r.occupation ?? '',
             primary_team: r.primaryTeamId ?? '',
+            prayer_request: r.prayerRequest ?? '',
+            inviter: r.inviter ?? '',
           },
     );
 
@@ -1433,6 +1449,8 @@ export class PeopleService {
         maritalStatus: evaluated.maritalStatus,
         occupation: evaluated.occupation,
         primaryTeamId: evaluated.primaryTeamId,
+        prayerRequest: evaluated.prayerRequest,
+        inviter: evaluated.inviter,
         state: evaluated.state,
         errors: evaluated.errors,
         warnings: evaluated.warnings,
@@ -1490,6 +1508,8 @@ export class PeopleService {
       marital_status: input.marital_status ?? '',
       occupation: input.occupation ?? '',
       primary_team: input.primary_team ?? '',
+      prayer_request: input.prayer_request ?? '',
+      inviter: input.inviter ?? '',
     };
 
     const allRawRows: RawCsvRow[] = job.rows.map((r) => ({
@@ -1509,6 +1529,8 @@ export class PeopleService {
       marital_status: r.maritalStatus ?? '',
       occupation: r.occupation ?? '',
       primary_team: r.primaryTeamId ?? '',
+      prayer_request: r.prayerRequest ?? '',
+      inviter: r.inviter ?? '',
     }));
     allRawRows.push(raw);
 
@@ -1543,6 +1565,8 @@ export class PeopleService {
         maritalStatus: evaluated.maritalStatus,
         occupation: evaluated.occupation,
         primaryTeamId: evaluated.primaryTeamId,
+        prayerRequest: evaluated.prayerRequest,
+        inviter: evaluated.inviter,
         state: evaluated.state,
         errors: evaluated.errors,
         warnings: evaluated.warnings,
@@ -1593,6 +1617,9 @@ export class PeopleService {
             continue;
           }
 
+          let appliedPersonId: string | null = null;
+          let isNewPerson = false;
+
           const matchedId = row.matchedPersonId;
           if (row.action === ImportRowAction.UPDATE_EXISTING && matchedId) {
             // Update existing matched person; fill or update fields from CSV row
@@ -1618,64 +1645,127 @@ export class PeopleService {
                   version: { increment: 1 },
                 },
               });
+              appliedPersonId = updated.id;
+            }
+          }
 
+          if (!appliedPersonId) {
+            // If action is CREATE, double check live conflict to prevent duplicates
+            const liveConflict = await findMatchingExistingPerson(tx, row.normalizedPhone, row.normalizedEmail);
+            if (liveConflict) {
+              const warningMsg = liveConflict.isVerified
+                ? `Matches verified profile ${liveConflict.firstName} ${liveConflict.lastName} — requires review instead of overwriting master.`
+                : `Possible duplicate of existing person ${liveConflict.firstName} ${liveConflict.lastName}.`;
               await tx.importJobRow.update({
                 where: { id: row.id },
                 data: {
-                  state: ImportRowState.APPLIED,
-                  appliedPersonId: updated.id,
-                  appliedAt: new Date(),
+                  state: ImportRowState.REVIEW_REQUIRED,
+                  matchedPersonId: liveConflict.id,
+                  action: ImportRowAction.UPDATE_EXISTING,
+                  warnings: [warningMsg],
                 },
               });
               continue;
             }
+
+            // Find inviter person if inviter name is provided
+            let inviterPersonId: string | null = null;
+            if (row.inviter?.trim()) {
+              const inviterMatch = await tx.person.findFirst({
+                where: {
+                  OR: [
+                    { firstName: { contains: row.inviter.trim(), mode: 'insensitive' } },
+                    { lastName: { contains: row.inviter.trim(), mode: 'insensitive' } },
+                  ],
+                },
+                select: { id: true },
+              });
+              if (inviterMatch) inviterPersonId = inviterMatch.id;
+            }
+
+            const created = await tx.person.create({
+              data: {
+                firstName: row.firstName,
+                lastName: row.lastName,
+                phone: row.phone,
+                email: row.normalizedEmail,
+                address: row.address,
+                membershipStatus: row.membershipStatus,
+                birthMonth: row.birthMonth,
+                birthDay: row.birthDay,
+                anniversaryMonth: row.anniversaryMonth,
+                anniversaryDay: row.anniversaryDay,
+                gender: row.gender,
+                maritalStatus: row.maritalStatus,
+                occupation: row.occupation,
+                primaryTeamId: row.primaryTeamId,
+                inviterPersonId,
+                firstVisitedAt: job.serviceOccurrenceId ? new Date() : null,
+              },
+            });
+            appliedPersonId = created.id;
+            isNewPerson = true;
           }
 
-          // If action is CREATE, double check live conflict to prevent duplicates
-          const liveConflict = await findMatchingExistingPerson(tx, row.normalizedPhone, row.normalizedEmail);
-          if (liveConflict) {
-            const warningMsg = liveConflict.isVerified
-              ? `Matches verified profile ${liveConflict.firstName} ${liveConflict.lastName} — requires review instead of overwriting master.`
-              : `Possible duplicate of existing person ${liveConflict.firstName} ${liveConflict.lastName}.`;
+          if (appliedPersonId) {
+            // If linked to a ServiceOccurrence, log attendance, welcome follow-up, and sync foundation
+            if (job.serviceOccurrenceId) {
+              await tx.attendanceRecord.upsert({
+                where: {
+                  serviceOccurrenceId_personId: {
+                    serviceOccurrenceId: job.serviceOccurrenceId,
+                    personId: appliedPersonId,
+                  },
+                },
+                update: {},
+                create: {
+                  serviceOccurrenceId: job.serviceOccurrenceId,
+                  personId: appliedPersonId,
+                  source: 'visitor_intake',
+                  isFirstVisit: isNewPerson,
+                  recordedById: actor.personId,
+                },
+              });
+
+              const existingTask = await tx.followUpTask.findFirst({
+                where: { personId: appliedPersonId, kind: 'WELCOME', status: { in: ['OPEN', 'IN_PROGRESS'] } },
+              });
+              if (!existingTask) {
+                await tx.followUpTask.create({
+                  data: {
+                    personId: appliedPersonId,
+                    serviceOccurrenceId: job.serviceOccurrenceId,
+                    kind: 'WELCOME',
+                    status: 'OPEN',
+                    dueAt: new Date(Date.now() + THREE_DAYS_MS),
+                  },
+                });
+              }
+
+              await syncFoundationEligibility(tx, appliedPersonId);
+            }
+
+            // HOF-013-S04: Store prayer request in PrayerNote
+            if (row.prayerRequest?.trim()) {
+              await tx.prayerNote.create({
+                data: {
+                  personId: appliedPersonId,
+                  serviceOccurrenceId: job.serviceOccurrenceId ?? null,
+                  content: row.prayerRequest.trim(),
+                  createdById: actor.personId,
+                },
+              });
+            }
+
             await tx.importJobRow.update({
               where: { id: row.id },
               data: {
-                state: ImportRowState.REVIEW_REQUIRED,
-                matchedPersonId: liveConflict.id,
-                action: ImportRowAction.UPDATE_EXISTING,
-                warnings: [warningMsg],
+                state: ImportRowState.APPLIED,
+                appliedPersonId,
+                appliedAt: new Date(),
               },
             });
-            continue;
           }
-
-          const created = await tx.person.create({
-            data: {
-              firstName: row.firstName,
-              lastName: row.lastName,
-              phone: row.phone,
-              email: row.normalizedEmail,
-              address: row.address,
-              membershipStatus: row.membershipStatus,
-              birthMonth: row.birthMonth,
-              birthDay: row.birthDay,
-              anniversaryMonth: row.anniversaryMonth,
-              anniversaryDay: row.anniversaryDay,
-              gender: row.gender,
-              maritalStatus: row.maritalStatus,
-              occupation: row.occupation,
-              primaryTeamId: row.primaryTeamId,
-            },
-          });
-
-          await tx.importJobRow.update({
-            where: { id: row.id },
-            data: {
-              state: ImportRowState.APPLIED,
-              appliedPersonId: created.id,
-              appliedAt: new Date(),
-            },
-          });
         }
       }
 
@@ -1696,6 +1786,9 @@ export class PeopleService {
           summary,
         },
         include: {
+          serviceOccurrence: {
+            select: { id: true, title: true, serviceDate: true, kind: true },
+          },
           rows: {
             orderBy: { rowIndex: 'asc' },
             include: {
@@ -2002,6 +2095,8 @@ interface RawCsvRow {
   occupation: string;
   /** Team id, key or name. */
   primary_team: string;
+  prayer_request?: string;
+  inviter?: string;
 }
 
 interface TeamSnapshot {
@@ -2204,6 +2299,8 @@ export function parseCsvRecords(csvText: string): RawCsvRow[] {
   const maritalIdx = idxOf('marital_status', 'marrital_status', 'marital', 'marrital');
   const occupationIdx = idxOf('occupation', 'job_occupation', 'job', 'profession');
   const teamIdx = idxOf('primary_team', 'team', 'department', 'unit');
+  const prayerIdx = idxOf('prayer_request', 'prayer', 'prayer_note', 'prayer_needs', 'prayer_requests', 'notes');
+  const inviterIdx = idxOf('inviter', 'invited_by', 'how_did_you_hear', 'invited');
 
   const rows: RawCsvRow[] = [];
   for (let i = 1; i < lines.length; i++) {
@@ -2233,6 +2330,8 @@ export function parseCsvRecords(csvText: string): RawCsvRow[] {
       marital_status: get(maritalIdx),
       occupation: get(occupationIdx),
       primary_team: get(teamIdx),
+      prayer_request: get(prayerIdx),
+      inviter: get(inviterIdx),
     });
   }
   return rows;
@@ -2330,6 +2429,9 @@ export function evaluateImportRow(
     if (team) primaryTeamId = team.id;
   }
 
+  const prayerRequest = raw.prayer_request?.trim() ? sanitizeCsvFormulaCell(raw.prayer_request) : null;
+  const inviter = raw.inviter?.trim() ? sanitizeCsvFormulaCell(raw.inviter) : null;
+
   let matchedPersonId: string | null = null;
   let matchedVerified = false;
 
@@ -2417,6 +2519,8 @@ export function evaluateImportRow(
     maritalStatus: maritalStatus ?? null,
     occupation,
     primaryTeamId,
+    prayerRequest,
+    inviter,
     state,
     errors,
     warnings,
@@ -2478,6 +2582,13 @@ function formatImportJobResponse(job: {
   id: string;
   fileName: string | null;
   status: ImportJobStatus;
+  serviceOccurrenceId?: string | null;
+  serviceOccurrence?: {
+    id: string;
+    title: string;
+    serviceDate: Date;
+    kind: any;
+  } | null;
   committedAt: Date | null;
   createdAt: Date;
   rows: {
@@ -2499,6 +2610,8 @@ function formatImportJobResponse(job: {
     maritalStatus: MaritalStatus | null;
     occupation: string | null;
     primaryTeamId: string | null;
+    prayerRequest?: string | null;
+    inviter?: string | null;
     state: ImportRowState;
     errors: Prisma.JsonValue;
     warnings: Prisma.JsonValue;
@@ -2545,6 +2658,8 @@ function formatImportJobResponse(job: {
     marital_status: r.maritalStatus,
     occupation: r.occupation,
     primary_team_id: r.primaryTeamId,
+    prayer_request: r.prayerRequest ?? null,
+    inviter: r.inviter ?? null,
     state: r.state,
     action: r.action ?? 'CREATE',
     errors: Array.isArray(r.errors) ? (r.errors as string[]) : [],
@@ -2579,6 +2694,17 @@ function formatImportJobResponse(job: {
     id: job.id,
     file_name: job.fileName,
     status: job.status,
+    service_occurrence_id: (job as any).serviceOccurrenceId ?? null,
+    service_occurrence: (job as any).serviceOccurrence
+      ? {
+          id: (job as any).serviceOccurrence.id,
+          title: (job as any).serviceOccurrence.title,
+          service_date: (job as any).serviceOccurrence.serviceDate instanceof Date
+            ? (job as any).serviceOccurrence.serviceDate.toISOString()
+            : (job as any).serviceOccurrence.serviceDate,
+          kind: (job as any).serviceOccurrence.kind,
+        }
+      : null,
     committed_at: job.committedAt?.toISOString() ?? null,
     created_at: job.createdAt.toISOString(),
     summary,

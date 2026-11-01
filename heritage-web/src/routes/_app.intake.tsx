@@ -6,6 +6,7 @@ import {
   ArrowRight,
   Calendar,
   CheckCircle2,
+  FileSpreadsheet,
   HeartHandshake,
   Mail,
   MapPin,
@@ -151,6 +152,13 @@ function VisitorIntakePage() {
           <Badge variant="secondary">
             <Calendar className="h-3 w-3" /> {todayFormatted}
           </Badge>
+        }
+        action={
+          <Link to="/visitor-import">
+            <Button variant="secondary" size="sm">
+              <FileSpreadsheet className="h-4 w-4" /> Bulk CSV Import
+            </Button>
+          </Link>
         }
         title={selectedCandidate ? 'Returning Visitor Check-In' : 'First-Timer Visitor Intake'}
         subtitle="Capture first-time guest details, automatically log service presence, and queue Membership follow-up."
