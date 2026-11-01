@@ -68,6 +68,12 @@ function AppShell() {
           show: hasCapability(me, 'visitors.capture'),
         },
         {
+          to: '/visitor-import' as const,
+          label: 'Visitor CSV Import',
+          icon: FileSpreadsheet,
+          show: hasCapability(me, 'visitors.capture') || hasCapability(me, 'people.import'),
+        },
+        {
           to: '/attendance' as const,
           label: 'Service Attendance',
           icon: ClipboardCheck,
