@@ -111,7 +111,9 @@ export interface Steward {
   email: string
   status: 'PENDING' | 'ACTIVE' | 'SUSPENDED'
   last_login_at: string | null
-  assignments: { id: string; role: Role; role_label: string; team: { id: string; name: string } | null }[]
+  invited_by_me?: boolean
+  is_self?: boolean
+  assignments: { id: string; role: Role; role_label: string; created_by_id?: string | null; team: { id: string; name: string } | null }[]
 }
 
 export interface DirectoryPerson {
@@ -285,6 +287,8 @@ export interface ImportJobRowItem {
   marital_status?: 'SINGLE' | 'MARRIED' | 'SEPARATED' | 'DIVORCED' | 'WIDOWED' | null
   occupation?: string | null
   primary_team_id?: string | null
+  prayer_request?: string | null
+  inviter?: string | null
   state: ImportRowState
   action: ImportRowAction
   errors: string[]
@@ -317,6 +321,13 @@ export interface ImportJobDetail {
   id: string
   file_name: string | null
   status: 'PREVIEW' | 'COMMITTED'
+  service_occurrence_id?: string | null
+  service_occurrence?: {
+    id: string
+    title: string
+    service_date: string
+    kind: string
+  } | null
   committed_at: string | null
   created_at: string
   summary: {

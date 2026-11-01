@@ -175,10 +175,12 @@ model ImportJob {
   committedAt         DateTime?
   commitIdempotencyKey String?
   summary             Json?
+  serviceOccurrenceId String?         @db.Uuid
   createdAt           DateTime        @default(now())
   updatedAt           DateTime        @updatedAt
 
-  rows ImportJobRow[]
+  rows              ImportJobRow[]
+  serviceOccurrence ServiceOccurrence? @relation(fields: [serviceOccurrenceId], references: [id], onDelete: SetNull)
 
   @@index([createdById, createdAt(sort: Desc)])
 }
@@ -203,6 +205,8 @@ model ImportJobRow {
   maritalStatus     MaritalStatus?
   occupation        String?
   primaryTeamId     String?        @db.Uuid
+  prayerRequest     String?
+  inviter           String?
   state             ImportRowState @default(READY)
   errors            Json?          // string[] validation messages
   warnings          Json?          // string[] duplicate / review warnings
@@ -263,6 +267,7 @@ model ServiceOccurrence {
   attendanceRecords AttendanceRecord[]
   followUpTasks     FollowUpTask[]
   prayerNotes       PrayerNote[]
+  importJobs        ImportJob[]
 
   @@unique([serviceDate, kind])
   @@index([serviceDate(sort: Desc)])

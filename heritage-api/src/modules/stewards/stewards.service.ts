@@ -15,6 +15,7 @@ import { SessionService } from '../identity/session.service.js';
 const HOUR = 60 * 60 * 1000;
 
 export interface InviteInput {
+  person_id?: string | null;
   first_name: string;
   last_name: string;
   email: string;
@@ -65,7 +66,7 @@ export class StewardsService {
         account: { select: { loginEmail: true, status: true, lastLoginAt: true } },
         assignments: {
           where: { endedAt: null },
-          select: { id: true, role: true, team: { select: { id: true, name: true } } },
+          select: { id: true, role: true, createdById: true, team: { select: { id: true, name: true } } },
         },
       },
     });
@@ -78,11 +79,14 @@ export class StewardsService {
       email: p.account!.loginEmail,
       status: p.account!.status,
       last_login_at: p.account!.lastLoginAt?.toISOString() ?? null,
+      invited_by_me: p.assignments.some((a) => a.createdById === actor.personId),
+      is_self: p.id === actor.personId,
       assignments: p.assignments.map((a) => ({
         id: a.id,
         role: a.role,
         role_label: ROLE_LABELS[a.role],
         team: a.team,
+        created_by_id: a.createdById,
       })),
     }));
   }
@@ -107,30 +111,59 @@ export class StewardsService {
       );
     }
 
+    // Check if person exists by person_id or by email in Person table
+    let existingPerson = null;
+    if (input.person_id) {
+      existingPerson = await this.prisma.person.findUnique({ where: { id: input.person_id } });
+    }
+    if (!existingPerson) {
+      existingPerson = await this.prisma.person.findFirst({
+        where: { email: { equals: loginEmail, mode: 'insensitive' } },
+      });
+    }
+
     let personId: string;
     try {
       personId = await this.prisma.$transaction(async (tx) => {
-        const person = await tx.person.create({
-          data: {
-            firstName: input.first_name.trim(),
-            lastName: input.last_name.trim(),
-            email: loginEmail,
-            phone: input.phone?.trim() || null,
-            membershipStatus: 'WORK_FORCE',
-            isVerified: true,
-            verifiedAt: new Date(),
-            verifiedById: actor.personId,
-          },
-        });
-        await tx.account.create({ data: { personId: person.id, loginEmail, status: 'PENDING' } });
+        let targetPersonId: string;
+        if (existingPerson) {
+          targetPersonId = existingPerson.id;
+          await tx.person.update({
+            where: { id: existingPerson.id },
+            data: {
+              email: loginEmail,
+              phone: input.phone?.trim() || existingPerson.phone,
+              membershipStatus: 'WORK_FORCE',
+              isVerified: true,
+              verifiedAt: existingPerson.verifiedAt ?? new Date(),
+              verifiedById: existingPerson.verifiedById ?? actor.personId,
+            },
+          });
+        } else {
+          const person = await tx.person.create({
+            data: {
+              firstName: input.first_name.trim(),
+              lastName: input.last_name.trim(),
+              email: loginEmail,
+              phone: input.phone?.trim() || null,
+              membershipStatus: 'WORK_FORCE',
+              isVerified: true,
+              verifiedAt: new Date(),
+              verifiedById: actor.personId,
+            },
+          });
+          targetPersonId = person.id;
+        }
+
+        await tx.account.create({ data: { personId: targetPersonId, loginEmail, status: 'PENDING' } });
         await tx.assignment.create({
-          data: { personId: person.id, role: input.role, teamId, createdById: actor.personId },
+          data: { personId: targetPersonId, role: input.role, teamId, createdById: actor.personId },
         });
         await this.audit.record(
-          { action: 'stewards.invited', actorId: actor.personId, subjectId: person.id, metadata: { role: input.role, teamId } },
+          { action: 'stewards.invited', actorId: actor.personId, subjectId: targetPersonId, metadata: { role: input.role, teamId } },
           tx,
         );
-        return person.id;
+        return targetPersonId;
       });
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {

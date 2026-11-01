@@ -26,12 +26,17 @@ export type AuthedRequest = Request & { auth?: AuthContext };
 
 const PUBLIC_KEY = 'heritage:public';
 const CAPABILITY_KEY = 'heritage:capability';
+const ANY_CAPABILITY_KEY = 'heritage:any_capability';
 
 /** Opt a route out of authentication. Everything else is authenticated by default. */
 export const Public = () => SetMetadata(PUBLIC_KEY, true);
 
 /** Require a capability (in any scope). Services enforce team scope on the resource. */
 export const RequireCapability = (capability: Capability) => SetMetadata(CAPABILITY_KEY, capability);
+
+/** Require at least one capability from the provided list. */
+export const RequireAnyCapability = (...capabilities: Capability[]) =>
+  SetMetadata(ANY_CAPABILITY_KEY, capabilities);
 
 export const CurrentAuth = createParamDecorator((_: unknown, ctx: ExecutionContext): AuthContext => {
   const req = ctx.switchToHttp().getRequest<AuthedRequest>();
@@ -82,6 +87,15 @@ export class AuthGuard implements CanActivate {
 
     const required = this.reflector.getAllAndOverride<Capability | undefined>(CAPABILITY_KEY, targets);
     if (required && !can(grants, required)) {
+      throw new ForbiddenException({
+        code: 'FORBIDDEN',
+        message: 'You do not have permission to do this.',
+        field_errors: {},
+      });
+    }
+
+    const requiredAny = this.reflector.getAllAndOverride<Capability[] | undefined>(ANY_CAPABILITY_KEY, targets);
+    if (requiredAny && !requiredAny.some((c) => can(grants, c))) {
       throw new ForbiddenException({
         code: 'FORBIDDEN',
         message: 'You do not have permission to do this.',
