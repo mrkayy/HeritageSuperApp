@@ -1,5 +1,5 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nestjs",
-  "buildCommand": "npm run db:generate && npm run build"
+  "buildCommand": "npm run db:deploy && npm run db:generate && npm run build"
 }
