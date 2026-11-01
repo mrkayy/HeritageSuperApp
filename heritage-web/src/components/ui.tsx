@@ -54,6 +54,7 @@ export function Field({
   error,
   hint,
   icon,
+  action,
   className = '',
   ...props
 }: InputHTMLAttributes<HTMLInputElement> & {
@@ -61,6 +62,7 @@ export function Field({
   error?: string
   hint?: string
   icon?: ReactNode
+  action?: ReactNode
 }) {
   const id = useId()
   const describedBy = [error && `${id}-error`, hint && `${id}-hint`].filter(Boolean).join(' ') || undefined
@@ -69,7 +71,7 @@ export function Field({
       <label htmlFor={id} className="text-xs font-semibold tracking-tight text-foreground">
         {label}
       </label>
-      <div className="relative">
+      <div className="relative flex items-center">
         {icon && (
           <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-muted-foreground">
             {icon}
@@ -82,8 +84,9 @@ export function Field({
           aria-describedby={describedBy}
           className={`h-11 w-full rounded-xl border border-input bg-white/85 px-3.5 text-sm text-foreground shadow-2xs outline-none transition focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/20 aria-invalid:border-destructive ${
             icon ? 'pl-10' : ''
-          } ${className}`}
+          } ${action ? 'pr-11' : ''} ${className}`}
         />
+        {action && <div className="absolute inset-y-0 right-0 flex items-center pr-3">{action}</div>}
       </div>
       {hint && !error && (
         <p id={`${id}-hint`} className="text-xs text-muted-foreground">
