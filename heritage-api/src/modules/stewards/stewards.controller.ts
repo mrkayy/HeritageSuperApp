@@ -5,6 +5,7 @@ import { CurrentAuth, RequireCapability, type AuthContext } from '../identity/au
 import { StewardsService } from './stewards.service.js';
 
 const InviteBody = z.object({
+  person_id: z.string().uuid().nullish(),
   first_name: z.string().trim().min(1, 'Required').max(80),
   last_name: z.string().trim().min(1, 'Required').max(80),
   email: z.string().trim().email('Enter a valid email address'),
