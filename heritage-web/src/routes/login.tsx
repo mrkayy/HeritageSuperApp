@@ -1,7 +1,7 @@
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { useState, type FormEvent } from 'react'
-import { KeyRound, Lock, Mail, Send, Sparkles } from 'lucide-react'
+import { Eye, EyeOff, KeyRound, Lock, Mail, Send, Sparkles } from 'lucide-react'
 import { z } from 'zod'
 import { Alert, AuthCard, Button, Field } from '#/components/ui'
 import { api, ApiError, type Me } from '#/lib/api'
@@ -42,6 +42,7 @@ function PasswordLogin({ onSwitch }: { onSwitch: () => void }) {
   const queryClient = useQueryClient()
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<ApiError | null>(null)
+  const [showPassword, setShowPassword] = useState(false)
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -84,13 +85,35 @@ function PasswordLogin({ onSwitch }: { onSwitch: () => void }) {
         <Field
           label="Password"
           name="password"
-          type="password"
+          type={showPassword ? 'text' : 'password'}
           autoComplete="current-password"
           placeholder="Enter your password"
           icon={<Lock className="h-4 w-4" />}
+          action={
+            <button
+              type="button"
+              onClick={() => setShowPassword((prev) => !prev)}
+              className="p-1 text-muted-foreground hover:text-foreground transition rounded-md focus:outline-none focus:ring-1 focus:ring-primary/40"
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              title={showPassword ? 'Hide password' : 'Show password'}
+            >
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          }
           required
           error={error?.fieldErrors.password}
         />
+        <div className="flex items-center justify-between -mt-1 px-0.5">
+          <label className="flex items-center gap-2 cursor-pointer text-xs text-muted-foreground hover:text-foreground select-none">
+            <input
+              type="checkbox"
+              checked={showPassword}
+              onChange={(e) => setShowPassword(e.target.checked)}
+              className="h-3.5 w-3.5 rounded border-input text-primary focus:ring-primary/20 accent-primary cursor-pointer"
+            />
+            <span>Show password</span>
+          </label>
+        </div>
         <Button type="submit" loading={pending} className="mt-1 w-full">
           <KeyRound className="h-4 w-4" />
           Sign in to Console
