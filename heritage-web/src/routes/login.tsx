@@ -66,7 +66,7 @@ function PasswordLogin({ onSwitch }: { onSwitch: () => void }) {
 
   return (
     <AuthCard
-      title="Steward Portal"
+      title="Membership Management Console"
       subtitle="Sign in with your church-authorized email to access ministry operations."
       badge="Returning Steward Sign In"
     >
@@ -103,7 +103,7 @@ function PasswordLogin({ onSwitch }: { onSwitch: () => void }) {
           required
           error={error?.fieldErrors.password}
         />
-        <div className="flex items-center justify-between -mt-1 px-0.5">
+        {/* <div className="flex items-center justify-between -mt-1 px-0.5">
           <label className="flex items-center gap-2 cursor-pointer text-xs text-muted-foreground hover:text-foreground select-none">
             <input
               type="checkbox"
@@ -113,8 +113,8 @@ function PasswordLogin({ onSwitch }: { onSwitch: () => void }) {
             />
             <span>Show password</span>
           </label>
-        </div>
-        <Button type="submit" loading={pending} className="mt-1 w-full">
+        </div> */}
+        <Button type="submit" loading={pending} className="mt-4 w-full">
           <KeyRound className="h-4 w-4" />
           Sign in to Console
         </Button>

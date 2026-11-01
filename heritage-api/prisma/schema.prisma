@@ -594,8 +594,7 @@ model CelebrationContact {
 }
 
 /// HOF-022-S03: Life Landmarks & Academic Graduation Tracker.
-/// Recording in profile is separate from public bulletin publication, which
-/// requires both `publicationPreference = ALLOW_BULLETIN` and `approvalStatus = APPROVED`.
+/// Records member graduations and family milestones for authorized internal care viewers.
 model LifeLandmark {
   id                    String                        @id @default(uuid()) @db.Uuid
   personId              String                        @db.Uuid

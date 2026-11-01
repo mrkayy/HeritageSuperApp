@@ -4,7 +4,6 @@ import type {
   CelebrationKind,
   LandmarkApprovalStatus,
   LandmarkCategory,
-  LandmarkPublicationPreference,
   LeapDayPolicy,
 } from '../../generated/prisma/client.js';
 import { AuditService } from '../../platform/audit/audit.module.js';
@@ -561,13 +560,10 @@ export class CelebrationsService {
     };
   }
 
-  // ── Life Landmarks & Bulletin Publication (HOF-022-S03) ───────────────────
+  // ── Life Landmarks & Academic Graduation Tracker (HOF-022-S03) ────────────
 
   /**
    * HOF-022-S03: Records a member's graduation or family milestone on their profile.
-   * Recording is strictly separate from bulletin publication: even if the member's
-   * `publication_preference` is `ALLOW_BULLETIN`, `approvalStatus` starts as `PENDING`
-   * until an authorized reviewer approves it.
    */
   async createLandmark(
     auth: AuthContext,
@@ -577,7 +573,6 @@ export class CelebrationsService {
       title: string;
       description?: string | null;
       occurred_on?: string | null;
-      publication_preference?: LandmarkPublicationPreference;
     },
   ) {
     const person = await this.prisma.person.findUnique({ where: { id: input.person_id } });
@@ -592,7 +587,7 @@ export class CelebrationsService {
         title: input.title.trim(),
         description: input.description?.trim() || null,
         occurredOn: input.occurred_on?.trim() || null,
-        publicationPreference: input.publication_preference ?? 'PRIVATE',
+        publicationPreference: 'PRIVATE',
         approvalStatus: 'PENDING',
         recordedById: auth.personId,
       },
@@ -610,7 +605,6 @@ export class CelebrationsService {
       metadata: {
         landmarkId: landmark.id,
         category: landmark.category,
-        publicationPreference: landmark.publicationPreference,
         approvalStatus: landmark.approvalStatus,
       },
     });
@@ -642,15 +636,12 @@ export class CelebrationsService {
   }
 
   /**
-   * HOF-022-S03: Updates the publication preference or approval status of a landmark.
-   * Approving a `PRIVATE` landmark for the public bulletin is rejected unless
-   * `publication_preference` is `ALLOW_BULLETIN`.
+   * HOF-022-S03: Updates the verification / approval status of a landmark.
    */
   async reviewLandmark(
     auth: AuthContext,
     landmarkId: string,
     input: {
-      publication_preference?: LandmarkPublicationPreference;
       approval_status?: LandmarkApprovalStatus;
       review_note?: string | null;
     },
@@ -662,26 +653,11 @@ export class CelebrationsService {
       throw new ApiError(404, 'LANDMARK_NOT_FOUND', 'Life landmark not found.');
     }
 
-    const nextPreference = input.publication_preference ?? existing.publicationPreference;
-    let nextApproval = input.approval_status ?? existing.approvalStatus;
-
-    if (nextApproval === 'APPROVED' && nextPreference !== 'ALLOW_BULLETIN') {
-      throw new ApiError(
-        400,
-        'PUBLICATION_PREFERENCE_REQUIRED',
-        'Cannot approve a landmark for the public bulletin when publication_preference is PRIVATE.',
-      );
-    }
-
-    // If preference is switched back to PRIVATE, it can no longer be published in the bulletin.
-    if (nextPreference === 'PRIVATE' && nextApproval === 'APPROVED' && !input.approval_status) {
-      nextApproval = 'PENDING';
-    }
+    const nextApproval = input.approval_status ?? existing.approvalStatus;
 
     const updated = await this.prisma.lifeLandmark.update({
       where: { id: landmarkId },
       data: {
-        publicationPreference: nextPreference,
         approvalStatus: nextApproval,
         reviewedById: input.approval_status ? auth.personId : existing.reviewedById,
         reviewedAt: input.approval_status ? new Date() : existing.reviewedAt,
@@ -700,33 +676,11 @@ export class CelebrationsService {
       subjectId: updated.personId,
       metadata: {
         landmarkId: updated.id,
-        publicationPreference: updated.publicationPreference,
         approvalStatus: updated.approvalStatus,
       },
     });
 
     return this.toLandmarkResponse(updated);
-  }
-
-  /**
-   * HOF-022-S03: Returns ONLY landmarks that have BOTH `publicationPreference = ALLOW_BULLETIN`
-   * AND `approvalStatus = APPROVED`.
-   */
-  async listPublicBulletinLandmarks() {
-    const items = await this.prisma.lifeLandmark.findMany({
-      where: {
-        publicationPreference: 'ALLOW_BULLETIN',
-        approvalStatus: 'APPROVED',
-      },
-      include: {
-        person: {
-          select: { id: true, firstName: true, lastName: true, membershipStatus: true },
-        },
-      },
-      orderBy: [{ reviewedAt: 'desc' }, { createdAt: 'desc' }],
-    });
-
-    return items.map((l) => this.toLandmarkResponse(l));
   }
 
   private toLandmarkResponse(l: {
@@ -736,7 +690,6 @@ export class CelebrationsService {
     title: string;
     description: string | null;
     occurredOn: string | null;
-    publicationPreference: LandmarkPublicationPreference;
     approvalStatus: LandmarkApprovalStatus;
     recordedById: string;
     reviewedById: string | null;
@@ -757,9 +710,7 @@ export class CelebrationsService {
       title: l.title,
       description: l.description,
       occurred_on: l.occurredOn,
-      publication_preference: l.publicationPreference,
       approval_status: l.approvalStatus,
-      in_public_bulletin: l.publicationPreference === 'ALLOW_BULLETIN' && l.approvalStatus === 'APPROVED',
       recorded_by_id: l.recordedById,
       reviewed_by_id: l.reviewedById,
       reviewed_at: l.reviewedAt?.toISOString() ?? null,
