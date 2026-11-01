@@ -386,7 +386,6 @@ export type LandmarkCategory =
   | 'BABY_DEDICATION'
   | 'CAREER_MILESTONE'
   | 'OTHER'
-export type LandmarkPublicationPreference = 'PRIVATE' | 'ALLOW_BULLETIN'
 export type LandmarkApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
 
 export interface CelebrationContactItem {
@@ -458,9 +457,7 @@ export interface LifeLandmarkItem {
   title: string
   description: string | null
   occurred_on: string | null
-  publication_preference: LandmarkPublicationPreference
   approval_status: LandmarkApprovalStatus
-  in_public_bulletin: boolean
   recorded_by_id: string
   reviewed_by_id: string | null
   reviewed_at: string | null

@@ -2,7 +2,7 @@ import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Patch, Post, Que
 import { z } from 'zod';
 import type { LandmarkApprovalStatus, LeapDayPolicy } from '../../generated/prisma/client.js';
 import { ZodBody } from '../../platform/http/errors.js';
-import { CurrentAuth, Public, RequireCapability, type AuthContext } from '../identity/auth.guard.js';
+import { CurrentAuth, RequireCapability, type AuthContext } from '../identity/auth.guard.js';
 import { CelebrationsService } from './celebrations.service.js';
 
 const LeapDayPolicyEnum = z.enum(['FEB_28', 'MAR_01']);
@@ -15,7 +15,6 @@ const LandmarkCategoryEnum = z.enum([
   'CAREER_MILESTONE',
   'OTHER',
 ]);
-const PublicationPreferenceEnum = z.enum(['PRIVATE', 'ALLOW_BULLETIN']);
 const ApprovalStatusEnum = z.enum(['PENDING', 'APPROVED', 'REJECTED']);
 
 const EvaluateRemindersBody = z.object({
@@ -41,11 +40,9 @@ const CreateLandmarkBody = z.object({
   title: z.string().trim().min(1, 'Landmark title is required').max(160),
   description: z.string().trim().max(1000).nullish(),
   occurred_on: z.string().trim().max(32).nullish(),
-  publication_preference: PublicationPreferenceEnum.optional(),
 });
 
 const ReviewLandmarkBody = z.object({
-  publication_preference: PublicationPreferenceEnum.optional(),
   approval_status: ApprovalStatusEnum.optional(),
   review_note: z.string().trim().max(400).nullish(),
 });
@@ -120,16 +117,6 @@ export class CelebrationsController {
       personId,
       approvalStatus: validStatus,
     });
-  }
-
-  /**
-   * HOF-022-S03: Public / church bulletin feed. Only landmarks with BOTH
-   * `publication_preference = ALLOW_BULLETIN` AND `approval_status = APPROVED` appear here.
-   */
-  @Get('landmarks/bulletin')
-  @Public()
-  listBulletin() {
-    return this.celebrations.listPublicBulletinLandmarks();
   }
 
   @Post('landmarks')
