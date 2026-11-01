@@ -2,11 +2,14 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import {
   AuthTokenPurpose,
   ImportJobStatus,
+  ImportRowAction,
   ImportRowState,
   MembershipStatus as PrismaMembershipStatus,
   Prisma,
   ProposalStatus,
   type FoundationClassStatus,
+  type Gender,
+  type MaritalStatus,
   type MembershipStatus,
   type Role,
 } from '../../generated/prisma/client.js';
@@ -61,6 +64,10 @@ export interface UpdatePersonInput {
   birth_day?: number | null;
   anniversary_month?: number | null;
   anniversary_day?: number | null;
+  gender?: Gender | null;
+  marital_status?: MaritalStatus | null;
+  occupation?: string | null;
+  primary_team_id?: string | null;
 }
 
 export interface CreateProposalInput {
@@ -87,6 +94,7 @@ export interface IssueClaimInvitationInput {
 export interface CreateImportJobInput {
   file_name?: string;
   csv_text: string;
+  default_membership_status?: MembershipStatus;
 }
 
 export interface UpdateImportRowInput {
@@ -100,6 +108,14 @@ export interface UpdateImportRowInput {
   birth_day?: number | null;
   anniversary_month?: number | null;
   anniversary_day?: number | null;
+  birth_date?: string | null;
+  anniversary_date?: string | null;
+  gender?: Gender | null;
+  marital_status?: MaritalStatus | null;
+  occupation?: string | null;
+  /** Team id, key or name (case-insensitive). */
+  primary_team?: string | null;
+  action?: ImportRowAction;
   approve_review?: boolean;
 }
 
@@ -167,6 +183,7 @@ export class PeopleService {
       take: 250,
       include: {
         account: { select: { status: true, loginEmail: true } },
+        primaryTeam: { select: { id: true, key: true, name: true } },
         _count: { select: { attendanceRecords: true, followUpTasks: true } },
       },
     });
@@ -191,6 +208,10 @@ export class PeopleService {
       birth_day: p.birthDay,
       anniversary_month: p.anniversaryMonth,
       anniversary_day: p.anniversaryDay,
+      gender: p.gender,
+      marital_status: p.maritalStatus,
+      occupation: p.occupation,
+      primary_team: p.primaryTeam ? { id: p.primaryTeam.id, key: p.primaryTeam.key, name: p.primaryTeam.name } : null,
       first_visited_at: p.firstVisitedAt?.toISOString() ?? null,
       attendance_count: p._count.attendanceRecords,
       followup_count: p._count.followUpTasks,
@@ -430,6 +451,7 @@ export class PeopleService {
    * Create or update a person directly in the Directory (without Maker-Checker friction).
    */
   async createPerson(actor: AuthContext, input: UpdatePersonInput & { first_name: string; last_name: string }) {
+    await this.assertTeamExists(input.primary_team_id);
     const person = await this.prisma.person.create({
       data: {
         firstName: input.first_name.trim(),
@@ -443,6 +465,10 @@ export class PeopleService {
         birthDay: input.birth_day ?? null,
         anniversaryMonth: input.anniversary_month ?? null,
         anniversaryDay: input.anniversary_day ?? null,
+        gender: input.gender ?? null,
+        maritalStatus: input.marital_status ?? null,
+        occupation: input.occupation?.trim() || null,
+        primaryTeamId: input.primary_team_id || null,
       },
     });
     await this.audit.record({
@@ -458,6 +484,7 @@ export class PeopleService {
     if (!existing) {
       throw new ApiError(HttpStatus.NOT_FOUND, 'PERSON_NOT_FOUND', 'Person not found.');
     }
+    await this.assertTeamExists(input.primary_team_id);
 
     const updated = await this.prisma.person.update({
       where: { id: personId },
@@ -474,6 +501,10 @@ export class PeopleService {
         birthDay: input.birth_day !== undefined ? input.birth_day : existing.birthDay,
         anniversaryMonth: input.anniversary_month !== undefined ? input.anniversary_month : existing.anniversaryMonth,
         anniversaryDay: input.anniversary_day !== undefined ? input.anniversary_day : existing.anniversaryDay,
+        gender: input.gender !== undefined ? input.gender : existing.gender,
+        maritalStatus: input.marital_status !== undefined ? input.marital_status : existing.maritalStatus,
+        occupation: input.occupation !== undefined ? input.occupation?.trim() || null : existing.occupation,
+        primaryTeamId: input.primary_team_id !== undefined ? input.primary_team_id || null : existing.primaryTeamId,
         version: { increment: 1 },
       },
     });
@@ -491,6 +522,17 @@ export class PeopleService {
       foundation_class_status: updated.foundationClassStatus,
       version: updated.version,
     };
+  }
+
+  /** Rejects an unknown primary team id with a field-level 422 instead of a raw FK error. */
+  private async assertTeamExists(teamId: string | null | undefined) {
+    if (!teamId) return;
+    const team = await this.prisma.team.findUnique({ where: { id: teamId }, select: { id: true } });
+    if (!team) {
+      throw new ApiError(HttpStatus.UNPROCESSABLE_ENTITY, 'TEAM_NOT_FOUND', 'Selected primary team does not exist.', {
+        primary_team_id: 'Select a valid team',
+      });
+    }
   }
 
   /**
@@ -553,6 +595,8 @@ export class PeopleService {
         : key === 'birth_day' ? 'birthDay'
         : key === 'anniversary_month' ? 'anniversaryMonth'
         : key === 'anniversary_day' ? 'anniversaryDay'
+        : key === 'marital_status' ? 'maritalStatus'
+        : key === 'primary_team_id' ? 'primaryTeamId'
         : key;
 
       const oldVal = (existing as Record<string, unknown>)[modelKey] ?? null;
@@ -767,6 +811,14 @@ export class PeopleService {
           updateData.anniversaryMonth = v.proposed != null ? Number(v.proposed) : null;
         } else if (k === 'anniversary_day' || k === 'anniversaryDay') {
           updateData.anniversaryDay = v.proposed != null ? Number(v.proposed) : null;
+        } else if (k === 'gender') {
+          updateData.gender = v.proposed ? (parseGender(String(v.proposed)) ?? undefined) : null;
+        } else if (k === 'marital_status' || k === 'maritalStatus') {
+          updateData.maritalStatus = v.proposed ? (parseMaritalStatus(String(v.proposed)) ?? undefined) : null;
+        } else if (k === 'occupation') {
+          updateData.occupation = v.proposed ? String(v.proposed).trim() : null;
+        } else if (k === 'primary_team_id' || k === 'primaryTeamId') {
+          updateData.primaryTeamId = v.proposed ? String(v.proposed) : null;
         }
       }
       updateData.version = { increment: 1 };
@@ -1029,8 +1081,15 @@ export class PeopleService {
       },
     });
 
+    const teams = await this.prisma.team.findMany({ select: { id: true, key: true, name: true } });
+
+    const isMembershipUploader = actor.grants.some(
+      (g) => g.capability === 'people.import' || g.capability === 'academy.manage' || g.capability === 'volunteers.manage' || g.scope === 'CHURCH',
+    );
+    const defaultStatus = input.default_membership_status ?? (isMembershipUploader ? PrismaMembershipStatus.WORK_FORCE : PrismaMembershipStatus.WORK_FORCE);
+
     const evaluatedRows = parsedRows.map((raw, idx) =>
-      evaluateImportRow(idx + 1, raw, existingPeople, parsedRows),
+      evaluateImportRow(idx + 1, raw, existingPeople, parsedRows, false, teams, undefined, defaultStatus),
     );
 
     const job = await this.prisma.importJob.create({
@@ -1053,15 +1112,43 @@ export class PeopleService {
             birthDay: r.birthDay,
             anniversaryMonth: r.anniversaryMonth,
             anniversaryDay: r.anniversaryDay,
+            gender: r.gender,
+            maritalStatus: r.maritalStatus,
+            occupation: r.occupation,
+            primaryTeamId: r.primaryTeamId,
             state: r.state,
             errors: r.errors,
             warnings: r.warnings,
             matchedPersonId: r.matchedPersonId,
+            action: r.action,
           })),
         },
       },
       include: {
-        rows: { orderBy: { rowIndex: 'asc' } },
+        rows: {
+          orderBy: { rowIndex: 'asc' },
+          include: {
+            matchedPerson: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                phone: true,
+                address: true,
+                gender: true,
+                maritalStatus: true,
+                occupation: true,
+                birthMonth: true,
+                birthDay: true,
+                anniversaryMonth: true,
+                anniversaryDay: true,
+                membershipStatus: true,
+                isVerified: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -1104,7 +1191,32 @@ export class PeopleService {
   async getImportJob(jobId: string, actor?: AuthContext) {
     const job = await this.prisma.importJob.findUnique({
       where: { id: jobId },
-      include: { rows: { orderBy: { rowIndex: 'asc' } } },
+      include: {
+        rows: {
+          orderBy: { rowIndex: 'asc' },
+          include: {
+            matchedPerson: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                phone: true,
+                address: true,
+                gender: true,
+                maritalStatus: true,
+                occupation: true,
+                birthMonth: true,
+                birthDay: true,
+                anniversaryMonth: true,
+                anniversaryDay: true,
+                membershipStatus: true,
+                isVerified: true,
+              },
+            },
+          },
+        },
+      },
     });
     if (!job || (actor && !this.canAccessImportJob(actor, job.createdById))) {
       throw new ApiError(HttpStatus.NOT_FOUND, 'IMPORT_JOB_NOT_FOUND', 'Import job not found.');
@@ -1136,6 +1248,45 @@ export class PeopleService {
    * HOF-012-S02: Edit a row in preview and re-evaluate its validation / duplicate state
    * before commit without creating any Person record.
    */
+  
+  /**
+   * Delete an import row from a PREVIEW job so the user can discard invalid/duplicate data.
+   */
+  async deleteImportRow(actor: AuthContext, jobId: string, rowId: string) {
+    const job = await this.prisma.importJob.findUnique({
+      where: { id: jobId },
+      include: { rows: { orderBy: { rowIndex: 'asc' } } },
+    });
+    if (!job || !this.canAccessImportJob(actor, job.createdById)) {
+      throw new ApiError(HttpStatus.NOT_FOUND, 'IMPORT_JOB_NOT_FOUND', 'Import job not found.');
+    }
+    if (job.status === ImportJobStatus.COMMITTED) {
+      throw new ApiError(
+        HttpStatus.CONFLICT,
+        'IMPORT_ALREADY_COMMITTED',
+        'This import job has already been committed and cannot be edited.',
+      );
+    }
+
+    const row = job.rows.find((r) => r.id === rowId);
+    if (!row) {
+      throw new ApiError(HttpStatus.NOT_FOUND, 'IMPORT_ROW_NOT_FOUND', 'Import row not found.');
+    }
+
+    await this.prisma.importJobRow.delete({
+      where: { id: rowId },
+    });
+
+    await this.audit.record({
+      action: 'people.import.row_deleted',
+      actorId: actor.personId,
+      subjectId: job.id,
+      metadata: { rowId, rowIndex: row.rowIndex },
+    });
+
+    return this.getImportJob(jobId, actor);
+  }
+
   async updateImportRow(actor: AuthContext, jobId: string, rowId: string, input: UpdateImportRowInput) {
     const job = await this.prisma.importJob.findUnique({
       where: { id: jobId },
@@ -1168,6 +1319,9 @@ export class PeopleService {
       },
     });
 
+    const hasBirthDateInput = Boolean(input.birth_date?.trim());
+    const hasAnnivDateInput = Boolean(input.anniversary_date?.trim());
+
     const mergedRaw: RawCsvRow = {
       first_name: input.first_name !== undefined ? input.first_name : row.firstName,
       last_name: input.last_name !== undefined ? input.last_name : row.lastName,
@@ -1181,33 +1335,47 @@ export class PeopleService {
           ? input.birth_month != null
             ? String(input.birth_month)
             : ''
-          : row.birthMonth != null
-            ? String(row.birthMonth)
-            : '',
+          : hasBirthDateInput
+            ? ''
+            : row.birthMonth != null
+              ? String(row.birthMonth)
+              : '',
       birth_day:
         input.birth_day !== undefined
           ? input.birth_day != null
             ? String(input.birth_day)
             : ''
-          : row.birthDay != null
-            ? String(row.birthDay)
-            : '',
+          : hasBirthDateInput
+            ? ''
+            : row.birthDay != null
+              ? String(row.birthDay)
+              : '',
       anniversary_month:
         input.anniversary_month !== undefined
           ? input.anniversary_month != null
             ? String(input.anniversary_month)
             : ''
-          : row.anniversaryMonth != null
-            ? String(row.anniversaryMonth)
-            : '',
+          : hasAnnivDateInput
+            ? ''
+            : row.anniversaryMonth != null
+              ? String(row.anniversaryMonth)
+              : '',
       anniversary_day:
         input.anniversary_day !== undefined
           ? input.anniversary_day != null
             ? String(input.anniversary_day)
             : ''
-          : row.anniversaryDay != null
-            ? String(row.anniversaryDay)
-            : '',
+          : hasAnnivDateInput
+            ? ''
+            : row.anniversaryDay != null
+              ? String(row.anniversaryDay)
+              : '',
+      birth_date: input.birth_date !== undefined ? input.birth_date ?? '' : '',
+      anniversary_date: input.anniversary_date !== undefined ? input.anniversary_date ?? '' : '',
+      gender: input.gender !== undefined ? input.gender ?? '' : row.gender ?? '',
+      marital_status: input.marital_status !== undefined ? input.marital_status ?? '' : row.maritalStatus ?? '',
+      occupation: input.occupation !== undefined ? input.occupation ?? '' : row.occupation ?? '',
+      primary_team: input.primary_team !== undefined ? input.primary_team ?? '' : row.primaryTeamId ?? '',
     };
 
     const allRawRows: RawCsvRow[] = job.rows.map((r) =>
@@ -1224,8 +1392,16 @@ export class PeopleService {
             birth_day: r.birthDay != null ? String(r.birthDay) : '',
             anniversary_month: r.anniversaryMonth != null ? String(r.anniversaryMonth) : '',
             anniversary_day: r.anniversaryDay != null ? String(r.anniversaryDay) : '',
+            birth_date: '',
+            anniversary_date: '',
+            gender: r.gender ?? '',
+            marital_status: r.maritalStatus ?? '',
+            occupation: r.occupation ?? '',
+            primary_team: r.primaryTeamId ?? '',
           },
     );
+
+    const teams = await this.prisma.team.findMany({ select: { id: true, key: true, name: true } });
 
     const evaluated = evaluateImportRow(
       row.rowIndex,
@@ -1233,6 +1409,9 @@ export class PeopleService {
       existingPeople,
       allRawRows,
       Boolean(input.approve_review),
+      teams,
+      input.action ?? row.action,
+      (input.membership_status as MembershipStatus) ?? row.membershipStatus,
     );
 
     await this.prisma.importJobRow.update({
@@ -1250,10 +1429,15 @@ export class PeopleService {
         birthDay: evaluated.birthDay,
         anniversaryMonth: evaluated.anniversaryMonth,
         anniversaryDay: evaluated.anniversaryDay,
+        gender: evaluated.gender,
+        maritalStatus: evaluated.maritalStatus,
+        occupation: evaluated.occupation,
+        primaryTeamId: evaluated.primaryTeamId,
         state: evaluated.state,
         errors: evaluated.errors,
         warnings: evaluated.warnings,
         matchedPersonId: evaluated.matchedPersonId,
+        action: evaluated.action,
       },
     });
 
@@ -1264,7 +1448,117 @@ export class PeopleService {
       metadata: { rowId, rowIndex: row.rowIndex, state: evaluated.state },
     });
 
-    return this.getImportJob(jobId);
+    return this.getImportJob(jobId, actor);
+  }
+
+  async addImportRow(actor: AuthContext, jobId: string, input: UpdateImportRowInput) {
+    const job = await this.prisma.importJob.findUnique({
+      where: { id: jobId },
+      include: { rows: { orderBy: { rowIndex: 'asc' } } },
+    });
+    if (!job || !this.canAccessImportJob(actor, job.createdById)) {
+      throw new ApiError(HttpStatus.NOT_FOUND, 'IMPORT_JOB_NOT_FOUND', 'Import job not found.');
+    }
+    if (job.status === ImportJobStatus.COMMITTED) {
+      throw new ApiError(
+        HttpStatus.CONFLICT,
+        'IMPORT_ALREADY_COMMITTED',
+        'This import job has already been committed and cannot be edited.',
+      );
+    }
+
+    const nextIndex = (job.rows[job.rows.length - 1]?.rowIndex ?? 0) + 1;
+    const existingPeople = await this.prisma.person.findMany({
+      select: { id: true, firstName: true, lastName: true, phone: true, email: true, isVerified: true },
+    });
+    const teams = await this.prisma.team.findMany({ select: { id: true, key: true, name: true } });
+
+    const raw: RawCsvRow = {
+      first_name: input.first_name ?? '',
+      last_name: input.last_name ?? '',
+      phone: input.phone ?? '',
+      email: input.email ?? '',
+      address: input.address ?? '',
+      membership_status: input.membership_status ?? PrismaMembershipStatus.WORK_FORCE,
+      birth_month: input.birth_month != null ? String(input.birth_month) : '',
+      birth_day: input.birth_day != null ? String(input.birth_day) : '',
+      anniversary_month: input.anniversary_month != null ? String(input.anniversary_month) : '',
+      anniversary_day: input.anniversary_day != null ? String(input.anniversary_day) : '',
+      birth_date: input.birth_date ?? '',
+      anniversary_date: input.anniversary_date ?? '',
+      gender: input.gender ?? '',
+      marital_status: input.marital_status ?? '',
+      occupation: input.occupation ?? '',
+      primary_team: input.primary_team ?? '',
+    };
+
+    const allRawRows: RawCsvRow[] = job.rows.map((r) => ({
+      first_name: r.firstName,
+      last_name: r.lastName,
+      phone: r.phone ?? '',
+      email: r.email ?? '',
+      address: r.address ?? '',
+      membership_status: r.membershipStatus,
+      birth_month: r.birthMonth != null ? String(r.birthMonth) : '',
+      birth_day: r.birthDay != null ? String(r.birthDay) : '',
+      anniversary_month: r.anniversaryMonth != null ? String(r.anniversaryMonth) : '',
+      anniversary_day: r.anniversaryDay != null ? String(r.anniversaryDay) : '',
+      birth_date: '',
+      anniversary_date: '',
+      gender: r.gender ?? '',
+      marital_status: r.maritalStatus ?? '',
+      occupation: r.occupation ?? '',
+      primary_team: r.primaryTeamId ?? '',
+    }));
+    allRawRows.push(raw);
+
+    const evaluated = evaluateImportRow(
+      nextIndex,
+      raw,
+      existingPeople,
+      allRawRows,
+      Boolean(input.approve_review),
+      teams,
+      input.action,
+      input.membership_status ?? PrismaMembershipStatus.WORK_FORCE,
+    );
+
+    await this.prisma.importJobRow.create({
+      data: {
+        jobId,
+        rowIndex: nextIndex,
+        firstName: evaluated.firstName,
+        lastName: evaluated.lastName,
+        phone: evaluated.phone,
+        normalizedPhone: evaluated.normalizedPhone,
+        email: evaluated.email,
+        normalizedEmail: evaluated.normalizedEmail,
+        address: evaluated.address,
+        membershipStatus: evaluated.membershipStatus,
+        birthMonth: evaluated.birthMonth,
+        birthDay: evaluated.birthDay,
+        anniversaryMonth: evaluated.anniversaryMonth,
+        anniversaryDay: evaluated.anniversaryDay,
+        gender: evaluated.gender,
+        maritalStatus: evaluated.maritalStatus,
+        occupation: evaluated.occupation,
+        primaryTeamId: evaluated.primaryTeamId,
+        state: evaluated.state,
+        errors: evaluated.errors,
+        warnings: evaluated.warnings,
+        matchedPersonId: evaluated.matchedPersonId,
+        action: evaluated.action,
+      },
+    });
+
+    await this.audit.record({
+      action: 'people.import.row_added',
+      actorId: actor.personId,
+      subjectId: job.id,
+      metadata: { rowIndex: nextIndex },
+    });
+
+    return this.getImportJob(jobId, actor);
   }
 
   /**
@@ -1286,10 +1580,58 @@ export class PeopleService {
         throw new ApiError(HttpStatus.NOT_FOUND, 'IMPORT_JOB_NOT_FOUND', 'Import job not found.');
       }
 
-      // Row-level idempotency: only rows in READY state without appliedPersonId are created
+      // Row-level idempotency: process READY rows without appliedPersonId
       for (const row of job.rows) {
         if (row.state === ImportRowState.READY && !row.appliedPersonId) {
-          // Double-check at commit time whether an existing Person now matches normalized contact (HOF-012-S04)
+          if (row.action === ImportRowAction.SKIP) {
+            await tx.importJobRow.update({
+              where: { id: row.id },
+              data: {
+                state: ImportRowState.SKIPPED,
+              },
+            });
+            continue;
+          }
+
+          const matchedId = row.matchedPersonId;
+          if (row.action === ImportRowAction.UPDATE_EXISTING && matchedId) {
+            // Update existing matched person; fill or update fields from CSV row
+            const existing = await tx.person.findUnique({ where: { id: matchedId } });
+            if (existing) {
+              const updated = await tx.person.update({
+                where: { id: matchedId },
+                data: {
+                  firstName: row.firstName || existing.firstName,
+                  lastName: row.lastName || existing.lastName,
+                  phone: row.phone ?? existing.phone,
+                  email: row.normalizedEmail ?? existing.email,
+                  address: row.address ?? existing.address,
+                  membershipStatus: row.membershipStatus ?? existing.membershipStatus,
+                  birthMonth: row.birthMonth ?? existing.birthMonth,
+                  birthDay: row.birthDay ?? existing.birthDay,
+                  anniversaryMonth: row.anniversaryMonth ?? existing.anniversaryMonth,
+                  anniversaryDay: row.anniversaryDay ?? existing.anniversaryDay,
+                  gender: row.gender ?? existing.gender,
+                  maritalStatus: row.maritalStatus ?? existing.maritalStatus,
+                  occupation: row.occupation ?? existing.occupation,
+                  primaryTeamId: row.primaryTeamId ?? existing.primaryTeamId,
+                  version: { increment: 1 },
+                },
+              });
+
+              await tx.importJobRow.update({
+                where: { id: row.id },
+                data: {
+                  state: ImportRowState.APPLIED,
+                  appliedPersonId: updated.id,
+                  appliedAt: new Date(),
+                },
+              });
+              continue;
+            }
+          }
+
+          // If action is CREATE, double check live conflict to prevent duplicates
           const liveConflict = await findMatchingExistingPerson(tx, row.normalizedPhone, row.normalizedEmail);
           if (liveConflict) {
             const warningMsg = liveConflict.isVerified
@@ -1300,6 +1642,7 @@ export class PeopleService {
               data: {
                 state: ImportRowState.REVIEW_REQUIRED,
                 matchedPersonId: liveConflict.id,
+                action: ImportRowAction.UPDATE_EXISTING,
                 warnings: [warningMsg],
               },
             });
@@ -1318,6 +1661,10 @@ export class PeopleService {
               birthDay: row.birthDay,
               anniversaryMonth: row.anniversaryMonth,
               anniversaryDay: row.anniversaryDay,
+              gender: row.gender,
+              maritalStatus: row.maritalStatus,
+              occupation: row.occupation,
+              primaryTeamId: row.primaryTeamId,
             },
           });
 
@@ -1348,7 +1695,32 @@ export class PeopleService {
           commitIdempotencyKey: job.commitIdempotencyKey ?? input.idempotency_key ?? null,
           summary,
         },
-        include: { rows: { orderBy: { rowIndex: 'asc' } } },
+        include: {
+          rows: {
+            orderBy: { rowIndex: 'asc' },
+            include: {
+              matchedPerson: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  email: true,
+                  phone: true,
+                  address: true,
+                  gender: true,
+                  maritalStatus: true,
+                  occupation: true,
+                  birthMonth: true,
+                  birthDay: true,
+                  anniversaryMonth: true,
+                  anniversaryDay: true,
+                  membershipStatus: true,
+                  isVerified: true,
+                },
+              },
+            },
+          },
+        },
       });
 
       await this.audit.record(
@@ -1622,6 +1994,20 @@ interface RawCsvRow {
   birth_day: string;
   anniversary_month: string;
   anniversary_day: string;
+  /** Combined day+month cell, e.g. "7-November" (used when month/day columns are absent). */
+  birth_date: string;
+  anniversary_date: string;
+  gender: string;
+  marital_status: string;
+  occupation: string;
+  /** Team id, key or name. */
+  primary_team: string;
+}
+
+interface TeamSnapshot {
+  id: string;
+  key: string;
+  name: string;
 }
 
 interface ExistingPersonSnapshot {
@@ -1641,6 +2027,78 @@ const VALID_MEMBERSHIP_STATUSES = new Set<string>([
   PrismaMembershipStatus.WORK_FORCE,
   PrismaMembershipStatus.INACTIVE,
 ]);
+
+const MONTHS = [
+  'january', 'february', 'march', 'april', 'may', 'june',
+  'july', 'august', 'september', 'october', 'november', 'december',
+];
+const DAYS_IN_MONTH = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+function monthFromName(token: string): number | null {
+  const t = token.toLowerCase().replace(/\./g, '');
+  if (t.length < 3) return null;
+  // Accept full names and abbreviations ("nov", "sept").
+  const idx = MONTHS.findIndex((m) => m.startsWith(t));
+  return idx === -1 ? null : idx + 1;
+}
+
+/**
+ * Parses a day+month value without a year, e.g. "7-November", "7 Nov", "November 7th",
+ * "07/11" (day/month). Returns `undefined` for blank input and `null` when unparseable
+ * or not a real calendar day (Feb 29 is allowed).
+ */
+export function parseDayMonth(value: string | null | undefined): { month: number; day: number } | null | undefined {
+  const v = (value ?? '').trim();
+  if (!v) return undefined;
+  let day: number | null = null;
+  let month: number | null = null;
+
+  const named = v.match(/^(\d{1,2})(?:st|nd|rd|th)?[\s/.,-]*(?:of\s+)?([a-z.]+)\.?$/i)
+    ?? v.match(/^([a-z.]+)[\s/.,-]*(\d{1,2})(?:st|nd|rd|th)?$/i);
+  if (named) {
+    const [a, b] = [named[1], named[2]];
+    const dayToken = /^\d/.test(a) ? a : b;
+    const monthToken = /^\d/.test(a) ? b : a;
+    day = Number(dayToken);
+    month = monthFromName(monthToken);
+  } else {
+    const numeric = v.match(/^(\d{1,2})[-/.](\d{1,2})$/);
+    if (numeric) {
+      day = Number(numeric[1]);
+      month = Number(numeric[2]);
+    }
+  }
+
+  if (!day || !month || month < 1 || month > 12 || day < 1 || day > DAYS_IN_MONTH[month - 1]) return null;
+  return { month, day };
+}
+
+/** Maps free-text gender ("Female", "f", "MALE") to the enum; `undefined` for blank, `null` if unknown. */
+export function parseGender(value: string | null | undefined): Gender | null | undefined {
+  const v = (value ?? '').trim().toLowerCase();
+  if (!v) return undefined;
+  if (v === 'm' || v === 'male' || v === 'man') return 'MALE';
+  if (v === 'f' || v === 'female' || v === 'woman') return 'FEMALE';
+  return null;
+}
+
+/** Maps free-text marital status to the enum; `undefined` for blank, `null` if unknown. */
+export function parseMaritalStatus(value: string | null | undefined): MaritalStatus | null | undefined {
+  const v = (value ?? '').trim().toLowerCase();
+  if (!v) return undefined;
+  if (v === 'single' || v === 'unmarried' || v === 'never married') return 'SINGLE';
+  if (v === 'married') return 'MARRIED';
+  if (v === 'separated') return 'SEPARATED';
+  if (v === 'divorced') return 'DIVORCED';
+  if (v === 'widowed' || v === 'widow' || v === 'widower') return 'WIDOWED';
+  return null;
+}
+
+function resolveTeam(value: string, teams: TeamSnapshot[]): TeamSnapshot | null {
+  const v = value.trim().toLowerCase();
+  const keyish = v.replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+  return teams.find((t) => t.id === value.trim() || t.key === keyish || t.name.toLowerCase() === v) ?? null;
+}
 
 export function normalizePhoneKey(phone: string | null | undefined): string | null {
   if (!phone) return null;
@@ -1662,7 +2120,7 @@ export function sanitizeCsvFormulaCell(value: string | null | undefined): string
   return str;
 }
 
-function splitCsvLine(line: string): string[] {
+function splitCsvLine(line: string, delimiter = ','): string[] {
   const result: string[] = [];
   let current = '';
   let inQuotes = false;
@@ -1675,7 +2133,7 @@ function splitCsvLine(line: string): string[] {
       } else {
         inQuotes = !inQuotes;
       }
-    } else if (ch === ',' && !inQuotes) {
+    } else if (ch === delimiter && !inQuotes) {
       result.push(current.trim());
       current = '';
     } else {
@@ -1686,17 +2144,24 @@ function splitCsvLine(line: string): string[] {
   return result;
 }
 
-function parseCsvRecords(csvText: string): RawCsvRow[] {
+export function parseCsvRecords(csvText: string): RawCsvRow[] {
   const lines = csvText
     .replace(/\r\n/g, '\n')
     .replace(/\r/g, '\n')
+    .replace(/^\uFEFF/, '')
     .split('\n')
-    .map((l) => l.trim())
-    .filter((l) => l.length > 0);
+    // Cells are trimmed individually; keep leading delimiters so empty first columns don't shift.
+    .filter((l) => l.trim().length > 0);
 
   if (lines.length < 2) return [];
 
-  const headers = splitCsvLine(lines[0]).map((h) =>
+  // Rows pasted straight from a spreadsheet are tab-separated.
+  // Headers may themselves contain commas ("If Married, wedding anniversary…"), so compare counts.
+  const tabCount = (lines[0].match(/\t/g) ?? []).length;
+  const commaCount = (lines[0].match(/,/g) ?? []).length;
+  const delimiter = tabCount > 0 && tabCount >= commaCount ? '\t' : ',';
+
+  const headers = splitCsvLine(lines[0], delimiter).map((h) =>
     h
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '_')
@@ -1708,8 +2173,16 @@ function parseCsvRecords(csvText: string): RawCsvRow[] {
       const i = headers.indexOf(a);
       if (i !== -1) return i;
     }
+    // Fall back to prefix match so descriptive headers such as
+    // "Home Address (Full address please)" -> "home_address_full_address_please" still resolve.
+    for (const a of aliases) {
+      const i = headers.findIndex((h) => h.startsWith(`${a}_`));
+      if (i !== -1) return i;
+    }
     return -1;
   };
+  const idxWhere = (pred: (h: string) => boolean, exclude: number[]) =>
+    headers.findIndex((h, i) => !exclude.includes(i) && pred(h));
 
   const firstIdx = idxOf('first_name', 'firstname', 'first', 'given_name');
   const lastIdx = idxOf('last_name', 'lastname', 'surname', 'last', 'family_name');
@@ -1721,11 +2194,28 @@ function parseCsvRecords(csvText: string): RawCsvRow[] {
   const birthDayIdx = idxOf('birth_day', 'birthday');
   const annivMonthIdx = idxOf('anniversary_month', 'anniversarymonth');
   const annivDayIdx = idxOf('anniversary_day', 'anniversaryday');
+  // Combined "Date of Birth (Day and Month)" / "wedding anniversary date (Day and Month)" columns.
+  const birthDateIdx = idxWhere(
+    (h) => h === 'dob' || h.includes('birth'),
+    [birthMonthIdx, birthDayIdx],
+  );
+  const annivDateIdx = idxWhere((h) => h.includes('anniversary'), [annivMonthIdx, annivDayIdx]);
+  const genderIdx = idxOf('gender', 'sex');
+  const maritalIdx = idxOf('marital_status', 'marrital_status', 'marital', 'marrital');
+  const occupationIdx = idxOf('occupation', 'job_occupation', 'job', 'profession');
+  const teamIdx = idxOf('primary_team', 'team', 'department', 'unit');
 
   const rows: RawCsvRow[] = [];
   for (let i = 1; i < lines.length; i++) {
-    const cols = splitCsvLine(lines[i]);
+    const cols = splitCsvLine(lines[i], delimiter);
     const get = (idx: number) => (idx >= 0 && idx < cols.length ? cols[idx] : '');
+    // A "Birthday" column (aliased to birth_day) may hold a full "7-November" value.
+    let birthDayCell = get(birthDayIdx);
+    let birthDateCell = get(birthDateIdx);
+    if (birthDayCell && !/^\d+$/.test(birthDayCell) && !birthDateCell) {
+      birthDateCell = birthDayCell;
+      birthDayCell = '';
+    }
     rows.push({
       first_name: get(firstIdx),
       last_name: get(lastIdx),
@@ -1734,20 +2224,29 @@ function parseCsvRecords(csvText: string): RawCsvRow[] {
       address: get(addressIdx),
       membership_status: get(statusIdx),
       birth_month: get(birthMonthIdx),
-      birth_day: get(birthDayIdx),
+      birth_day: birthDayCell,
       anniversary_month: get(annivMonthIdx),
       anniversary_day: get(annivDayIdx),
+      birth_date: birthDateCell,
+      anniversary_date: get(annivDateIdx),
+      gender: get(genderIdx),
+      marital_status: get(maritalIdx),
+      occupation: get(occupationIdx),
+      primary_team: get(teamIdx),
     });
   }
   return rows;
 }
 
-function evaluateImportRow(
+export function evaluateImportRow(
   rowIndex: number,
   raw: RawCsvRow,
   existingPeople: ExistingPersonSnapshot[],
   allBatchRows: RawCsvRow[],
   approveReview = false,
+  teams: TeamSnapshot[] = [],
+  actionOverride?: ImportRowAction,
+  fallbackStatus: MembershipStatus = PrismaMembershipStatus.WORK_FORCE,
 ) {
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -1776,22 +2275,22 @@ function evaluateImportRow(
     errors.push(`Invalid phone number "${phone}" (at least 7 digits required)`);
   }
 
-  let rawStatus = (raw.membership_status?.trim() || 'MEMBER').toUpperCase();
-  if (rawStatus === 'WORKER') {
+  let rawStatus = (raw.membership_status?.trim() || fallbackStatus).toUpperCase();
+  if (rawStatus === 'WORKER' || rawStatus === 'WORKFORCE') {
     rawStatus = PrismaMembershipStatus.WORK_FORCE;
   }
-  let membershipStatus: MembershipStatus = PrismaMembershipStatus.MEMBER;
+  let membershipStatus: MembershipStatus = fallbackStatus;
   if (VALID_MEMBERSHIP_STATUSES.has(rawStatus)) {
     membershipStatus = rawStatus as MembershipStatus;
   } else {
-    errors.push(`Invalid membership_status "${raw.membership_status}"`);
+    // Sanitize non-critical membership status to fallback (default WORK_FORCE)
+    membershipStatus = fallbackStatus;
   }
 
   const parseOptionalInt = (val: string, label: string, min: number, max: number): number | null => {
     if (!val || !val.trim()) return null;
     const n = Number(val.trim());
     if (!Number.isInteger(n) || n < min || n > max) {
-      errors.push(`${label} must be between ${min} and ${max}`);
       return null;
     }
     return n;
@@ -1801,6 +2300,35 @@ function evaluateImportRow(
   const birthDay = parseOptionalInt(raw.birth_day, 'birth_day', 1, 31);
   const anniversaryMonth = parseOptionalInt(raw.anniversary_month, 'anniversary_month', 1, 12);
   const anniversaryDay = parseOptionalInt(raw.anniversary_day, 'anniversary_day', 1, 31);
+
+  // A combined day+month cell fills month/day only when the separate columns are blank.
+  const applyCombined = (
+    value: string,
+    label: string,
+    current: { month: number | null; day: number | null },
+  ) => {
+    if (current.month != null || current.day != null) return current;
+    const parsed = parseDayMonth(value);
+    if (parsed === undefined || parsed === null) return current;
+    return parsed;
+  };
+  const birth = applyCombined(raw.birth_date, 'Date of birth', { month: birthMonth, day: birthDay });
+  const anniversary = applyCombined(raw.anniversary_date, 'Wedding anniversary', {
+    month: anniversaryMonth,
+    day: anniversaryDay,
+  });
+
+  const parsedGender = parseGender(raw.gender);
+  const gender = parsedGender === 'MALE' || parsedGender === 'FEMALE' ? parsedGender : null;
+  const parsedMarital = parseMaritalStatus(raw.marital_status);
+  const maritalStatus = parsedMarital ?? null;
+  const occupation = raw.occupation?.trim() ? sanitizeCsvFormulaCell(raw.occupation) : null;
+
+  let primaryTeamId: string | null = null;
+  if (raw.primary_team?.trim()) {
+    const team = resolveTeam(raw.primary_team, teams);
+    if (team) primaryTeamId = team.id;
+  }
 
   let matchedPersonId: string | null = null;
   let matchedVerified = false;
@@ -1821,15 +2349,16 @@ function evaluateImportRow(
           `Matches verified profile ${p.firstName} ${p.lastName} by ${reason} — held for review rather than overwriting master.`,
         );
       } else {
-        warnings.push(`Possible duplicate of existing person ${p.firstName} ${p.lastName} (matching ${reason}).`);
+        warnings.push(`Matches existing person ${p.firstName} ${p.lastName} (${reason}) — default set to update existing.`);
       }
       break;
     }
   }
 
-  // Check intra-batch duplicate contacts
+  // Check intra-batch duplicate contacts (only check rows that appeared earlier in the CSV)
+  let isIntraBatchDuplicate = false;
   for (let i = 0; i < allBatchRows.length; i++) {
-    if (i + 1 === rowIndex) continue;
+    if (i + 1 >= rowIndex) break;
     const other = allBatchRows[i];
     const otherPhone = normalizePhoneKey(other.phone);
     const otherEmail = other.email?.trim() ? normalizeEmail(other.email) : null;
@@ -1837,17 +2366,37 @@ function evaluateImportRow(
       (normalizedPhone && otherPhone && normalizedPhone === otherPhone) ||
       (normalizedEmail && otherEmail && normalizedEmail === otherEmail)
     ) {
-      warnings.push(`Shares contact with row #${i + 1} (${other.first_name} ${other.last_name}) in this CSV.`);
+      isIntraBatchDuplicate = true;
+      warnings.push(`Duplicate contact of row #${i + 1} (${other.first_name} ${other.last_name}) in this CSV — skipped by default to avoid duplicate.`);
       break;
     }
   }
 
+  let action: ImportRowAction =
+    actionOverride ??
+    (matchedPersonId
+      ? ImportRowAction.UPDATE_EXISTING
+      : isIntraBatchDuplicate
+      ? ImportRowAction.SKIP
+      : ImportRowAction.CREATE);
+
   let state: ImportRowState = ImportRowState.READY;
   if (errors.length > 0) {
     state = ImportRowState.INVALID;
-  } else if (warnings.length > 0 && (!approveReview || matchedVerified)) {
-    // HOF-012-S04: Verified profile matches cannot bypass review/approval to overwrite master
-    state = ImportRowState.REVIEW_REQUIRED;
+  } else if (warnings.length > 0) {
+    if (action === ImportRowAction.SKIP) {
+      state = ImportRowState.READY;
+    } else if (action === ImportRowAction.UPDATE_EXISTING) {
+      if (matchedVerified && !approveReview) {
+        state = ImportRowState.REVIEW_REQUIRED;
+      } else {
+        state = ImportRowState.READY;
+      }
+    } else if (action === ImportRowAction.CREATE && approveReview) {
+      state = ImportRowState.READY;
+    } else if (!approveReview || matchedVerified) {
+      state = ImportRowState.REVIEW_REQUIRED;
+    }
   }
 
   return {
@@ -1860,14 +2409,19 @@ function evaluateImportRow(
     normalizedEmail,
     address,
     membershipStatus,
-    birthMonth,
-    birthDay,
-    anniversaryMonth,
-    anniversaryDay,
+    birthMonth: birth.month,
+    birthDay: birth.day,
+    anniversaryMonth: anniversary.month,
+    anniversaryDay: anniversary.day,
+    gender: gender ?? null,
+    maritalStatus: maritalStatus ?? null,
+    occupation,
+    primaryTeamId,
     state,
     errors,
     warnings,
     matchedPersonId,
+    action,
   };
 }
 
@@ -1941,12 +2495,34 @@ function formatImportJobResponse(job: {
     birthDay: number | null;
     anniversaryMonth: number | null;
     anniversaryDay: number | null;
+    gender: Gender | null;
+    maritalStatus: MaritalStatus | null;
+    occupation: string | null;
+    primaryTeamId: string | null;
     state: ImportRowState;
     errors: Prisma.JsonValue;
     warnings: Prisma.JsonValue;
     matchedPersonId: string | null;
+    action?: ImportRowAction;
     appliedPersonId: string | null;
     appliedAt: Date | null;
+    matchedPerson?: {
+      id: string;
+      firstName: string;
+      lastName: string;
+      email: string | null;
+      phone: string | null;
+      address: string | null;
+      gender: Gender | null;
+      maritalStatus: MaritalStatus | null;
+      occupation: string | null;
+      birthMonth: number | null;
+      birthDay: number | null;
+      anniversaryMonth: number | null;
+      anniversaryDay: number | null;
+      membershipStatus: MembershipStatus;
+      isVerified: boolean;
+    } | null;
   }[];
 }) {
   const summary = buildImportSummary(job.rows);
@@ -1965,10 +2541,34 @@ function formatImportJobResponse(job: {
     birth_day: r.birthDay,
     anniversary_month: r.anniversaryMonth,
     anniversary_day: r.anniversaryDay,
+    gender: r.gender,
+    marital_status: r.maritalStatus,
+    occupation: r.occupation,
+    primary_team_id: r.primaryTeamId,
     state: r.state,
+    action: r.action ?? 'CREATE',
     errors: Array.isArray(r.errors) ? (r.errors as string[]) : [],
     warnings: Array.isArray(r.warnings) ? (r.warnings as string[]) : [],
     matched_person_id: r.matchedPersonId,
+    matched_person: r.matchedPerson
+      ? {
+          id: r.matchedPerson.id,
+          first_name: r.matchedPerson.firstName,
+          last_name: r.matchedPerson.lastName,
+          email: r.matchedPerson.email,
+          phone: r.matchedPerson.phone,
+          address: r.matchedPerson.address,
+          gender: r.matchedPerson.gender,
+          marital_status: r.matchedPerson.maritalStatus,
+          occupation: r.matchedPerson.occupation,
+          birth_month: r.matchedPerson.birthMonth,
+          birth_day: r.matchedPerson.birthDay,
+          anniversary_month: r.matchedPerson.anniversaryMonth,
+          anniversary_day: r.matchedPerson.anniversaryDay,
+          membership_status: r.matchedPerson.membershipStatus,
+          is_verified: r.matchedPerson.isVerified,
+        }
+      : null,
     applied_person_id: r.appliedPersonId,
     applied_at: r.appliedAt?.toISOString() ?? null,
     formula_safe_first_name: sanitizeCsvFormulaCell(r.firstName),

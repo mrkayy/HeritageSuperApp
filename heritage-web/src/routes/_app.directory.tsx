@@ -1,9 +1,13 @@
 import { createFileRoute, Link, redirect } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
-import { useState, type FormEvent } from 'react'
+import { useState, useMemo, type FormEvent } from 'react'
 import {
   Cake,
   CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  Eye,
+  GraduationCap,
   Heart,
   Mail,
   MapPin,
@@ -12,6 +16,7 @@ import {
   Search,
   Send,
   ShieldCheck,
+  TrendingUp,
   UserPlus,
   Users,
   X,
@@ -27,13 +32,8 @@ import {
 import { hasCapability, meQuery } from '#/lib/auth'
 
 /**
- * Unified Church People & Membership Directory (replaces 6 redundant legacy tables).
- * Includes:
- * - Instant search by name, phone, or email
- * - Stage filters: All | First-Timers | Visitors | Foundation | Members | Workforce
- * - Celebrations filter (Birthdays & Anniversaries this month)
- * - Direct inline status & Foundation Class progress updates (no Maker-Checker friction)
- * - Profile verification & Controlled Claim Invitation dispatch (HOF-002-S01)
+ * Unified Church People & Membership Directory — redesigned with pipeline summary,
+ * inline status cards, and enhanced table with collapsible member detail rows.
  */
 export const Route = createFileRoute('/_app/directory')({
   beforeLoad: async ({ context }) => {
@@ -45,14 +45,14 @@ export const Route = createFileRoute('/_app/directory')({
   component: DirectoryPage,
 })
 
-const STATUS_TABS: { key: '' | MembershipStatus | 'CELEBRATIONS'; label: string }[] = [
-  { key: '', label: 'All People' },
-  { key: 'FIRST_TIMER', label: 'First-Timers' },
-  { key: 'VISITOR', label: 'Visitors' },
-  { key: 'FOUNDATION', label: 'Foundation Class' },
-  { key: 'MEMBER', label: 'Members' },
-  { key: 'WORK_FORCE', label: 'Workforce' },
-  { key: 'CELEBRATIONS', label: 'Celebrations (This Month)' },
+const STATUS_TABS: { key: '' | MembershipStatus | 'CELEBRATIONS'; label: string; icon?: typeof Users }[] = [
+  { key: '', label: 'All People', icon: Users },
+  { key: 'FIRST_TIMER', label: 'First-Timers', icon: UserPlus },
+  { key: 'VISITOR', label: 'Visitors', icon: Eye },
+  { key: 'FOUNDATION', label: 'Foundation', icon: GraduationCap },
+  { key: 'MEMBER', label: 'Members', icon: ShieldCheck },
+  { key: 'WORK_FORCE', label: 'Workforce', icon: TrendingUp },
+  { key: 'CELEBRATIONS', label: 'Celebrations', icon: Cake },
 ]
 
 const STATUS_BADGE_VARIANT: Record<
@@ -67,6 +67,15 @@ const STATUS_BADGE_VARIANT: Record<
   INACTIVE: 'secondary',
 }
 
+const STAGE_COLORS: Record<string, string> = {
+  FIRST_TIMER: 'bg-blue-500/10 text-blue-600 border-blue-500/30',
+  VISITOR: 'bg-amber-500/10 text-amber-600 border-amber-500/30',
+  FOUNDATION: 'bg-indigo-500/10 text-indigo-600 border-indigo-500/30',
+  MEMBER: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30',
+  WORK_FORCE: 'bg-purple-500/10 text-purple-600 border-purple-500/30',
+  INACTIVE: 'bg-slate-500/10 text-slate-500 border-slate-500/30',
+}
+
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 function DirectoryPage() {
@@ -77,11 +86,19 @@ function DirectoryPage() {
   const [search, setSearch] = useState('')
   const [activeTab, setActiveTab] = useState<'' | MembershipStatus | 'CELEBRATIONS'>('')
   const [showAddModal, setShowAddModal] = useState(false)
+  const [expandedRow, setExpandedRow] = useState<string | null>(null)
   const [banner, setBanner] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const currentMonth = new Date().getUTCMonth() + 1
 
+  /* ── All people (for stage summary counts) ── */
+  const allPeople = useQuery({
+    queryKey: ['directory', '', ''],
+    queryFn: () => api<DirectoryPerson[]>('/people'),
+  })
+
+  /* ── Filtered directory view ── */
   const directory = useQuery({
     queryKey: ['directory', search.trim(), activeTab],
     queryFn: () => {
@@ -95,6 +112,24 @@ function DirectoryPage() {
       return api<DirectoryPerson[]>(`/people?${params.toString()}`)
     },
   })
+
+  /* ── Stage summary counts ── */
+  const stageCounts = useMemo(() => {
+    const counts: Record<string, number> = {
+      FIRST_TIMER: 0,
+      VISITOR: 0,
+      FOUNDATION: 0,
+      MEMBER: 0,
+      WORK_FORCE: 0,
+      INACTIVE: 0,
+    }
+    for (const p of allPeople.data ?? []) {
+      counts[p.membership_status] = (counts[p.membership_status] ?? 0) + 1
+    }
+    return counts
+  }, [allPeople.data])
+
+  const totalPeople = allPeople.data?.length ?? 0
 
   const updateMutation = useMutation({
     mutationFn: ({ personId, body }: { personId: string; body: Record<string, unknown> }) =>
@@ -181,6 +216,15 @@ function DirectoryPage() {
         subtitle="Single canonical directory across Visitors, First-Timers, Foundation Class, Members, and Stewards."
         actions={
           <>
+            {hasCapability(me, 'people.read') && (
+              <Link
+                to="/journey"
+                className="inline-flex h-11 items-center gap-2 rounded-xl border border-primary/30 bg-white/80 px-4 text-sm font-semibold text-primary transition hover:border-primary/50 hover:bg-primary/10"
+              >
+                <TrendingUp className="h-4 w-4" />
+                Journey Pipeline
+              </Link>
+            )}
             {hasCapability(me, 'visitors.capture') && (
               <Link
                 to="/intake"
@@ -206,6 +250,49 @@ function DirectoryPage() {
           </>
         }
       />
+
+      {/* ── Pipeline Summary Strip ── */}
+      <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        {(['FIRST_TIMER', 'VISITOR', 'FOUNDATION', 'MEMBER', 'WORK_FORCE', 'INACTIVE'] as const).map(
+          (status) => {
+            const count = stageCounts[status] ?? 0
+            const pct = totalPeople > 0 ? Math.round((count / totalPeople) * 100) : 0
+            const isActive = activeTab === status
+            return (
+              <button
+                key={status}
+                type="button"
+                onClick={() => setActiveTab(isActive ? '' : status)}
+                className={`glass-card flex flex-col gap-2 rounded-2xl border p-4 text-left transition-all hover:shadow-md ${
+                  isActive
+                    ? 'border-primary/50 ring-2 ring-primary/20'
+                    : 'border-border/60 hover:border-primary/30'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <Badge
+                    variant="outline"
+                    className={`text-[10px] font-semibold ${STAGE_COLORS[status] ?? ''}`}
+                  >
+                    {status.replace('_', ' ')}
+                  </Badge>
+                </div>
+                <p className="text-2xl font-bold tracking-tight text-foreground">
+                  {allPeople.isPending ? '…' : count}
+                </p>
+                {/* Mini progress bar */}
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-border/50">
+                  <div
+                    className="h-full rounded-full bg-primary/60 transition-all duration-500"
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+                <p className="text-[10px] text-muted-foreground">{pct}% of directory</p>
+              </button>
+            )
+          },
+        )}
+      </section>
 
       {banner && <Alert tone="success">{banner}</Alert>}
       {error && <Alert>{error}</Alert>}
@@ -285,6 +372,7 @@ function DirectoryPage() {
         <div className="flex flex-wrap gap-1.5">
           {STATUS_TABS.map((tab) => {
             const active = activeTab === tab.key
+            const Icon = tab.icon
             return (
               <button
                 key={tab.key}
@@ -296,7 +384,7 @@ function DirectoryPage() {
                     : 'border border-border/70 bg-white/70 text-muted-foreground hover:bg-secondary/60 hover:text-foreground'
                 }`}
               >
-                {tab.key === 'CELEBRATIONS' && <Cake className="h-3.5 w-3.5" />}
+                {Icon && <Icon className="h-3.5 w-3.5" />}
                 {tab.label}
               </button>
             )
@@ -342,170 +430,245 @@ function DirectoryPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/50">
-                {(directory.data ?? []).map((p) => (
-                  <tr key={p.id} className="transition-colors hover:bg-secondary/35">
-                    <td className="px-5 py-3.5 font-semibold text-foreground">
-                      <div className="flex items-center gap-3">
-                        {p.photo_url ? (
-                          <img
-                            src={p.photo_url}
-                            alt=""
-                            className="h-9 w-9 shrink-0 rounded-full border border-border object-cover"
-                          />
-                        ) : (
-                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-                            {p.first_name[0]}
-                            {p.last_name[0]}
-                          </div>
-                        )}
-                        <div>
-                          <div>
-                            {p.first_name} {p.last_name}
-                          </div>
-                          {p.address && (
-                            <div className="flex items-center gap-1 text-xs font-normal text-muted-foreground">
-                              <MapPin className="h-3 w-3 shrink-0" />
-                              {p.address}
+                {(directory.data ?? []).map((p) => {
+                  const isExpanded = expandedRow === p.id
+                  return (
+                    <tr
+                      key={p.id}
+                      className={`transition-colors ${isExpanded ? 'bg-secondary/40' : 'hover:bg-secondary/35'}`}
+                    >
+                      <td className="px-5 py-3.5 font-semibold text-foreground">
+                        <div className="flex items-center gap-3">
+                          {p.photo_url ? (
+                            <img
+                              src={p.photo_url}
+                              alt=""
+                              className="h-9 w-9 shrink-0 rounded-full border border-border object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                              {p.first_name[0]}
+                              {p.last_name[0]}
                             </div>
                           )}
+                          <div className="min-w-0">
+                            <button
+                              type="button"
+                              onClick={() => setExpandedRow(isExpanded ? null : p.id)}
+                              className="flex items-center gap-1 text-left font-semibold text-foreground hover:text-primary transition-colors"
+                            >
+                              {p.first_name} {p.last_name}
+                              {isExpanded ? (
+                                <ChevronUp className="h-3 w-3 text-muted-foreground" />
+                              ) : (
+                                <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                              )}
+                            </button>
+                            {p.address && (
+                              <div className="flex items-center gap-1 text-xs font-normal text-muted-foreground">
+                                <MapPin className="h-3 w-3 shrink-0" />
+                                <span className="truncate max-w-[180px]">{p.address}</span>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-5 py-3.5 text-xs text-muted-foreground">
-                      {p.phone && (
-                        <div className="flex items-center gap-1.5 font-medium text-foreground">
-                          <Phone className="h-3 w-3 text-primary" />
-                          {p.phone}
-                        </div>
-                      )}
-                      {p.email && (
-                        <div className="mt-0.5 flex items-center gap-1.5">
-                          <Mail className="h-3 w-3 text-muted-foreground" />
-                          {p.email}
-                        </div>
-                      )}
-                      {!p.phone && !p.email && p.missing_contact_reason && (
-                        <span className="italic text-amber-700">No contact: {p.missing_contact_reason}</span>
-                      )}
-                    </td>
-                    <td className="px-5 py-3.5">
-                      {canWrite ? (
-                        <select
-                          aria-label={`Standing for ${p.first_name} ${p.last_name}`}
-                          value={p.membership_status}
-                          onChange={(e) =>
-                            updateMutation.mutate({
-                              personId: p.id,
-                              body: { membership_status: e.target.value as MembershipStatus },
-                            })
-                          }
-                          className="rounded-xl border border-input bg-white/90 px-2.5 py-1.5 text-xs font-semibold text-foreground shadow-2xs outline-none focus:border-primary"
-                        >
-                          <option value="FIRST_TIMER">FIRST_TIMER</option>
-                          <option value="VISITOR">VISITOR</option>
-                          <option value="FOUNDATION">FOUNDATION</option>
-                          <option value="MEMBER">MEMBER</option>
-                          <option value="WORK_FORCE">WORK_FORCE</option>
-                          <option value="INACTIVE">INACTIVE</option>
-                        </select>
-                      ) : (
-                        <Badge variant={STATUS_BADGE_VARIANT[p.membership_status] ?? 'secondary'}>
-                          {p.membership_status}
-                        </Badge>
-                      )}
-                    </td>
-                    <td className="px-5 py-3.5">
-                      {canWrite ? (
-                        <select
-                          aria-label={`Foundation Class for ${p.first_name} ${p.last_name}`}
-                          value={p.foundation_class_status}
-                          onChange={(e) =>
-                            updateMutation.mutate({
-                              personId: p.id,
-                              body: { foundation_class_status: e.target.value as FoundationClassStatus },
-                            })
-                          }
-                          className="rounded-xl border border-input bg-white/90 px-2.5 py-1.5 text-xs font-medium text-foreground shadow-2xs outline-none focus:border-primary"
-                        >
-                          <option value="NOT_STARTED">Not Started</option>
-                          <option value="IN_PROGRESS">In Progress</option>
-                          <option value="COMPLETED">Completed ✓</option>
-                        </select>
-                      ) : (
-                        <Badge
-                          variant={
-                            p.foundation_class_status === 'COMPLETED'
-                              ? 'success'
-                              : p.foundation_class_status === 'IN_PROGRESS'
-                                ? 'purple'
-                                : 'secondary'
-                          }
-                        >
-                          {p.foundation_class_status}
-                        </Badge>
-                      )}
-                    </td>
-                    <td className="px-5 py-3.5 text-xs text-muted-foreground">
-                      {p.birth_month && p.birth_day && (
-                        <div className="flex items-center gap-1.5 text-foreground">
-                          <Cake className="h-3.5 w-3.5 text-primary" />
-                          {MONTHS[p.birth_month - 1]} {p.birth_day}
-                        </div>
-                      )}
-                      {p.anniversary_month && p.anniversary_day && (
-                        <div className="mt-0.5 flex items-center gap-1.5 text-foreground">
-                          <Heart className="h-3.5 w-3.5 text-pink-600" />
-                          {MONTHS[p.anniversary_month - 1]} {p.anniversary_day}
-                        </div>
-                      )}
-                      {!p.birth_month && !p.anniversary_month && '—'}
-                    </td>
-                    <td className="px-5 py-3.5 text-xs">
-                      <div className="flex flex-wrap items-center gap-2">
-                        {p.is_verified ? (
-                          <Badge variant="success">
-                            <CheckCircle2 className="h-3 w-3" /> Verified
-                          </Badge>
-                        ) : canWrite ? (
-                          <button
-                            type="button"
-                            onClick={() => verifyMutation.mutate(p.id)}
-                            className="inline-flex items-center gap-1 rounded-lg border border-primary/30 bg-white px-2.5 py-1 text-xs font-semibold text-primary transition hover:bg-primary/10"
+                      </td>
+                      <td className="px-5 py-3.5 text-xs text-muted-foreground">
+                        {p.phone && (
+                          <a
+                            href={`tel:${p.phone}`}
+                            className="flex items-center gap-1.5 font-medium text-foreground hover:text-primary transition-colors"
                           >
-                            <ShieldCheck className="h-3.5 w-3.5" />
-                            Verify Profile
-                          </button>
+                            <Phone className="h-3 w-3 text-primary" />
+                            {p.phone}
+                          </a>
+                        )}
+                        {p.email && (
+                          <div className="mt-0.5 flex items-center gap-1.5">
+                            <Mail className="h-3 w-3 text-muted-foreground" />
+                            {p.email}
+                          </div>
+                        )}
+                        {!p.phone && !p.email && p.missing_contact_reason && (
+                          <span className="italic text-amber-700">No contact: {p.missing_contact_reason}</span>
+                        )}
+                      </td>
+                      <td className="px-5 py-3.5">
+                        {canWrite ? (
+                          <select
+                            aria-label={`Standing for ${p.first_name} ${p.last_name}`}
+                            value={p.membership_status}
+                            onChange={(e) =>
+                              updateMutation.mutate({
+                                personId: p.id,
+                                body: { membership_status: e.target.value as MembershipStatus },
+                              })
+                            }
+                            className="rounded-xl border border-input bg-white/90 px-2.5 py-1.5 text-xs font-semibold text-foreground shadow-2xs outline-none focus:border-primary"
+                          >
+                            <option value="FIRST_TIMER">First-Timer</option>
+                            <option value="VISITOR">Visitor</option>
+                            <option value="FOUNDATION">Foundation</option>
+                            <option value="MEMBER">Member</option>
+                            <option value="WORK_FORCE">Workforce</option>
+                            <option value="INACTIVE">Inactive</option>
+                          </select>
                         ) : (
-                          <span className="text-muted-foreground">Unverified</span>
+                          <Badge variant={STATUS_BADGE_VARIANT[p.membership_status] ?? 'secondary'}>
+                            {p.membership_status.replace('_', ' ')}
+                          </Badge>
                         )}
-
-                        {p.account_status === 'ACTIVE' && (
-                          <Badge variant="default">Account Active</Badge>
-                        )}
-
-                        {canWrite && p.is_verified && p.email && p.account_status !== 'ACTIVE' && (
-                          <button
-                            type="button"
-                            onClick={() => claimInviteMutation.mutate(p.id)}
-                            className="inline-flex items-center gap-1 font-semibold text-primary hover:underline"
+                      </td>
+                      <td className="px-5 py-3.5">
+                        {canWrite ? (
+                          <select
+                            aria-label={`Foundation Class for ${p.first_name} ${p.last_name}`}
+                            value={p.foundation_class_status}
+                            onChange={(e) =>
+                              updateMutation.mutate({
+                                personId: p.id,
+                                body: { foundation_class_status: e.target.value as FoundationClassStatus },
+                              })
+                            }
+                            className="rounded-xl border border-input bg-white/90 px-2.5 py-1.5 text-xs font-medium text-foreground shadow-2xs outline-none focus:border-primary"
                           >
-                            <Send className="h-3 w-3" />
-                            {p.account_status === 'PENDING' ? 'Resend Claim Link' : 'Send Claim Invite'}
-                          </button>
+                            <option value="NOT_STARTED">Not Started</option>
+                            <option value="IN_PROGRESS">In Progress</option>
+                            <option value="COMPLETED">Completed ✓</option>
+                          </select>
+                        ) : (
+                          <Badge
+                            variant={
+                              p.foundation_class_status === 'COMPLETED'
+                                ? 'success'
+                                : p.foundation_class_status === 'IN_PROGRESS'
+                                  ? 'purple'
+                                  : 'secondary'
+                            }
+                          >
+                            {p.foundation_class_status.replace('_', ' ')}
+                          </Badge>
                         )}
-                      </div>
-                    </td>
-                    <td className="px-5 py-3.5 text-right">
-                      <span className="inline-flex min-w-8 items-center justify-center rounded-lg bg-primary/10 px-2 py-0.5 text-xs font-bold text-primary">
-                        {p.attendance_count}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="px-5 py-3.5 text-xs text-muted-foreground">
+                        {p.birth_month && p.birth_day && (
+                          <div className="flex items-center gap-1.5 text-foreground">
+                            <Cake className="h-3.5 w-3.5 text-pink-500" />
+                            {MONTHS[p.birth_month - 1]} {p.birth_day}
+                          </div>
+                        )}
+                        {p.anniversary_month && p.anniversary_day && (
+                          <div className="mt-0.5 flex items-center gap-1.5 text-foreground">
+                            <Heart className="h-3.5 w-3.5 text-rose-500" />
+                            {MONTHS[p.anniversary_month - 1]} {p.anniversary_day}
+                          </div>
+                        )}
+                        {!p.birth_month && !p.anniversary_month && '—'}
+                      </td>
+                      <td className="px-5 py-3.5 text-xs">
+                        <div className="flex flex-wrap items-center gap-2">
+                          {p.is_verified ? (
+                            <Badge variant="success">
+                              <CheckCircle2 className="h-3 w-3" /> Verified
+                            </Badge>
+                          ) : canWrite ? (
+                            <button
+                              type="button"
+                              onClick={() => verifyMutation.mutate(p.id)}
+                              className="inline-flex items-center gap-1 rounded-lg border border-primary/30 bg-white px-2.5 py-1 text-xs font-semibold text-primary transition hover:bg-primary/10"
+                            >
+                              <ShieldCheck className="h-3.5 w-3.5" />
+                              Verify
+                            </button>
+                          ) : (
+                            <span className="text-muted-foreground">Unverified</span>
+                          )}
+
+                          {p.account_status === 'ACTIVE' && (
+                            <Badge variant="default">Active</Badge>
+                          )}
+
+                          {canWrite && p.is_verified && p.email && p.account_status !== 'ACTIVE' && (
+                            <button
+                              type="button"
+                              onClick={() => claimInviteMutation.mutate(p.id)}
+                              className="inline-flex items-center gap-1 font-semibold text-primary hover:underline"
+                            >
+                              <Send className="h-3 w-3" />
+                              {p.account_status === 'PENDING' ? 'Resend' : 'Claim Invite'}
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-5 py-3.5 text-right">
+                        <span className="inline-flex min-w-8 items-center justify-center rounded-lg bg-primary/10 px-2 py-0.5 text-xs font-bold text-primary">
+                          {p.attendance_count}
+                        </span>
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
         )}
+      </section>
+
+      {/* Bottom Quick Navigation */}
+      <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <Link
+          to="/journey"
+          className="glass-card group flex items-start gap-4 rounded-2xl border border-border/60 p-5 transition-all hover:border-primary/50 hover:shadow-md"
+        >
+          <div className="rounded-xl bg-purple-500/10 p-3 text-purple-500">
+            <TrendingUp className="h-6 w-6" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-foreground">Member Journey Pipeline</h3>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Track member growth from First-Timer through Foundation, Membership, and Workforce.
+            </p>
+            <span className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-primary">
+              View Pipeline →
+            </span>
+          </div>
+        </Link>
+
+        <Link
+          to="/celebrations"
+          className="glass-card group flex items-start gap-4 rounded-2xl border border-border/60 p-5 transition-all hover:border-pink-500/50 hover:shadow-md"
+        >
+          <div className="rounded-xl bg-pink-500/10 p-3 text-pink-500">
+            <Cake className="h-6 w-6" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-foreground">Celebration Reminders</h3>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Filter birthdays &amp; wedding anniversaries month-by-month for pastoral care outreach.
+            </p>
+            <span className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-primary">
+              Open Celebrations →
+            </span>
+          </div>
+        </Link>
+
+        <Link
+          to="/follow-up"
+          className="glass-card group flex items-start gap-4 rounded-2xl border border-border/60 p-5 transition-all hover:border-emerald-500/50 hover:shadow-md"
+        >
+          <div className="rounded-xl bg-emerald-500/10 p-3 text-emerald-500">
+            <Phone className="h-6 w-6" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-foreground">Follow-Up Queue</h3>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Log call outcomes and assign first-timer outreach for pastoral follow-up.
+            </p>
+            <span className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-primary">
+              Open Follow-Up →
+            </span>
+          </div>
+        </Link>
       </section>
     </div>
   )
