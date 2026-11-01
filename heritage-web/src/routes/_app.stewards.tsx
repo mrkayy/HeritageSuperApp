@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from '@tansta
 import { useState, useMemo, type FormEvent } from 'react'
 import {
   CheckCircle2,
+  HelpCircle,
   Info,
   Mail,
   Phone,
@@ -13,6 +14,7 @@ import {
   UserCheck,
   UserPlus,
   Users,
+  X,
 } from 'lucide-react'
 import { Alert, Badge, Button, Field, PageBanner } from '#/components/ui'
 import { api, ApiError, type DirectoryPerson, type Role, type Steward, type Team } from '#/lib/api'
@@ -63,6 +65,7 @@ function StewardsPage() {
   const [role, setRole] = useState<Role>('STEWARD')
   const [formError, setFormError] = useState<ApiError | null>(null)
   const [banner, setBanner] = useState<{ tone: 'success' | 'info' | 'error'; text: string } | null>(null)
+  const [showHelperBubble, setShowHelperBubble] = useState(false)
 
   // Eligible directory people for invite: those without active accounts
   const eligibleDirectoryPeople = useMemo(() => {
@@ -159,35 +162,6 @@ function StewardsPage() {
         title="Stewards & Invitations"
         subtitle="Manage login access and operational team appointments for stewards. Appointed stewards receive a single-use claim link to activate their console account."
       />
-
-      {/* Guide Callout: Explaining how to invite existing people from Person table */}
-      <section className="glass-card rounded-2xl border border-primary/20 bg-primary/5 p-4 sm:p-5">
-        <div className="flex items-start gap-3.5">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-            <Info className="h-5 w-5" />
-          </div>
-          <div className="space-y-1.5 text-xs text-foreground">
-            <h3 className="text-sm font-bold text-foreground">How to grant login access to people in the Person table</h3>
-            <p className="leading-relaxed text-muted-foreground">
-              You have two official ways to grant login access to existing members, visitors, or workers from the database:
-            </p>
-            <div className="grid gap-3 pt-1 sm:grid-cols-2">
-              <div className="rounded-xl border border-border/60 bg-white/80 p-3 shadow-2xs">
-                <span className="font-semibold text-primary">1. Appoint as Steward / Worker (Here)</span>
-                <p className="mt-1 text-muted-foreground">
-                  In the form below, select <strong>&ldquo;Existing Person from Directory&rdquo;</strong>. Choose the person, assign their operational team &amp; role, and send an invite. They receive a claim link for full console access.
-                </p>
-              </div>
-              <div className="rounded-xl border border-border/60 bg-white/80 p-3 shadow-2xs">
-                <span className="font-semibold text-primary">2. General Member Claim Access</span>
-                <p className="mt-1 text-muted-foreground">
-                  Go to <Link to="/directory" className="font-medium underline hover:text-primary">People Directory</Link>, locate the person, click <strong>Verify</strong> (if unverified), then click <strong>Claim Invite</strong>. This grants personal member portal access without an operational staff role.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {banner && <Alert tone={banner.tone}>{banner.text}</Alert>}
 
@@ -554,6 +528,85 @@ function StewardsPage() {
           </div>
         )}
       </section>
+
+      {/* Floating Helper Bubble */}
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
+        {showHelperBubble && (
+          <div
+            role="dialog"
+            aria-label="How to grant login access guide"
+            className="w-[calc(100vw-3rem)] max-w-md rounded-2xl border border-primary/25 bg-white/95 p-5 shadow-2xl backdrop-blur-md animate-in fade-in slide-in-from-bottom-2 duration-200"
+          >
+            <div className="flex items-start justify-between gap-3 border-b border-border/60 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <Info className="h-4 w-4" />
+                </div>
+                <h3 className="text-sm font-bold text-foreground">
+                  How to grant login access to people
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowHelperBubble(false)}
+                aria-label="Close helper guide"
+                className="rounded-lg p-1 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="mt-3 space-y-2.5 text-xs text-foreground">
+              <p className="leading-relaxed text-muted-foreground">
+                You have two official ways to grant login access to existing members, visitors, or workers from the database:
+              </p>
+              <div className="space-y-2.5 pt-1">
+                <div className="rounded-xl border border-border/60 bg-secondary/35 p-3">
+                  <span className="font-semibold text-primary">1. Appoint as Steward / Worker (Here)</span>
+                  <p className="mt-1 leading-relaxed text-muted-foreground">
+                    In the form on this page, select <strong>&ldquo;Existing from Directory&rdquo;</strong>. Choose the person, assign their operational team &amp; role, and send an invite. They receive a claim link for full console access.
+                  </p>
+                </div>
+                <div className="rounded-xl border border-border/60 bg-secondary/35 p-3">
+                  <span className="font-semibold text-primary">2. General Member Claim Access</span>
+                  <p className="mt-1 leading-relaxed text-muted-foreground">
+                    Go to{' '}
+                    <Link
+                      to="/directory"
+                      onClick={() => setShowHelperBubble(false)}
+                      className="font-medium underline hover:text-primary"
+                    >
+                      People Directory
+                    </Link>
+                    , locate the person, click <strong>Verify</strong> (if unverified), then click{' '}
+                    <strong>Claim Invite</strong>. This grants personal member portal access without an operational staff role.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <button
+          type="button"
+          onClick={() => setShowHelperBubble((prev) => !prev)}
+          aria-expanded={showHelperBubble}
+          aria-label="Toggle access guide helper"
+          className="group inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary px-4 py-3 text-xs font-semibold text-primary-foreground shadow-lg transition-all hover:scale-[1.02] hover:shadow-xl active:scale-95"
+        >
+          {showHelperBubble ? (
+            <>
+              <X className="h-4 w-4" />
+              <span>Close Guide</span>
+            </>
+          ) : (
+            <>
+              <HelpCircle className="h-4 w-4" />
+              <span>How to Grant Access</span>
+            </>
+          )}
+        </button>
+      </div>
     </div>
   )
 }

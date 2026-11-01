@@ -106,7 +106,7 @@ Organization-level identity; provisional capture; scoped assignments; separate m
 | P06 | Cross-branch curriculum equivalence | Manual authorized recognition; no inferred equivalence |
 | P07 | Production datasets and cutover window | Inventory and rehearsal required before production migration |
 | P08 | Public map granularity and minimum group size | Publication disabled until configured and accepted |
-| P09 | Retention, outreach contact preferences, bulletin publication and continuing caller access | Conservative access; configure named owner and approved rules before release |
+| P09 | Retention, outreach contact preferences and continuing caller access | Conservative access; configure named owner and approved rules before release |
 
 Engineering choices such as queue library and exact outbox implementation do not require new product decisions. Policy gates block affected release paths, not documentation or independent implementation. Changing a default requires a dated decision and changes to both masters.
 
@@ -160,7 +160,7 @@ All mutable records have UUID IDs, timestamps, a row version and lifecycle state
 | Transport | TransportRequest, Trip, Vehicle, DriverAssignment, PassengerAllocation; valid transitions and capacity constraints; no double allocation of same request |
 | Kids | ChildProfile, GuardianAuthority, CheckIn, PickupAuthorization, PickupEvent; active authority and occurrence-specific code; one open check-in per child/session |
 | Inventory | Item, StockMovement, Sale, SaleLine, PaymentEvidence, Reversal; non-negative available stock; snapshots of price/currency; reference upload is evidence, not bank verification |
-| Communications | Announcement, BulletinSubmission, TemplateVersion, Notification, DeliveryAttempt, ContactPreference; audience scope; expiry; logical-send uniqueness |
+| Communications | Announcement, TemplateVersion, Notification, DeliveryAttempt, ContactPreference; audience scope; expiry; logical-send uniqueness |
 | Work | WorkItem, AssignmentHistory, DomainOutbox, ConsumerReceipt, ScheduledJob; unique logical task key; leased jobs; per-consumer event uniqueness |
 | Reporting | ProjectionCheckpoint, ExportJob, ReportSnapshot; scope and policy version recorded; exports have expiry and authorization at download |
 | Governance | FeatureFlag, BranchFlagOverride, SettingsVersion, AuditEvent, RetentionJob, MigrationRun; revisioned changes and restricted audit metadata |
@@ -276,7 +276,7 @@ Each row maps directly to a Gherkin feature ID. “P” means organization scope
 | HOF-019 Programs/cohorts | Academy; B programs/modules/cohorts/sessions/enrollments and teacher assignments | Cohort list, timetable, roster, enroll/withdraw, teacher and student views | 2 |
 | HOF-020 Assessments/graduation | Academy/Journey; B assessment revisions, attendance, makeup, graduate, retake | Six-part gradebook, totals, attendance warnings, graduation preview/result | 2 |
 | HOF-021 Volunteer placement | Membership/Access; B volunteer-applications, placements, probation review | Own ranked preferences, placement queue, receiving lead notification | 2 |
-| HOF-022 Celebrations/landmarks | Membership/Communications; B celebrations, landmarks, publication requests | Day/month birthdays, anniversary calendar, three-day alerts, milestones, celebrate/log contact | 2 |
+| HOF-022 Celebrations/landmarks | Membership/Communications; B celebrations, landmarks | Day/month birthdays, anniversary calendar, three-day alerts, milestones, celebrate/log contact | 2 |
 | HOF-023 Pastoral care | Care; B care-cases, actions, escalation/acknowledge, amendments | Confidential timeline, categorized SitRep, urgent alert, follow-up closure | 2 |
 | HOF-024 Branch transfers | People/Journey/Access; B transfers initiate/inbound/review/accept/cancel; P recognition | Origin request, minimal inbound preview, clarification/reject/accept, sector selection, history | 3 |
 | HOF-025 Outreach capture | Outreach/People; B outreach-contacts/activities/decisions, optional transport request | Soul registration on mobile, GPS/manual location, decisions and own list | 3 |
@@ -287,7 +287,7 @@ Each row maps directly to a Gherkin feature ID. “P” means organization scope
 | HOF-030 Family/guardians | People/Kids; B relationships, households, guardian-authorities verify/revoke | Relationship editor, authority evidence, expiry, permitted dependent view | 3 |
 | HOF-031 Kids check-in/pickup | Kids; B child-profiles, sessions, checkins, pickup-authorizations/verify | Restricted roster, allergy projection, check-in code, verified release, incident workflow | 3 |
 | HOF-032 Inventory/sales | Inventory; B items, stock-movements, sales, payment-evidence, reversals | Catalog/variants, stock alerts, transfer-only sale, evidence upload, history | 4 |
-| HOF-033 Announcements | Communications; B announcements draft/publish/archive, R `/me/announcements` | Editor, audience/schedule, presenter bulletin, member carousel/list | 4 |
+| HOF-033 Announcements | Communications; B announcements draft/publish/archive, R `/me/announcements` | Editor, audience/schedule, member carousel/list | 4 |
 | HOF-034 Events | Organization/Communications; B events, registrations, occurrences, reminders | Event list/calendar, signup, capacity/waitlist where configured, attendance and cancellation | 4 |
 | HOF-035 Communications | Communications; B messages/notification-jobs, P templates, delivery-status; R `/me/preferences` | Email/SMS preview, recipients, delivery status, notification inbox, preferences | 1–4 |
 | HOF-036 Dashboards/dossier | Reporting; R `/me/dashboard`, B dashboards, P dossiers with projections | Personal/team/pastor/executive views, scoped lifetime tabs and freshness indicator | 2–4 |

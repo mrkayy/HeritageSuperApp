@@ -51,7 +51,7 @@ Every row is a Jira-style epic/story tracking item. Scenario IDs are the accepta
 | HOF-030 | Epic | Households, relationships and guardian authority | 3 | TODO | [S01–S04](master-gherkin-stories.md#hof-030--households-relationships-and-guardian-authority) |
 | HOF-031 | Epic | Kids profiles, check-in and secure pickup | 3 | TODO | [S01–S04](master-gherkin-stories.md#hof-031--kids-profiles-check-in-and-secure-pickup) |
 | HOF-032 | Epic | Books, merchandise, stock and transfer sales | 4 | TODO | [S01–S05](master-gherkin-stories.md#hof-032--books-merchandise-stock-and-transfer-sales) |
-| HOF-033 | Epic | Announcements, presenter bulletin and expiry | 4 | TODO | [S01–S03](master-gherkin-stories.md#hof-033--announcements-presenter-bulletin-and-expiry) |
+| HOF-033 | Epic | Announcements, audience targeting and expiry | 4 | TODO | [S01–S03](master-gherkin-stories.md#hof-033--announcements-audience-targeting-and-expiry) |
 | HOF-034 | Epic | Events, registration, reminders and attendance | 4 | TODO | [S01–S03](master-gherkin-stories.md#hof-034--events-registration-reminders-and-attendance) |
 | HOF-035 | Epic | Email, SMS, templates, inbox and delivery status | 1–4 | TODO | [S01–S06](master-gherkin-stories.md#hof-035--email-sms-templates-inbox-and-delivery-status) |
 | HOF-036 | Epic | Personal, departmental and executive dashboards and dossiers | 2–4 | TODO | [S01–S04](master-gherkin-stories.md#hof-036--personal-departmental-and-executive-dashboards-and-dossiers) |

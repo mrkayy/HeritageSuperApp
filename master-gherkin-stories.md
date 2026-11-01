@@ -70,7 +70,7 @@ Apply these to every feature below, in addition to its concrete scenarios:
 | HOF-030 | Households, relationships and guardian authority | 3 | planned |
 | HOF-031 | Kids profiles, check-in and secure pickup | 3 | planned |
 | HOF-032 | Books, merchandise, stock and transfer sales | 4 | planned |
-| HOF-033 | Announcements, presenter bulletin and expiry | 4 | planned |
+| HOF-033 | Announcements, audience targeting and expiry | 4 | planned |
 | HOF-034 | Events, registration, reminders and attendance | 4 | planned |
 | HOF-035 | Email, SMS, templates, inbox and delivery status | 1–4 | planned |
 | HOF-036 | Personal, departmental and executive dashboards and dossiers | 2–4 | planned |
@@ -835,11 +835,10 @@ Feature: Birthdays, anniversaries and life landmarks
     When the scheduler evaluates the relevant local date
     Then the reminder follows that policy once in that branch timezone
   @HOF-022-S03
-  Scenario: Landmark publication is separate from recording
+  Scenario: Life landmark recording and verification
     Given a member's graduation or family milestone
     When it is recorded in the profile
-    Then it appears to authorized viewers
-    And it enters the public bulletin only after the required publication preference and approval
+    Then it appears to authorized internal viewers and can be verified by leadership
   @HOF-022-S04
   Scenario: Celebration contact is recorded
     Given an authorized worker viewing an upcoming anniversary
@@ -1190,18 +1189,18 @@ Feature: Books, merchandise, stock and transfer sales
     Then neither metadata nor file contents are returned
 ```
 
-### HOF-033 — Announcements, presenter bulletin and expiry
+### HOF-033 — Announcements, audience targeting and expiry
 
 Sources: Backlog IC 5; specification 4.5. Architecture: feature catalog HOF-033 and shared contracts. Phase: 4.
 
 ```gherkin
 @HOF-033
-Feature: Announcements, presenter bulletin and expiry
+Feature: Announcements, audience targeting and expiry
   @HOF-033-S01
   Scenario: Publish to a scoped audience
     Given an authorized editor and a draft announcement with branch, audience and schedule
     When it is published
-    Then matching members and the permitted service bulletin see it during its active interval
+    Then matching members see it during its active interval
     And members in another branch or outside its audience do not receive it
   @HOF-033-S02
   Scenario: Expiration does not depend on cron timing
