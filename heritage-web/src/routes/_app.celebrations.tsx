@@ -3,15 +3,12 @@ import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from '@tansta
 import { useState, type FormEvent } from 'react'
 import {
   Award,
-  BellRing,
   Cake,
   Calendar,
   CheckCircle2,
   Clock,
-  Globe,
   GraduationCap,
   Heart,
-  Lock,
   Mail,
   MessageSquare,
   Phone,
@@ -31,7 +28,6 @@ import {
   type DirectoryPerson,
   type LandmarkApprovalStatus,
   type LandmarkCategory,
-  type LandmarkPublicationPreference,
   type LeapDayPolicy,
   type LifeLandmarkItem,
 } from '#/lib/api'
@@ -41,7 +37,7 @@ import { hasCapability, meQuery } from '#/lib/auth'
  * HOF-022: Birthdays, Anniversaries & Life Landmarks
  * - @HOF-022-S01: Proactive 3-day celebration reminder engine (crosses Dec -> Jan year boundary idempotently; no birth year required or invented)
  * - @HOF-022-S02: Explicit Leap-Day (`FEB_28` vs `MAR_01`) and Church Timezone (`Africa/Lagos`) policy
- * - @HOF-022-S03: Life Landmarks & Academic Graduation Tracker with separate recording vs Public Bulletin publication approval
+ * - @HOF-022-S03: Life Landmarks & Academic Graduation Tracker
  * - @HOF-022-S04: Celebration contact logging & 1-click Greeting Email dispatch with idempotency protection
  */
 export const Route = createFileRoute('/_app/celebrations')({
@@ -87,7 +83,7 @@ function CelebrationsPage() {
   const canWriteLandmark = hasCapability(me, 'landmarks.write')
   const canApproveLandmark = hasCapability(me, 'landmarks.approve')
 
-  const [activeTab, setActiveTab] = useState<'alerts' | 'monthly' | 'landmarks' | 'bulletin'>('alerts')
+  const [activeTab, setActiveTab] = useState<'alerts' | 'monthly' | 'landmarks'>('monthly')
   const [leapDayPolicy, setLeapDayPolicy] = useState<LeapDayPolicy>('FEB_28')
   const [selectedMonth, setSelectedMonth] = useState<number>(() => new Date().getUTCMonth() + 1)
   const [localDateOverride, setLocalDateOverride] = useState<string>('')
@@ -120,11 +116,6 @@ function CelebrationsPage() {
   const landmarks = useQuery({
     queryKey: ['celebrations-landmarks'],
     queryFn: () => api<LifeLandmarkItem[]>('/celebrations/landmarks'),
-  })
-
-  const bulletin = useQuery({
-    queryKey: ['celebrations-bulletin'],
-    queryFn: () => api<LifeLandmarkItem[]>('/celebrations/landmarks/bulletin'),
   })
 
   const peopleDirectory = useQuery({
@@ -213,18 +204,12 @@ function CelebrationsPage() {
         method: 'POST',
         body,
       }),
-    onSuccess: async (created) => {
+    onSuccess: async () => {
       setShowLandmarkForm(false)
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['celebrations-landmarks'] }),
-        queryClient.invalidateQueries({ queryKey: ['celebrations-bulletin'] }),
-      ])
+      await queryClient.invalidateQueries({ queryKey: ['celebrations-landmarks'] })
       setBanner({
         tone: 'success',
-        text:
-          created.publication_preference === 'ALLOW_BULLETIN'
-            ? 'Life landmark recorded on profile. It awaits leadership approval before entering the public bulletin.'
-            : 'Private life landmark recorded on member profile.',
+        text: 'Life landmark recorded on member profile.',
       })
     },
     onError: (err) =>
@@ -241,7 +226,6 @@ function CelebrationsPage() {
     }: {
       landmarkId: string
       body: {
-        publication_preference?: LandmarkPublicationPreference
         approval_status?: LandmarkApprovalStatus
         review_note?: string | null
       }
@@ -251,15 +235,10 @@ function CelebrationsPage() {
         body,
       }),
     onSuccess: async (updated) => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['celebrations-landmarks'] }),
-        queryClient.invalidateQueries({ queryKey: ['celebrations-bulletin'] }),
-      ])
+      await queryClient.invalidateQueries({ queryKey: ['celebrations-landmarks'] })
       setBanner({
         tone: 'success',
-        text: updated.in_public_bulletin
-          ? `Landmark "${updated.title}" approved and published to the church bulletin.`
-          : `Landmark "${updated.title}" updated (${updated.approval_status} · ${updated.publication_preference}).`,
+        text: `Landmark "${updated.title}" updated (${updated.approval_status}).`,
       })
     },
     onError: (err) =>
@@ -297,14 +276,12 @@ function CelebrationsPage() {
       title: form.get('title'),
       description: form.get('description') || null,
       occurred_on: form.get('occurred_on') || null,
-      publication_preference: form.get('publication_preference') as LandmarkPublicationPreference,
     })
   }
 
   const remindersCount = overview.data?.reminders.length ?? 0
   const monthlyCount = overview.data?.monthly_celebrations.length ?? 0
   const landmarksCount = landmarks.data?.length ?? 0
-  const bulletinCount = bulletin.data?.length ?? 0
 
   return (
     <div className="space-y-6">
@@ -318,7 +295,7 @@ function CelebrationsPage() {
           </Badge>
         }
         title="Birthdays, Anniversaries & Life Landmarks"
-        subtitle="Proactive 3-day celebration alert engine, idempotent greeting/call logging, and member life landmarks with separate bulletin approval."
+        subtitle="Proactive 3-day celebration alert engine, idempotent greeting/call logging, and member life landmarks."
         actions={
           <>
             {canWriteLandmark && (
@@ -357,20 +334,7 @@ function CelebrationsPage() {
       {/* Policy & Navigation Bar */}
       <div className="glass-card flex flex-col gap-3 rounded-2xl border border-border/60 p-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-wrap gap-1.5">
-          <button
-            type="button"
-            onClick={() => setActiveTab('alerts')}
-            className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-semibold transition-all ${
-              activeTab === 'alerts'
-                ? 'bg-primary text-primary-foreground shadow-xs'
-                : 'border border-border/70 bg-white/70 text-muted-foreground hover:bg-secondary/60 hover:text-foreground'
-            }`}
-          >
-            <BellRing className="h-3.5 w-3.5" />
-            Proactive 3-Day Alerts ({remindersCount})
-          </button>
-
-          <button
+           <button
             type="button"
             onClick={() => setActiveTab('monthly')}
             className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-semibold transition-all ${
@@ -383,6 +347,19 @@ function CelebrationsPage() {
             Monthly Calendar ({monthlyCount})
           </button>
 
+          {/* <button
+            type="button"
+            onClick={() => setActiveTab('alerts')}
+            className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-semibold transition-all ${
+              activeTab === 'alerts'
+                ? 'bg-primary text-primary-foreground shadow-xs'
+                : 'border border-border/70 bg-white/70 text-muted-foreground hover:bg-secondary/60 hover:text-foreground'
+            }`}
+          >
+            <BellRing className="h-3.5 w-3.5" />
+            Proactive 3-Day Alerts ({remindersCount})
+          </button> */}
+
           <button
             type="button"
             onClick={() => setActiveTab('landmarks')}
@@ -394,19 +371,6 @@ function CelebrationsPage() {
           >
             <GraduationCap className="h-3.5 w-3.5" />
             Life Landmarks ({landmarksCount})
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('bulletin')}
-            className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-semibold transition-all ${
-              activeTab === 'bulletin'
-                ? 'bg-primary text-primary-foreground shadow-xs'
-                : 'border border-border/70 bg-white/70 text-muted-foreground hover:bg-secondary/60 hover:text-foreground'
-            }`}
-          >
-            <Globe className="h-3.5 w-3.5" />
-            Approved Bulletin ({bulletinCount})
           </button>
         </div>
 
@@ -536,7 +500,7 @@ function CelebrationsPage() {
                 Record Member Life Landmark or Graduation
               </h2>
               <p className="text-xs text-muted-foreground">
-                Landmarks are immediately visible to authorized internal stewards, and enter the public bulletin only when both member preference and leadership approval are granted.
+                Record graduations, baby dedications, weddings, and family milestones on the member profile for pastoral care and recognition.
               </p>
             </div>
             <Badge variant="purple">HOF-022-S03</Badge>
@@ -582,20 +546,7 @@ function CelebrationsPage() {
             required
           />
 
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Milestone Date (optional)" name="occurred_on" type="date" />
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-foreground">Publication Preference</label>
-              <select
-                name="publication_preference"
-                defaultValue="ALLOW_BULLETIN"
-                className="h-11 rounded-xl border border-input bg-white/90 px-3 text-xs font-semibold text-foreground shadow-2xs outline-none focus:border-primary"
-              >
-                <option value="ALLOW_BULLETIN">Allow Church Bulletin (Requires Approval)</option>
-                <option value="PRIVATE">Private (Internal Pastoral / Care View Only)</option>
-              </select>
-            </div>
-          </div>
+          <Field label="Milestone Date (optional)" name="occurred_on" type="date" />
 
           <div className="sm:col-span-2 flex flex-col gap-1.5">
             <label className="text-xs font-semibold text-foreground">Notes / Details (optional)</label>
@@ -901,7 +852,7 @@ function CelebrationsPage() {
         </section>
       )}
 
-      {/* TAB 3: Life Landmarks & Bulletin Approval Queue (HOF-022-S03) */}
+      {/* TAB 3: Life Landmarks & Academic Graduation Tracker (HOF-022-S03) */}
       {activeTab === 'landmarks' && (
         <section className="space-y-4">
           <div className="flex items-center justify-between px-1">
@@ -910,8 +861,7 @@ function CelebrationsPage() {
                 Life Landmarks &amp; Academic Graduation Tracker
               </h2>
               <p className="text-xs text-muted-foreground">
-                Internal directory of graduations and family milestones. Bulletin publication requires both{' '}
-                <code>ALLOW_BULLETIN</code> preference and leadership approval.
+                Internal directory of member graduations, baby dedications, weddings, and family milestones.
               </p>
             </div>
           </div>
@@ -951,19 +901,6 @@ function CelebrationsPage() {
                         </Badge>
                       )}
                       <Badge
-                        variant={l.publication_preference === 'ALLOW_BULLETIN' ? 'secondary' : 'outline'}
-                      >
-                        {l.publication_preference === 'ALLOW_BULLETIN' ? (
-                          <>
-                            <Globe className="h-3 w-3" /> Prefers Bulletin
-                          </>
-                        ) : (
-                          <>
-                            <Lock className="h-3 w-3" /> Private Only
-                          </>
-                        )}
-                      </Badge>
-                      <Badge
                         variant={
                           l.approval_status === 'APPROVED'
                             ? 'success'
@@ -972,36 +909,14 @@ function CelebrationsPage() {
                               : 'warning'
                         }
                       >
-                        Approval: {l.approval_status}
+                        Status: {l.approval_status}
                       </Badge>
-                      {l.in_public_bulletin && (
-                        <Badge variant="success">
-                          <CheckCircle2 className="h-3 w-3" /> Live in Public Bulletin
-                        </Badge>
-                      )}
                     </div>
                   </div>
 
                   {canApproveLandmark && (
                     <div className="flex flex-wrap items-center gap-2">
-                      <select
-                        aria-label={`Publication preference for ${l.title}`}
-                        value={l.publication_preference}
-                        onChange={(e) =>
-                          reviewLandmarkMutation.mutate({
-                            landmarkId: l.id,
-                            body: {
-                              publication_preference: e.target.value as LandmarkPublicationPreference,
-                            },
-                          })
-                        }
-                        className="h-9 rounded-xl border border-input bg-white px-2.5 text-xs font-semibold text-foreground"
-                      >
-                        <option value="ALLOW_BULLETIN">Pref: Allow Bulletin</option>
-                        <option value="PRIVATE">Pref: Private</option>
-                      </select>
-
-                      {l.publication_preference === 'ALLOW_BULLETIN' && l.approval_status !== 'APPROVED' && (
+                      {l.approval_status !== 'APPROVED' && (
                         <Button
                           size="sm"
                           onClick={() =>
@@ -1012,7 +927,7 @@ function CelebrationsPage() {
                           }
                         >
                           <CheckCircle2 className="h-3.5 w-3.5" />
-                          Approve for Bulletin
+                          Verify Milestone
                         </Button>
                       )}
 
@@ -1027,54 +942,10 @@ function CelebrationsPage() {
                             })
                           }
                         >
-                          Unpublish
+                          Mark Pending
                         </Button>
                       )}
                     </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-      )}
-
-      {/* TAB 4: Public Church Bulletin Feed (HOF-022-S03) */}
-      {activeTab === 'bulletin' && (
-        <section className="space-y-4">
-          <div className="px-1">
-            <h2 className="text-base font-bold text-foreground">
-              Approved Church Bulletin Landmarks ({bulletinCount})
-            </h2>
-            <p className="text-xs text-muted-foreground">
-              Only milestones where the member opted into bulletin publication AND leadership approved are published here.
-            </p>
-          </div>
-
-          {bulletinCount === 0 ? (
-            <div className="glass-card rounded-2xl border border-border/60 p-12 text-center text-sm text-muted-foreground">
-              No landmarks are currently published in the public bulletin.
-            </div>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2">
-              {bulletin.data?.map((b) => (
-                <div
-                  key={b.id}
-                  className="glass-card rounded-2xl border border-emerald-500/30 p-5 shadow-xs"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <Badge variant="success">
-                      <Award className="h-3 w-3" /> {LANDMARK_CATEGORY_LABELS[b.category]}
-                    </Badge>
-                    {b.occurred_on && (
-                      <span className="text-xs text-muted-foreground">{b.occurred_on}</span>
-                    )}
-                  </div>
-                  <h3 className="mt-2.5 text-base font-bold text-foreground">
-                    {b.person.first_name} {b.person.last_name} — {b.title}
-                  </h3>
-                  {b.description && (
-                    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{b.description}</p>
                   )}
                 </div>
               ))}

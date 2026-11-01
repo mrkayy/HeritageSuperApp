@@ -823,12 +823,12 @@ describe('Heritage Single-Church MVP E2E', () => {
     expect(bdayMar01?.days_until).toBe(3);
   });
 
-  it('HOF-022-S03: life landmark publication in the public bulletin is separate from profile recording and requires preference + approval', async () => {
+  it('HOF-022-S03: life landmark recording and verification for authorized internal viewers', async () => {
     const leapPerson = await prisma.person.findFirstOrThrow({
       where: { firstName: 'LeapDay', lastName: 'Celebrant' },
     });
 
-    // 1. Record a graduation landmark with ALLOW_BULLETIN preference -> starts as PENDING
+    // 1. Record a graduation landmark -> starts as PENDING
     const createRes = await request(app.getHttpServer())
       .post('/api/celebrations/landmarks')
       .set('Origin', ORIGIN)
@@ -839,12 +839,10 @@ describe('Heritage Single-Church MVP E2E', () => {
         title: 'B.Sc. Computer Science (First Class Honours)',
         description: 'Graduated from University of Lagos.',
         occurred_on: '2026-10-20',
-        publication_preference: 'ALLOW_BULLETIN',
       });
     expect(createRes.status).toBe(201);
     const landmarkId = createRes.body.id as string;
     expect(createRes.body.approval_status).toBe('PENDING');
-    expect(createRes.body.in_public_bulletin).toBe(false);
 
     // 2. Visible to authorized internal viewers immediately
     const internalList = await request(app.getHttpServer())
@@ -853,39 +851,17 @@ describe('Heritage Single-Church MVP E2E', () => {
     expect(internalList.status).toBe(200);
     expect(internalList.body.some((l: { id: string }) => l.id === landmarkId)).toBe(true);
 
-    // 3. Not in public bulletin before approval
-    const bulletinBefore = await request(app.getHttpServer()).get('/api/celebrations/landmarks/bulletin');
-    expect(bulletinBefore.status).toBe(200);
-    expect(bulletinBefore.body.some((l: { id: string }) => l.id === landmarkId)).toBe(false);
-
-    // 4. Attempting to approve when preference is switched to PRIVATE is rejected
-    const rejectPrivateApprove = await request(app.getHttpServer())
-      .patch(`/api/celebrations/landmarks/${landmarkId}`)
-      .set('Origin', ORIGIN)
-      .set('Cookie', adminCookie)
-      .send({
-        publication_preference: 'PRIVATE',
-        approval_status: 'APPROVED',
-      });
-    expect(rejectPrivateApprove.status).toBe(400);
-    expect(rejectPrivateApprove.body.code).toBe('PUBLICATION_PREFERENCE_REQUIRED');
-
-    // 5. Approve with ALLOW_BULLETIN -> now appears in public bulletin
+    // 3. Verify / approve landmark
     const approveRes = await request(app.getHttpServer())
       .patch(`/api/celebrations/landmarks/${landmarkId}`)
       .set('Origin', ORIGIN)
       .set('Cookie', adminCookie)
       .send({
-        publication_preference: 'ALLOW_BULLETIN',
         approval_status: 'APPROVED',
-        review_note: 'Approved for Sunday bulletin announcement.',
+        review_note: 'Verified graduation milestone.',
       });
     expect(approveRes.status).toBe(200);
-    expect(approveRes.body.in_public_bulletin).toBe(true);
-
-    const bulletinAfter = await request(app.getHttpServer()).get('/api/celebrations/landmarks/bulletin');
-    expect(bulletinAfter.status).toBe(200);
-    expect(bulletinAfter.body.some((l: { id: string }) => l.id === landmarkId)).toBe(true);
+    expect(approveRes.body.approval_status).toBe('APPROVED');
   });
 
   it('HOF-022-S04: celebration contact (greeting email or call log) is linked to the celebration and repeated clicks do not create duplicate deliveries', async () => {
